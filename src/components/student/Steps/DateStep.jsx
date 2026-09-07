@@ -1,19 +1,55 @@
 import React from 'react';
-import { Calendar as CalendarIcon, Check, ChevronLeft, ChevronRight, Info } from 'lucide-react';
+import { Calendar as CalendarIcon, Check, Info } from 'lucide-react';
+import { useApp } from '../../../context/AppContext';
 
 export default function DateStep({ selectedDate, setSelectedDate, onNext }) {
-  // Calendar dates for September 2026
-  const dates = [
-    { date: '2026-09-07', label: 'Mon, Sep 7', day: '7', weekday: 'Mon', status: 'AVAILABLE', slotsLeft: 12 },
-    { date: '2026-09-08', label: 'Tue, Sep 8', day: '8', weekday: 'Tue', status: 'AVAILABLE', slotsLeft: 18 },
-    { date: '2026-09-09', label: 'Wed, Sep 9', day: '9', weekday: 'Wed', status: 'LIMITED', slotsLeft: 4 },
-    { date: '2026-09-10', label: 'Thu, Sep 10', day: '10', weekday: 'Thu', status: 'FULL', slotsLeft: 0 },
-    { date: '2026-09-11', label: 'Fri, Sep 11', day: '11', weekday: 'Fri', status: 'AVAILABLE', slotsLeft: 14 },
-    { date: '2026-09-12', label: 'Sat, Sep 12', day: '12', weekday: 'Sat', status: 'UNAVAILABLE', slotsLeft: 0 },
-    { date: '2026-09-13', label: 'Sun, Sep 13', day: '13', weekday: 'Sun', status: 'UNAVAILABLE', slotsLeft: 0 },
-    { date: '2026-09-14', label: 'Mon, Sep 14', day: '14', weekday: 'Mon', status: 'AVAILABLE', slotsLeft: 20 },
-    { date: '2026-09-15', label: 'Tue, Sep 15', day: '15', weekday: 'Tue', status: 'AVAILABLE', slotsLeft: 16 },
-  ];
+  const { appointments, availability } = useApp();
+
+  const maxSlotsPerDay = availability.maxBookings || 25;
+
+  // Generate 10 upcoming days starting from Today (Sep 7, 2026)
+  const baseDate = new Date(2026, 8, 7); // September 7, 2026
+
+  const dates = Array.from({ length: 10 }).map((_, idx) => {
+    const d = new Date(baseDate);
+    d.setDate(baseDate.getDate() + idx);
+
+    const yearStr = d.getFullYear();
+    const monthStr = String(d.getMonth() + 1).padStart(2, '0');
+    const dayStr = String(d.getDate()).padStart(2, '0');
+    const isoDate = `${yearStr}-${monthStr}-${dayStr}`;
+
+    const dayNum = d.getDate();
+    const weekday = d.toLocaleDateString('en-US', { weekday: 'short' });
+    const label = `${weekday}, ${d.toLocaleDateString('en-US', { month: 'short' })} ${dayNum}`;
+    const isWeekend = d.getDay() === 0 || d.getDay() === 6; // Sun or Sat
+
+    // Calculate actual live booked appointments for this date
+    const bookedForDate = appointments.filter(
+      a => a.appointmentDate === isoDate && a.status !== 'CANCELLED'
+    ).length;
+
+    const slotsRemaining = Math.max(0, maxSlotsPerDay - bookedForDate);
+
+    let status = 'AVAILABLE';
+    if (isWeekend) {
+      status = 'UNAVAILABLE';
+    } else if (slotsRemaining === 0) {
+      status = 'FULL';
+    } else if (slotsRemaining <= 5) {
+      status = 'LIMITED';
+    }
+
+    return {
+      date: isoDate,
+      label,
+      day: dayNum,
+      weekday,
+      status,
+      slotsLeft: slotsRemaining,
+      bookedCount: bookedForDate
+    };
+  });
 
   return (
     <div className="space-y-6">
@@ -23,29 +59,21 @@ export default function DateStep({ selectedDate, setSelectedDate, onNext }) {
           <span>Step 1: Select Consultation Date</span>
         </h3>
         <p className="text-xs text-slate-400 mt-1">
-          Choose an available date for your meeting with the Internship Coordinator.
+          Dates dynamically calculate live availability based on student bookings.
         </p>
       </div>
 
-      {/* Calendar Month Header */}
+      {/* Month Header */}
       <div className="flex items-center justify-between bg-slate-950 p-4 rounded-xl border border-slate-800">
         <div className="flex items-center gap-3">
           <span className="text-base font-bold text-white">September 2026</span>
-          <span className="text-xs px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-medium">
-            Active Term
+          <span className="text-xs px-2.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-semibold">
+            Live Availability Engine
           </span>
-        </div>
-        <div className="flex items-center gap-1 text-slate-500">
-          <button disabled className="p-1 hover:text-white disabled:opacity-40">
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <button disabled className="p-1 hover:text-white disabled:opacity-40">
-            <ChevronRight className="w-5 h-5" />
-          </button>
         </div>
       </div>
 
-      {/* Date Grid */}
+      {/* Dynamic Date Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
         {dates.map((item) => {
           const isSelected = selectedDate === item.date;
@@ -55,7 +83,7 @@ export default function DateStep({ selectedDate, setSelectedDate, onNext }) {
           let badge = null;
 
           if (item.status === 'AVAILABLE') {
-            badge = <span className="text-[10px] text-emerald-400 font-semibold">{item.slotsLeft} slots</span>;
+            badge = <span className="text-[10px] text-emerald-400 font-semibold">{item.slotsLeft} slots open</span>;
           } else if (item.status === 'LIMITED') {
             badge = <span className="text-[10px] text-amber-400 font-semibold">Only {item.slotsLeft} left!</span>;
           } else if (item.status === 'FULL') {
@@ -63,7 +91,7 @@ export default function DateStep({ selectedDate, setSelectedDate, onNext }) {
             badge = <span className="text-[10px] text-rose-500 font-semibold">Fully Booked</span>;
           } else if (item.status === 'UNAVAILABLE') {
             statusStyle = 'bg-slate-950/40 border-slate-900 text-slate-600 cursor-not-allowed opacity-50';
-            badge = <span className="text-[10px] text-slate-500 font-semibold">Holiday / Off</span>;
+            badge = <span className="text-[10px] text-slate-500 font-semibold">Weekend Off</span>;
           }
 
           if (isSelected) {
@@ -90,17 +118,17 @@ export default function DateStep({ selectedDate, setSelectedDate, onNext }) {
         })}
       </div>
 
-      {/* Legend & Instructions */}
+      {/* Legend */}
       <div className="flex flex-wrap items-center justify-between p-3 bg-slate-950/50 rounded-xl border border-slate-800 text-xs text-slate-400 gap-3">
         <div className="flex items-center gap-4 flex-wrap">
           <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-400" /> Available</span>
           <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-400" /> Limited</span>
           <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-rose-500" /> Fully Booked</span>
-          <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-slate-600" /> Weekend / Off</span>
+          <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-slate-600" /> Weekend Off</span>
         </div>
         <div className="flex items-center gap-1 text-slate-400">
           <Info className="w-3.5 h-3.5 text-blue-400" />
-          <span>Consultations are 15 minutes each.</span>
+          <span>Calculated live from active Supabase database records.</span>
         </div>
       </div>
 

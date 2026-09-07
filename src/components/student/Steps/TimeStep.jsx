@@ -1,35 +1,46 @@
 import React from 'react';
-import { Clock, Check, Sun, Sunset, AlertTriangle, ShieldCheck, Info } from 'lucide-react';
+import { Clock, Sunset, AlertTriangle, Info } from 'lucide-react';
+import { useApp } from '../../../context/AppContext';
 
 export default function TimeStep({ selectedDate, selectedTime, setSelectedTime, onNext, onBack }) {
+  const { appointments } = useApp();
+
   // Pre-3:00 PM Emergency slots
   const emergencySlots = [
-    { time: '11:00 AM (Emergency Only)', value: '11:00 AM', status: 'EMERGENCY_ONLY' },
-    { time: '11:30 AM (Emergency Only)', value: '11:30 AM', status: 'EMERGENCY_ONLY' },
-    { time: '01:30 PM (Emergency Only)', value: '01:30 PM', status: 'EMERGENCY_ONLY' },
-    { time: '02:30 PM (Emergency Only)', value: '02:30 PM', status: 'EMERGENCY_ONLY' },
+    { time: '11:00 AM (Emergency Only)', value: '11:00 AM' },
+    { time: '11:30 AM (Emergency Only)', value: '11:30 AM' },
+    { time: '01:30 PM (Emergency Only)', value: '01:30 PM' },
+    { time: '02:30 PM (Emergency Only)', value: '02:30 PM' },
   ];
 
   // Regular slots after 3:00 PM (15-min intervals)
   const regularAfter3Slots = [
-    { time: '03:00 PM', value: '03:00 PM', status: 'AVAILABLE' },
-    { time: '03:15 PM', value: '03:15 PM', status: 'AVAILABLE' },
-    { time: '03:30 PM', value: '03:30 PM', status: 'AVAILABLE' },
-    { time: '03:45 PM', value: '03:45 PM', status: 'AVAILABLE' },
-    { time: '04:00 PM', value: '04:00 PM', status: 'AVAILABLE' },
-    { time: '04:15 PM', value: '04:15 PM', status: 'AVAILABLE' },
-    { time: '04:30 PM', value: '04:30 PM', status: 'AVAILABLE' },
-    { time: '04:45 PM', value: '04:45 PM', status: 'LIMITED' },
-    { time: '05:00 PM', value: '05:00 PM', status: 'AVAILABLE' },
-    { time: '05:15 PM', value: '05:15 PM', status: 'AVAILABLE' },
+    { time: '03:00 PM', value: '03:00 PM' },
+    { time: '03:15 PM', value: '03:15 PM' },
+    { time: '03:30 PM', value: '03:30 PM' },
+    { time: '03:45 PM', value: '03:45 PM' },
+    { time: '04:00 PM', value: '04:00 PM' },
+    { time: '04:15 PM', value: '04:15 PM' },
+    { time: '04:30 PM', value: '04:30 PM' },
+    { time: '04:45 PM', value: '04:45 PM' },
+    { time: '05:00 PM', value: '05:00 PM' },
+    { time: '05:15 PM', value: '05:15 PM' },
   ];
+
+  const checkIsBooked = (timeVal) => {
+    return appointments.some(
+      a => a.appointmentDate === selectedDate &&
+           a.appointmentTime === timeVal &&
+           a.status !== 'CANCELLED'
+    );
+  };
 
   const isEmergencyTime = selectedTime && (
     selectedTime.includes('11:') || selectedTime.includes('01:') || selectedTime.includes('02:')
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 font-sans">
       <div>
         <div className="flex items-center justify-between">
           <h3 className="text-xl font-extrabold text-white flex items-center gap-2">
@@ -41,7 +52,7 @@ export default function TimeStep({ selectedDate, selectedTime, setSelectedTime, 
           </span>
         </div>
         <p className="text-xs text-slate-400 mt-1">
-          Regular desk consultations run <strong className="text-white">after 3:00 PM</strong>. Pre-3 PM slots are strictly for emergency requests.
+          Showing real-time availability for <strong className="text-white">{selectedDate}</strong>.
         </p>
       </div>
 
@@ -61,7 +72,7 @@ export default function TimeStep({ selectedDate, selectedTime, setSelectedTime, 
                 {isEmergencyTime ? '🚨 EMERGENCY TIME SLOT SELECTED' : 'REGULAR CONSULTATION SLOT'}
               </p>
               <p className="text-sm font-bold text-white">
-                September 7, 2026 at <span className="font-mono text-blue-300">{selectedTime}</span>
+                {selectedDate} at <span className="font-mono text-blue-300">{selectedTime}</span>
               </p>
               <p className="text-[11px] text-slate-400">15-minute individual consultation session</p>
             </div>
@@ -80,28 +91,36 @@ export default function TimeStep({ selectedDate, selectedTime, setSelectedTime, 
             <span>Regular Consultations (03:00 PM – 05:30 PM)</span>
           </div>
           <span className="text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-            ● Open for All Queries
+            ● Live Slot Status
           </span>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
           {regularAfter3Slots.map((slot) => {
             const isSelected = selectedTime === slot.value;
+            const isBooked = checkIsBooked(slot.value);
+
+            let btnStyle = 'bg-slate-900 border-slate-800 text-slate-200 hover:border-slate-700';
+            if (isBooked) {
+              btnStyle = 'bg-slate-950/60 border-slate-900 text-slate-600 cursor-not-allowed opacity-60';
+            } else if (isSelected) {
+              btnStyle = 'bg-blue-600/25 border-blue-500 text-white ring-2 ring-blue-500/50 shadow-lg';
+            }
+
             return (
               <button
                 key={slot.value}
+                disabled={isBooked}
                 onClick={() => setSelectedTime(slot.value)}
-                className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all ${
-                  isSelected
-                    ? 'bg-blue-600/25 border-blue-500 text-white ring-2 ring-blue-500/50 shadow-lg'
-                    : 'bg-slate-900 border-slate-800 text-slate-200 hover:border-slate-700'
-                }`}
+                className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all ${btnStyle}`}
               >
                 <span className="font-mono font-bold text-sm">{slot.time}</span>
-                {isSelected ? (
+                {isBooked ? (
+                  <span className="text-[10px] font-extrabold uppercase text-rose-500">Booked</span>
+                ) : isSelected ? (
                   <span className="text-[10px] font-bold text-blue-300">Selected ✓</span>
                 ) : (
-                  <span className="text-[10px] font-semibold text-emerald-400">15 Mins</span>
+                  <span className="text-[10px] font-semibold text-emerald-400">Available</span>
                 )}
               </button>
             );
@@ -124,18 +143,28 @@ export default function TimeStep({ selectedDate, selectedTime, setSelectedTime, 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5">
           {emergencySlots.map((slot) => {
             const isSelected = selectedTime === slot.value;
+            const isBooked = checkIsBooked(slot.value);
+
+            let btnStyle = 'bg-slate-900/80 border-slate-800/90 text-slate-300 hover:border-rose-500/40';
+            if (isBooked) {
+              btnStyle = 'bg-slate-950/60 border-slate-900 text-slate-600 cursor-not-allowed opacity-60';
+            } else if (isSelected) {
+              btnStyle = 'bg-rose-600/25 border-rose-500 text-white ring-2 ring-rose-500/50 shadow-lg';
+            }
+
             return (
               <button
                 key={slot.value}
+                disabled={isBooked}
                 onClick={() => setSelectedTime(slot.value)}
-                className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all ${
-                  isSelected
-                    ? 'bg-rose-600/25 border-rose-500 text-white ring-2 ring-rose-500/50 shadow-lg'
-                    : 'bg-slate-900/80 border-slate-800/90 text-slate-300 hover:border-rose-500/40'
-                }`}
+                className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all ${btnStyle}`}
               >
                 <span className="font-mono font-bold text-xs text-rose-300">{slot.value}</span>
-                <span className="text-[10px] text-slate-400">Emergency Only</span>
+                {isBooked ? (
+                  <span className="text-[10px] font-extrabold uppercase text-rose-500">Booked</span>
+                ) : (
+                  <span className="text-[10px] text-slate-400">Emergency Only</span>
+                )}
               </button>
             );
           })}
@@ -145,7 +174,7 @@ export default function TimeStep({ selectedDate, selectedTime, setSelectedTime, 
       {/* Policy Reminder */}
       <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 text-xs text-slate-400 flex items-center gap-2">
         <Info className="w-4 h-4 text-blue-400 shrink-0" />
-        <span>Each consultation is allocated 15 minutes to keep the queue moving on schedule.</span>
+        <span>Booked slots are automatically locked in real time to prevent double-booking.</span>
       </div>
 
       {/* Action Buttons */}
