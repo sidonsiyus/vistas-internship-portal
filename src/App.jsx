@@ -58,13 +58,13 @@ function AppContent() {
 
   // Render Student Portal Views
   return (
-    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 font-sans">
+    <div className="min-h-screen flex flex-col bg-[#090d16] text-slate-100 font-sans">
       
-      {/* Toast Notification (Bottom-Right Positioned) */}
+      {/* Toast Notification (Bottom-Right Positioned, Minimalist) */}
       {toastNotification && (
-        <div className="fixed bottom-5 right-5 z-50 bg-slate-900 border-2 border-blue-500 text-white px-5 py-3.5 rounded-xl shadow-2xl animate-bounce flex items-center gap-3 max-w-sm">
-          <span className="h-3 w-3 rounded-full bg-blue-400 live-pulse shrink-0" />
-          <span className="text-xs font-bold leading-snug">{toastNotification.message}</span>
+        <div className="fixed bottom-5 right-5 z-50 bg-[#0e1422] border border-blue-500/40 text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-2.5 max-w-sm">
+          <span className="h-2 w-2 rounded-full bg-blue-400 live-pulse shrink-0" />
+          <span className="text-xs font-semibold leading-snug">{toastNotification.message}</span>
         </div>
       )}
 

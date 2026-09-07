@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { GraduationCap, Menu, X, Shield, Clock, Ticket, UserCheck, ChevronRight } from 'lucide-react';
+import { GraduationCap, Menu, X, Shield, Clock, Ticket, UserCheck } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import StatusBadge from './StatusBadge';
 
@@ -15,20 +15,22 @@ export default function Navbar({ activeTab, setActiveTab }) {
   ];
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-md">
+    <header className="sticky top-0 z-40 w-full border-b border-slate-800/60 bg-[#090d16]/85 backdrop-blur-md transition-all">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14">
           
-          {/* Plain & Simple Top-Left Logo */}
+          {/* Minimalist Top-Left Logo */}
           <div 
             onClick={() => setActiveTab('home')}
-            className="flex items-center gap-2 cursor-pointer hover:opacity-90 transition-opacity"
+            className="flex items-center gap-2.5 cursor-pointer hover:opacity-90 transition-opacity"
           >
-            <GraduationCap className="w-5 h-5 text-blue-500 shrink-0" />
-            <span className="font-bold text-base text-white tracking-tight">Internship Portal</span>
+            <div className="p-1 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400">
+              <GraduationCap className="w-4 h-4 shrink-0" />
+            </div>
+            <span className="font-bold text-sm text-white tracking-tight">Internship Portal</span>
           </div>
 
-          {/* Desktop Navigation */}
+          {/* Desktop Navigation - Clean Minimalist Pills */}
           <nav className="hidden md:flex items-center gap-1">
             {navItems.map(item => {
               const Icon = item.icon;
@@ -37,10 +39,10 @@ export default function Navbar({ activeTab, setActiveTab }) {
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                     isActive
-                      ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                      ? 'bg-blue-600/15 text-blue-400 border border-blue-500/30'
+                      : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/40'
                   }`}
                 >
                   <Icon className="w-3.5 h-3.5" />
@@ -56,18 +58,18 @@ export default function Navbar({ activeTab, setActiveTab }) {
           </nav>
 
           {/* Status Indicator & Admin Button */}
-          <div className="hidden md:flex items-center gap-3">
-            <div className="flex items-center gap-1.5 bg-slate-900 px-2.5 py-1 rounded-full border border-slate-800">
+          <div className="hidden md:flex items-center gap-2.5">
+            <div className="flex items-center gap-1.5 bg-slate-900/80 px-2.5 py-1 rounded-full border border-slate-800/80">
               <span className="text-[11px] text-slate-400">Desk:</span>
-              <StatusBadge status={availability.status} size="normal" />
+              <StatusBadge status={availability.status} size="small" />
             </div>
 
             <button
               onClick={() => setActiveTab('admin')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                 activeTab === 'admin'
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'bg-slate-900 text-slate-300 hover:bg-slate-800 hover:text-white border border-slate-800'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'bg-slate-900/80 text-slate-300 hover:bg-slate-800 hover:text-white border border-slate-800/80'
               }`}
             >
               <Shield className="w-3.5 h-3.5 text-blue-400" />
@@ -77,10 +79,10 @@ export default function Navbar({ activeTab, setActiveTab }) {
 
           {/* Mobile Menu Toggle */}
           <div className="flex md:hidden items-center gap-2">
-            <StatusBadge status={availability.status} size="normal" />
+            <StatusBadge status={availability.status} size="small" />
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-1.5 rounded-lg text-slate-300 hover:bg-slate-800 focus:outline-none"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 focus:outline-none"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -90,7 +92,7 @@ export default function Navbar({ activeTab, setActiveTab }) {
 
       {/* Mobile Navigation */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-slate-800 bg-slate-950 px-4 pt-2 pb-4 space-y-1 shadow-2xl">
+        <div className="md:hidden border-t border-slate-800/60 bg-[#090d16] px-4 pt-2 pb-4 space-y-1 shadow-2xl">
           {navItems.map(item => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -104,7 +106,7 @@ export default function Navbar({ activeTab, setActiveTab }) {
                 className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all ${
                   isActive
                     ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
-                    : 'text-slate-300 hover:bg-slate-900'
+                    : 'text-slate-300 hover:bg-slate-900/60'
                 }`}
               >
                 <div className="flex items-center gap-2.5">
@@ -126,7 +128,7 @@ export default function Navbar({ activeTab, setActiveTab }) {
                 setActiveTab('admin');
                 setMobileMenuOpen(false);
               }}
-              className="w-full flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-blue-600 text-white font-semibold text-xs shadow-md"
+              className="w-full flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs shadow-md"
             >
               <Shield className="w-4 h-4" />
               <span>Admin Desk Login</span>

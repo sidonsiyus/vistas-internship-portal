@@ -9,7 +9,7 @@ export default function QuickStats() {
 
   const stats = [
     {
-      label: 'Students Booked Today',
+      label: 'Booked Today',
       value: metrics.totalToday,
       subtext: 'Across all departments',
       icon: Users,
@@ -17,25 +17,25 @@ export default function QuickStats() {
       bg: 'bg-blue-500/10 border-blue-500/20'
     },
     {
-      label: 'Currently Waiting',
+      label: 'In Queue',
       value: metrics.waitingCount,
-      subtext: 'In queue sequence',
+      subtext: 'Waiting sequence',
       icon: Hourglass,
       color: 'text-amber-400',
       bg: 'bg-amber-500/10 border-amber-500/20'
     },
     {
-      label: 'Completed Consultations',
+      label: 'Completed',
       value: metrics.completedCount,
-      subtext: 'Processed today',
+      subtext: 'Consultations done',
       icon: CheckCircle2,
       color: 'text-emerald-400',
       bg: 'bg-emerald-500/10 border-emerald-500/20'
     },
     {
-      label: 'Average Consultation Time',
-      value: `${metrics.avgDurationMinutes} Mins`,
-      subtext: 'Based on live pace',
+      label: 'Average Pace',
+      value: `${metrics.avgDurationMinutes}m`,
+      subtext: 'Per consultation',
       icon: Clock,
       color: 'text-sky-400',
       bg: 'bg-sky-500/10 border-sky-500/20'
@@ -43,29 +43,29 @@ export default function QuickStats() {
   ];
 
   return (
-    <section className="py-8 bg-slate-900 border-b border-slate-800">
+    <section className="py-7 bg-[#080c14] border-b border-slate-800/60 font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
           {stats.map((stat, idx) => {
             const Icon = stat.icon;
             return (
               <div
                 key={idx}
-                className="bg-slate-950/80 p-5 rounded-2xl border border-slate-800 flex flex-col justify-between hover:border-slate-700 transition-colors shadow-lg"
+                className="bg-[#0b101b] p-4 sm:p-5 rounded-xl border border-slate-800/70 flex flex-col justify-between hover:border-slate-700 transition-colors shadow-sm"
               >
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                  <span className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
                     {stat.label}
                   </span>
-                  <div className={`p-2 rounded-xl border ${stat.bg} ${stat.color}`}>
-                    <Icon className="w-4 h-4" />
+                  <div className={`p-1.5 rounded-lg border ${stat.bg} ${stat.color}`}>
+                    <Icon className="w-3.5 h-3.5" />
                   </div>
                 </div>
-                <div className="space-y-1">
-                  <div className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight font-mono">
+                <div className="space-y-0.5">
+                  <div className="text-2xl sm:text-3xl font-bold text-white tracking-tight font-mono">
                     {stat.value}
                   </div>
-                  <p className="text-[11px] text-slate-400 font-medium">
+                  <p className="text-[11px] text-slate-500">
                     {stat.subtext}
                   </p>
                 </div>
