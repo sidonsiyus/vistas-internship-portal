@@ -1,14 +1,24 @@
 import React, { useState } from 'react';
-import { Settings as SettingsIcon, Bell, QrCode, Database, Shield, Lock, CheckCircle2, KeyRound } from 'lucide-react';
+import { Settings as SettingsIcon, Bell, QrCode, Database, Shield, Lock, CheckCircle2, KeyRound, Mail, MessageSquare, Send } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 
 export default function SettingsPage() {
-  const { showToast, usingSupabase, resetAllTokens } = useApp();
+  const { showToast, usingSupabase, resetAllTokens, notificationSettings, setNotificationSettings } = useApp();
 
   const [soundAlerts, setSoundAlerts] = useState(true);
   const [autoNext, setAutoNext] = useState(false);
-  const [qrCheckInRequired, setQrCheckInRequired] = useState(true);
+
+  // Notification Config Form State
+  const [notifyForm, setNotifyForm] = useState(notificationSettings || {
+    enableEmail: true,
+    enableSms: true,
+    emailjsServiceId: '',
+    emailjsTemplateId: '',
+    emailjsPublicKey: '',
+    emailWebhookUrl: '',
+    smsWebhookUrl: ''
+  });
 
   // Admin Credentials Form State
   const [newPasscode, setNewPasscode] = useState('');
@@ -17,6 +27,12 @@ export default function SettingsPage() {
 
   const handleSavePreferences = () => {
     showToast('Desk system settings saved successfully!', 'success');
+  };
+
+  const handleSaveNotificationConfig = (e) => {
+    e.preventDefault();
+    setNotificationSettings(notifyForm);
+    showToast('📩 Email & SMS Notification settings saved!', 'success');
   };
 
   const handleUpdatePasscode = async (e) => {
@@ -69,6 +85,123 @@ export default function SettingsPage() {
         <p className="text-xs text-slate-400 mt-0.5">
           Configure real-time notifications, Supabase admin passcodes, and desk parameters.
         </p>
+      </div>
+
+      {/* EMAIL & SMS NOTIFICATION CONFIGURATION SECTION */}
+      <div className="bg-slate-900 border border-emerald-500/30 p-6 rounded-2xl shadow-xl space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div className="space-y-1">
+            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              <Mail className="w-4 h-4 text-emerald-400" />
+              <span>Student Token Notifications (Email & SMS)</span>
+            </h3>
+            <p className="text-xs text-slate-400">
+              Configure automatic dispatch of token passes via Email and SMS text messages.
+            </p>
+          </div>
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            ● Active Dispatch Mode
+          </span>
+        </div>
+
+        <form onSubmit={handleSaveNotificationConfig} className="space-y-4 pt-2">
+          {/* Toggles */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-2 border-b border-slate-800">
+            <label className="flex items-center justify-between p-3 bg-slate-950 rounded-xl border border-slate-800 cursor-pointer">
+              <div className="flex items-center gap-2 text-xs font-semibold text-slate-200">
+                <Mail className="w-4 h-4 text-blue-400" />
+                <span>Auto-Send Email Notifications</span>
+              </div>
+              <input
+                type="checkbox"
+                checked={notifyForm.enableEmail}
+                onChange={(e) => setNotifyForm(prev => ({ ...prev, enableEmail: e.target.checked }))}
+                className="w-4 h-4 accent-emerald-500 rounded cursor-pointer"
+              />
+            </label>
+
+            <label className="flex items-center justify-between p-3 bg-slate-950 rounded-xl border border-slate-800 cursor-pointer">
+              <div className="flex items-center gap-2 text-xs font-semibold text-slate-200">
+                <MessageSquare className="w-4 h-4 text-emerald-400" />
+                <span>Auto-Send SMS Text Messages</span>
+              </div>
+              <input
+                type="checkbox"
+                checked={notifyForm.enableSms}
+                onChange={(e) => setNotifyForm(prev => ({ ...prev, enableSms: e.target.checked }))}
+                className="w-4 h-4 accent-emerald-500 rounded cursor-pointer"
+              />
+            </label>
+          </div>
+
+          {/* EmailJS / Custom Webhook Configuration */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="space-y-1">
+              <label className="block text-[11px] font-semibold text-slate-300">EmailJS Service ID (Optional)</label>
+              <input
+                type="text"
+                placeholder="service_xxx"
+                value={notifyForm.emailjsServiceId}
+                onChange={(e) => setNotifyForm(prev => ({ ...prev, emailjsServiceId: e.target.value }))}
+                className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="block text-[11px] font-semibold text-slate-300">EmailJS Template ID (Optional)</label>
+              <input
+                type="text"
+                placeholder="template_xxx"
+                value={notifyForm.emailjsTemplateId}
+                onChange={(e) => setNotifyForm(prev => ({ ...prev, emailjsTemplateId: e.target.value }))}
+                className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="block text-[11px] font-semibold text-slate-300">EmailJS Public Key (Optional)</label>
+              <input
+                type="password"
+                placeholder="user_xxx"
+                value={notifyForm.emailjsPublicKey}
+                onChange={(e) => setNotifyForm(prev => ({ ...prev, emailjsPublicKey: e.target.value }))}
+                className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <div className="space-y-1">
+              <label className="block text-[11px] font-semibold text-slate-300">Email Webhook URL (Optional)</label>
+              <input
+                type="url"
+                placeholder="https://api.vistas.edu/hooks/email"
+                value={notifyForm.emailWebhookUrl}
+                onChange={(e) => setNotifyForm(prev => ({ ...prev, emailWebhookUrl: e.target.value }))}
+                className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="block text-[11px] font-semibold text-slate-300">SMS Webhook URL (Optional)</label>
+              <input
+                type="url"
+                placeholder="https://api.vistas.edu/hooks/sms"
+                value={notifyForm.smsWebhookUrl}
+                onChange={(e) => setNotifyForm(prev => ({ ...prev, smsWebhookUrl: e.target.value }))}
+                className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <button
+              type="submit"
+              className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5"
+            >
+              <Send className="w-3.5 h-3.5" />
+              <span>SAVE NOTIFICATION SETTINGS</span>
+            </button>
+          </div>
+        </form>
       </div>
 
       {/* ADMIN PASSCODE & CREDENTIALS SECTION */}
