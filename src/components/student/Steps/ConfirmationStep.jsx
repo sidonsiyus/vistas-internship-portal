@@ -3,7 +3,7 @@ import { CheckCircle2, Ticket, Download, ArrowRight, Mail, MessageSquare, Send, 
 import TokenBadge from '../../common/TokenBadge';
 import { downloadIcsFile } from '../../../utils/calendar';
 import { useApp } from '../../../context/AppContext';
-import { openEmailApp, openSmsApp, sendTokenNotificationPair, OFFICE_LOCATION } from '../../../utils/notifications';
+import { sendTokenNotificationPair, OFFICE_LOCATION } from '../../../utils/notifications';
 
 export default function ConfirmationStep({ appointment, onTrackToken, onCancel }) {
   const { cancelAppointment, notificationSettings, showToast } = useApp();
@@ -27,7 +27,7 @@ export default function ConfirmationStep({ appointment, onTrackToken, onCancel }
     try {
       await sendTokenNotificationPair(appointment, notificationSettings);
       setResentSuccess(true);
-      showToast(`📩 Token ${actualTokenNumber} resent to ${appointment.email} & ${appointment.phone}!`, 'success');
+      showToast(`📩 Token ${actualTokenNumber} resent automatically to ${appointment.email} & ${appointment.phone}!`, 'success');
       setTimeout(() => setResentSuccess(false), 4000);
     } catch (err) {
       showToast('Failed to resend notification.', 'warning');
@@ -37,7 +37,7 @@ export default function ConfirmationStep({ appointment, onTrackToken, onCancel }
   };
 
   return (
-    <div className="space-y-6 text-center">
+    <div className="space-y-6 text-center font-sans">
       
       {/* Confirmation Header */}
       <div className="inline-flex items-center justify-center p-3 bg-emerald-500/10 rounded-full border border-emerald-500/20 text-emerald-400 mb-1">
@@ -49,7 +49,7 @@ export default function ConfirmationStep({ appointment, onTrackToken, onCancel }
           ✓ BOOKING CONFIRMED!
         </h2>
         <p className="text-xs text-slate-300 mt-1">
-          Your consultation slot has been reserved. Token details sent via Email & SMS.
+          Your consultation slot has been reserved. Token details sent automatically via Email & SMS.
         </p>
       </div>
 
@@ -87,17 +87,17 @@ export default function ConfirmationStep({ appointment, onTrackToken, onCancel }
           </div>
         </div>
 
-        {/* Notification Status & Action Row */}
-        <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3 text-left space-y-2.5">
+        {/* Automatic Background Notification Delivery Card */}
+        <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 text-left space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-slate-300 flex items-center gap-1.5">
-              <Send className="w-3.5 h-3.5 text-blue-400" />
-              <span>Token Sent to Student Contact</span>
+            <span className="text-[11px] font-bold text-white flex items-center gap-1.5">
+              <Send className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Automatic Background Delivery</span>
             </span>
             <button
               onClick={handleResendNotifications}
               disabled={resending}
-              className="text-[10px] font-bold px-2 py-1 rounded bg-blue-600/20 hover:bg-blue-600 hover:text-white text-blue-300 border border-blue-500/30 transition-all flex items-center gap-1"
+              className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-blue-600/20 hover:bg-blue-600 hover:text-white text-blue-300 border border-blue-500/30 transition-all flex items-center gap-1"
             >
               {resentSuccess ? (
                 <>
@@ -114,27 +114,25 @@ export default function ConfirmationStep({ appointment, onTrackToken, onCancel }
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
-            <div
-              onClick={() => openEmailApp(appointment)}
-              className="flex items-center gap-2 p-2 bg-slate-950/80 rounded-lg border border-slate-800 text-slate-300 hover:border-blue-500 cursor-pointer transition-colors"
-              title="Click to open pre-filled Email in Mail App"
-            >
-              <Mail className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+            <div className="flex items-center gap-2 p-2.5 bg-slate-950/80 rounded-lg border border-slate-800 text-slate-300">
+              <Mail className="w-4 h-4 text-blue-400 shrink-0" />
               <div className="truncate">
-                <span className="block text-[10px] text-slate-500 font-semibold">EMAIL PASS</span>
-                <span className="font-mono text-slate-200 text-[11px] truncate">{appointment.email || 'Registered Email'}</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] text-slate-400 font-semibold uppercase">EMAIL PASS</span>
+                  <span className="text-[9px] px-1 bg-emerald-500/10 text-emerald-400 font-bold rounded">SENT</span>
+                </div>
+                <span className="font-mono text-slate-200 text-[11px] truncate block">{appointment.email || 'Registered Email'}</span>
               </div>
             </div>
 
-            <div
-              onClick={() => openSmsApp(appointment)}
-              className="flex items-center gap-2 p-2 bg-slate-950/80 rounded-lg border border-slate-800 text-slate-300 hover:border-emerald-500 cursor-pointer transition-colors"
-              title="Click to open pre-filled Text in Message App"
-            >
-              <MessageSquare className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+            <div className="flex items-center gap-2 p-2.5 bg-slate-950/80 rounded-lg border border-slate-800 text-slate-300">
+              <MessageSquare className="w-4 h-4 text-emerald-400 shrink-0" />
               <div className="truncate">
-                <span className="block text-[10px] text-slate-500 font-semibold">SMS TEXT PASS</span>
-                <span className="font-mono text-slate-200 text-[11px] truncate">{appointment.phone || 'Mobile Number'}</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] text-slate-400 font-semibold uppercase">SMS TEXT PASS</span>
+                  <span className="text-[9px] px-1 bg-emerald-500/10 text-emerald-400 font-bold rounded">SENT</span>
+                </div>
+                <span className="font-mono text-slate-200 text-[11px] truncate block">{appointment.phone || 'Mobile Number'}</span>
               </div>
             </div>
           </div>
