@@ -1,14 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { CheckCircle2, Ticket, Download, ArrowRight, Mail, MessageSquare, Send, Check } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { CheckCircle2, Ticket, Download, ArrowRight, MapPin } from 'lucide-react';
 import TokenBadge from '../../common/TokenBadge';
 import { downloadIcsFile } from '../../../utils/calendar';
 import { useApp } from '../../../context/AppContext';
-import { sendTokenNotificationPair, OFFICE_LOCATION } from '../../../utils/notifications';
+
+export const OFFICE_LOCATION = '7th Floor Staff Room, Vels Hi-Tech Campus';
 
 export default function ConfirmationStep({ appointment, onTrackToken, onCancel }) {
-  const { cancelAppointment, notificationSettings, showToast } = useApp();
-  const [resending, setResending] = useState(false);
-  const [resentSuccess, setResentSuccess] = useState(false);
+  const { cancelAppointment } = useApp();
 
   useEffect(() => {
     try {
@@ -21,20 +20,6 @@ export default function ConfirmationStep({ appointment, onTrackToken, onCancel }
   if (!appointment) return null;
 
   const actualTokenNumber = appointment.tokenNumber;
-
-  const handleResendNotifications = async () => {
-    setResending(true);
-    try {
-      await sendTokenNotificationPair(appointment, notificationSettings);
-      setResentSuccess(true);
-      showToast(`📩 Token ${actualTokenNumber} resent automatically to ${appointment.email} & ${appointment.phone}!`, 'success');
-      setTimeout(() => setResentSuccess(false), 4000);
-    } catch (err) {
-      showToast('Failed to resend notification.', 'warning');
-    } finally {
-      setResending(false);
-    }
-  };
 
   return (
     <div className="space-y-6 text-center font-sans">
@@ -49,7 +34,7 @@ export default function ConfirmationStep({ appointment, onTrackToken, onCancel }
           ✓ BOOKING CONFIRMED!
         </h2>
         <p className="text-xs text-slate-300 mt-1">
-          Your consultation slot has been reserved. Token details sent automatically via Email & SMS.
+          Your consultation slot has been reserved. Please state your token number when called.
         </p>
       </div>
 
@@ -83,58 +68,10 @@ export default function ConfirmationStep({ appointment, onTrackToken, onCancel }
           </div>
           <div className="col-span-2 border-t border-slate-800/80 pt-2">
             <span className="text-slate-500 block font-medium">LOCATION</span>
-            <span className="font-semibold text-emerald-400 text-xs">📍 {OFFICE_LOCATION}</span>
-          </div>
-        </div>
-
-        {/* Automatic Background Notification Delivery Card */}
-        <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 text-left space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold text-white flex items-center gap-1.5">
-              <Send className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Automatic Background Delivery</span>
+            <span className="font-semibold text-emerald-400 text-xs flex items-center gap-1 mt-0.5">
+              <MapPin className="w-3.5 h-3.5 shrink-0" />
+              <span>{OFFICE_LOCATION}</span>
             </span>
-            <button
-              onClick={handleResendNotifications}
-              disabled={resending}
-              className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-blue-600/20 hover:bg-blue-600 hover:text-white text-blue-300 border border-blue-500/30 transition-all flex items-center gap-1"
-            >
-              {resentSuccess ? (
-                <>
-                  <Check className="w-3 h-3 text-emerald-400" />
-                  <span>Resent!</span>
-                </>
-              ) : (
-                <>
-                  <Send className="w-3 h-3" />
-                  <span>{resending ? 'Sending...' : 'Resend Email & SMS'}</span>
-                </>
-              )}
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
-            <div className="flex items-center gap-2 p-2.5 bg-slate-950/80 rounded-lg border border-slate-800 text-slate-300">
-              <Mail className="w-4 h-4 text-blue-400 shrink-0" />
-              <div className="truncate">
-                <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-slate-400 font-semibold uppercase">EMAIL PASS</span>
-                  <span className="text-[9px] px-1 bg-emerald-500/10 text-emerald-400 font-bold rounded">SENT</span>
-                </div>
-                <span className="font-mono text-slate-200 text-[11px] truncate block">{appointment.email || 'Registered Email'}</span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 p-2.5 bg-slate-950/80 rounded-lg border border-slate-800 text-slate-300">
-              <MessageSquare className="w-4 h-4 text-emerald-400 shrink-0" />
-              <div className="truncate">
-                <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-slate-400 font-semibold uppercase">SMS TEXT PASS</span>
-                  <span className="text-[9px] px-1 bg-emerald-500/10 text-emerald-400 font-bold rounded">SENT</span>
-                </div>
-                <span className="font-mono text-slate-200 text-[11px] truncate block">{appointment.phone || 'Mobile Number'}</span>
-              </div>
-            </div>
           </div>
         </div>
       </div>

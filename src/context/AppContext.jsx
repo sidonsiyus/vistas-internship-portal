@@ -2,7 +2,6 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { INITIAL_APPOINTMENTS, INITIAL_AVAILABILITY, MOCK_STUDENTS } from '../mock/sampleData';
 import { generateNextTokenNumber } from '../utils/tokenGenerator';
-import { sendTokenNotificationPair } from '../utils/notifications';
 
 const AppContext = createContext();
 const CHANNEL_NAME = 'VISTAS_REALTIME_QUEUE';
@@ -34,23 +33,6 @@ export function AppProvider({ children }) {
 
   const [toastNotification, setToastNotification] = useState(null);
   const [usingSupabase, setUsingSupabase] = useState(false);
-
-  const [notificationSettings, setNotificationSettings] = useState(() => {
-    const saved = localStorage.getItem('vistas_notification_settings');
-    return saved ? JSON.parse(saved) : {
-      enableEmail: true,
-      enableSms: true,
-      emailjsServiceId: '',
-      emailjsTemplateId: '',
-      emailjsPublicKey: '',
-      emailWebhookUrl: '',
-      smsWebhookUrl: ''
-    };
-  });
-
-  useEffect(() => {
-    localStorage.setItem('vistas_notification_settings', JSON.stringify(notificationSettings));
-  }, [notificationSettings]);
 
   const playAlertSound = () => {
     try {
@@ -299,19 +281,7 @@ export function AppProvider({ children }) {
     }
 
     setTrackedToken(tokenNumber);
-
-    // Auto-dispatch Email & SMS notifications to student
-    try {
-      if (notificationSettings.enableEmail || notificationSettings.enableSms) {
-        sendTokenNotificationPair(newApt, notificationSettings);
-        showToast(`📩 Token ${tokenNumber} sent via Email & SMS to ${newApt.email}!`, 'success');
-      } else {
-        showToast(`Confirmed! Your Token is ${tokenNumber}`, 'success');
-      }
-    } catch (e) {
-      showToast(`Confirmed! Your Token is ${tokenNumber}`, 'success');
-    }
-
+    showToast(`Confirmed! Your Token is ${tokenNumber}`, 'success');
     return newApt;
   };
 
@@ -478,8 +448,6 @@ export function AppProvider({ children }) {
         trackedToken,
         toastNotification,
         usingSupabase,
-        notificationSettings,
-        setNotificationSettings,
         setTrackedToken,
         resetAllTokens,
         bookAppointment,
