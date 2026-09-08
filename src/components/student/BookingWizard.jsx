@@ -6,11 +6,19 @@ import DetailsStep from './Steps/DetailsStep';
 import ConfirmationStep from './Steps/ConfirmationStep';
 import { useApp } from '../../context/AppContext';
 
+const getTodayIso = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export default function BookingWizard({ setActiveTab }) {
   const { bookAppointment } = useApp();
 
   const [currentStep, setCurrentStep] = useState(1);
-  const [selectedDate, setSelectedDate] = useState('2026-09-07');
+  const [selectedDate, setSelectedDate] = useState(getTodayIso);
   const [selectedTime, setSelectedTime] = useState('');
   const [formData, setFormData] = useState({
     name: '',

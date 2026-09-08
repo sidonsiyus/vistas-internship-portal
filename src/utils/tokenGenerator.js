@@ -27,7 +27,9 @@ export function formatMinutesToReadable(minutes) {
 }
 
 export function calculateQueueMetrics(appointments) {
-  const todayApts = appointments.filter(a => a.appointmentDate === '2026-09-07');
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const todayApts = appointments.filter(a => a.appointmentDate === todayStr);
   
   const completed = todayApts.filter(a => a.status === 'COMPLETED');
   const waiting = todayApts.filter(a => a.status === 'WAITING');

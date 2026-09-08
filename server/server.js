@@ -129,7 +129,8 @@ app.post('/api/appointments', (req, res) => {
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'WAITING', ?, ?, ?, 0)
   `);
 
-  stmt.run(id, tokenNumber, name, registerNumber, department, year, phone, email, category, description || '', queuePosition, date || '2026-09-07', timeSlot);
+  const todayStr = new Date().toISOString().split('T')[0];
+  stmt.run(id, tokenNumber, name, registerNumber, department, year, phone, email, category, description || '', queuePosition, date || todayStr, timeSlot);
 
   const stdCheck = db.prepare('SELECT * FROM students WHERE register_number = ?').get(registerNumber);
   if (!stdCheck) {
@@ -162,12 +163,13 @@ app.post('/api/appointments/walk-in', (req, res) => {
 
   const id = `apt-${Date.now()}`;
 
+  const todayStr = new Date().toISOString().split('T')[0];
   db.prepare(`
     INSERT INTO appointments (
       id, token_number, student_name, register_number, department, year, phone, email,
       category, description, status, queue_position, appointment_date, appointment_time, is_walk_in
-    ) VALUES (?, ?, ?, ?, ?, ?, 'N/A', 'N/A', ?, ?, 'WAITING', ?, '2026-09-07', ?, 1)
-  `).run(id, tokenNumber, name, registerNumber || 'WALK-IN', department, year || 'N/A', category, `[WALK-IN] ${description || ''}`, pos, new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+    ) VALUES (?, ?, ?, ?, ?, ?, 'N/A', 'N/A', ?, ?, 'WAITING', ?, ?, ?, 1)
+  `).run(id, tokenNumber, name, registerNumber || 'WALK-IN', department, year || 'N/A', category, `[WALK-IN] ${description || ''}`, pos, todayStr, new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
 
   const newState = getFullState();
   io.emit('state:updated', newState);

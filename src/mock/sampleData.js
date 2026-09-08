@@ -29,7 +29,7 @@ export const OFFICE_LOCATION = '7th Floor Staff Room, Vels Hi-Tech Campus';
 
 export const INITIAL_AVAILABILITY = {
   status: 'AVAILABLE',
-  todayDate: '2026-09-07',
+  todayDate: new Date().toISOString().split('T')[0],
   startTime: '15:00',
   endTime: '17:30',
   slotDuration: 15,
