@@ -6,6 +6,8 @@ export default function DateStep({ selectedDate, setSelectedDate, onNext }) {
   const { appointments, availability } = useApp();
 
   const maxSlotsPerDay = availability.maxBookings || 25;
+  const activeWorkingDays = availability.workingDays || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+  const dateOverrides = availability.dateOverrides || {};
 
   // Real-time current date (no past days shown)
   const now = new Date();
@@ -34,7 +36,17 @@ export default function DateStep({ selectedDate, setSelectedDate, onNext }) {
     if (isToday) daySubLabel = 'Today';
     else if (isTomorrow) daySubLabel = 'Tmrw';
 
-    const isWeekend = d.getDay() === 0 || d.getDay() === 6; // Sunday or Saturday
+    // Check specific date override (e.g. Working Saturday or Holiday)
+    const override = dateOverrides[isoDate];
+    const isOverrideWorking = override && (typeof override === 'string' ? override === 'WORKING' : override.type === 'WORKING');
+    const isOverrideHoliday = override && (typeof override === 'string' ? override === 'HOLIDAY' : override.type === 'HOLIDAY');
+
+    // Check against weekly working days
+    const isStandardWorkingDay = activeWorkingDays.includes(weekday);
+    const isWorkingDay = isOverrideWorking || (!isOverrideHoliday && isStandardWorkingDay);
+
+    const isWeekend = d.getDay() === 0 || d.getDay() === 6; // Sat or Sun
+    const isSpecialWorkingWeekend = isWorkingDay && isWeekend;
 
     // Live booked appointments count for this date
     const bookedForDate = appointments.filter(
@@ -44,8 +56,8 @@ export default function DateStep({ selectedDate, setSelectedDate, onNext }) {
     const slotsRemaining = Math.max(0, maxSlotsPerDay - bookedForDate);
 
     let status = 'AVAILABLE';
-    if (isWeekend) {
-      status = 'UNAVAILABLE';
+    if (!isWorkingDay) {
+      status = isOverrideHoliday ? 'HOLIDAY' : 'UNAVAILABLE';
     } else if (isToday && isPastClosingToday) {
       status = 'CLOSED_TODAY';
     } else if (slotsRemaining === 0) {
@@ -61,6 +73,8 @@ export default function DateStep({ selectedDate, setSelectedDate, onNext }) {
       daySubLabel,
       isToday,
       status,
+      isSpecialWorkingWeekend,
+      override,
       slotsLeft: slotsRemaining,
       bookedCount: bookedForDate
     };
@@ -76,7 +90,7 @@ export default function DateStep({ selectedDate, setSelectedDate, onNext }) {
           <span>Step 1: Select Consultation Date</span>
         </h3>
         <p className="text-xs text-slate-400 mt-1">
-          Select an upcoming consultation date. Past days are automatically archived.
+          Select an upcoming consultation date. Working days and Saturday hours are managed dynamically by the Coordinator.
         </p>
       </div>
 
@@ -85,11 +99,11 @@ export default function DateStep({ selectedDate, setSelectedDate, onNext }) {
         <div className="flex items-center gap-3">
           <span className="text-base font-bold text-white">{monthYearLabel}</span>
           <span className="text-[11px] px-2.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-semibold">
-            Upcoming Active Days
+            Active Schedule
           </span>
         </div>
         <span className="text-xs text-slate-400 hidden sm:inline">
-          15-min slots after 3:00 PM
+          Regular hours after 3:00 PM
         </span>
       </div>
 
@@ -97,12 +111,14 @@ export default function DateStep({ selectedDate, setSelectedDate, onNext }) {
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
         {dates.map((item) => {
           const isSelected = selectedDate === item.date;
-          const isDisabled = item.status === 'UNAVAILABLE' || item.status === 'FULL' || item.status === 'CLOSED_TODAY';
+          const isDisabled = item.status === 'UNAVAILABLE' || item.status === 'HOLIDAY' || item.status === 'FULL' || item.status === 'CLOSED_TODAY';
 
           let statusStyle = 'bg-[#0b101b] border-slate-800/80 hover:border-slate-700 text-slate-200';
           let badge = null;
 
-          if (item.status === 'AVAILABLE') {
+          if (item.isSpecialWorkingWeekend && item.status === 'AVAILABLE') {
+            badge = <span className="text-[10px] text-blue-400 font-semibold">Working {item.weekday}! ({item.slotsLeft})</span>;
+          } else if (item.status === 'AVAILABLE') {
             badge = <span className="text-[10px] text-emerald-400 font-semibold">{item.slotsLeft} slots open</span>;
           } else if (item.status === 'LIMITED') {
             badge = <span className="text-[10px] text-amber-400 font-semibold">Only {item.slotsLeft} left!</span>;
@@ -112,9 +128,12 @@ export default function DateStep({ selectedDate, setSelectedDate, onNext }) {
           } else if (item.status === 'CLOSED_TODAY') {
             statusStyle = 'bg-slate-950/60 border-slate-900 text-slate-600 cursor-not-allowed';
             badge = <span className="text-[10px] text-slate-500 font-semibold">Hours Passed</span>;
+          } else if (item.status === 'HOLIDAY') {
+            statusStyle = 'bg-slate-950/40 border-slate-900 text-slate-600 cursor-not-allowed opacity-50';
+            badge = <span className="text-[10px] text-amber-400 font-semibold">Holiday / Off</span>;
           } else if (item.status === 'UNAVAILABLE') {
             statusStyle = 'bg-slate-950/40 border-slate-900 text-slate-600 cursor-not-allowed opacity-50';
-            badge = <span className="text-[10px] text-slate-500 font-semibold">Weekend Off</span>;
+            badge = <span className="text-[10px] text-slate-500 font-semibold">{item.weekday === 'Sat' || item.weekday === 'Sun' ? 'Weekend Off' : 'Day Off'}</span>;
           }
 
           if (isSelected) {
@@ -150,13 +169,14 @@ export default function DateStep({ selectedDate, setSelectedDate, onNext }) {
       <div className="flex flex-wrap items-center justify-between p-3 bg-[#0b101b]/80 rounded-xl border border-slate-800/80 text-xs text-slate-400 gap-3">
         <div className="flex items-center gap-4 flex-wrap">
           <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-400" /> Available</span>
-          <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-400" /> Limited</span>
+          <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-blue-400" /> Working Sat</span>
+          <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-400" /> Limited / Holiday</span>
           <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-rose-500" /> Fully Booked</span>
-          <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-slate-600" /> Weekend Off</span>
+          <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-slate-600" /> Day Off</span>
         </div>
         <div className="flex items-center gap-1 text-slate-400">
           <Info className="w-3.5 h-3.5 text-blue-400" />
-          <span>Real-time availability calculated from live student bookings.</span>
+          <span>Real-time availability synced with Coordinator Schedule.</span>
         </div>
       </div>
 

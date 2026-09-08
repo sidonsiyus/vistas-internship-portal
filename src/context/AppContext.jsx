@@ -8,8 +8,19 @@ const CHANNEL_NAME = 'VISTAS_REALTIME_QUEUE';
 
 export function AppProvider({ children }) {
   const [availability, setAvailability] = useState(() => {
-    const saved = localStorage.getItem('vistas_availability');
-    return saved ? JSON.parse(saved) : INITIAL_AVAILABILITY;
+    try {
+      const saved = localStorage.getItem('vistas_availability');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          ...INITIAL_AVAILABILITY,
+          ...parsed,
+          workingDays: parsed.workingDays || INITIAL_AVAILABILITY.workingDays,
+          dateOverrides: parsed.dateOverrides || INITIAL_AVAILABILITY.dateOverrides
+        };
+      }
+    } catch (e) {}
+    return INITIAL_AVAILABILITY;
   });
 
   const [appointments, setAppointments] = useState(() => {
@@ -428,19 +439,24 @@ export function AppProvider({ children }) {
 
   const updateAvailabilityConfig = async (newConfig) => {
     if (isSupabaseConfigured()) {
-      await supabase.from('availability').update({
-        start_time: newConfig.startTime,
-        end_time: newConfig.endTime,
-        slot_duration: newConfig.slotDuration,
-        break_start_time: newConfig.breakStartTime,
-        break_end_time: newConfig.breakEndTime,
-        max_bookings: newConfig.maxBookings
-      }).eq('id', 1);
-    } else {
-      const updated = { ...availability, ...newConfig };
-      setAvailability(updated);
+      try {
+        await supabase.from('availability').update({
+          start_time: newConfig.startTime,
+          end_time: newConfig.endTime,
+          slot_duration: newConfig.slotDuration,
+          break_start_time: newConfig.breakStartTime,
+          break_end_time: newConfig.breakEndTime,
+          max_bookings: newConfig.maxBookings
+        }).eq('id', 1);
+      } catch (e) {
+        console.warn('Supabase availability sync error', e);
+      }
     }
-    showToast('Availability settings saved!', 'success');
+
+    const updated = { ...availability, ...newConfig };
+    setAvailability(updated);
+    broadcastChange('SYNC', { availability: updated });
+    showToast('Availability & Working Days settings saved!', 'success');
   };
 
   return (

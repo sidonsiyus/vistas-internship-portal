@@ -37,7 +37,9 @@ export const INITIAL_AVAILABILITY = {
   breakEndTime: '16:30',
   maxBookings: 25,
   bookingDeadline: '17:00',
-  isAcceptingBookings: true
+  isAcceptingBookings: true,
+  workingDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+  dateOverrides: {}
 };
 
 export const INITIAL_APPOINTMENTS = [];
