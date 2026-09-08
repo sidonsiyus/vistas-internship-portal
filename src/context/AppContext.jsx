@@ -111,7 +111,8 @@ export function AppProvider({ children }) {
             durationMinutes: a.duration_minutes,
             notes: a.notes,
             startedAt: a.started_at,
-            completedAt: a.completed_at
+            completedAt: a.completed_at,
+            createdAt: a.created_at || a.appointment_date
           }));
           setAppointments(formatted);
           const active = formatted.find(a => a.status === 'IN_PROGRESS');
@@ -174,9 +175,26 @@ export function AppProvider({ children }) {
         .subscribe();
     }
 
+    // 📡 Cross-tab listener via BroadcastChannel
+    let bc;
+    try {
+      bc = new BroadcastChannel(CHANNEL_NAME);
+      bc.onmessage = (event) => {
+        if (event.data?.action === 'SYNC' && event.data?.payload) {
+          if (event.data.payload.appointments) {
+            setAppointments(event.data.payload.appointments);
+          }
+          if (event.data.payload.availability) {
+            setAvailability(event.data.payload.availability);
+          }
+        }
+      };
+    } catch (e) {}
+
     return () => {
       clearInterval(pollInterval);
       if (channel) supabase.removeChannel(channel);
+      if (bc) bc.close();
     };
   }, []);
 
@@ -259,6 +277,7 @@ export function AppProvider({ children }) {
     const tokenNumber = generateNextTokenNumber(appointments);
     const activeWaiting = appointments.filter(a => a.status === 'WAITING' || a.status === 'CALLED');
     const queuePosition = activeWaiting.length + 1;
+    const nowIso = new Date().toISOString();
 
     const newApt = {
       id: `apt-${Date.now()}`,
@@ -275,34 +294,45 @@ export function AppProvider({ children }) {
       queuePosition,
       appointmentDate: bookingData.date,
       appointmentTime: bookingData.timeSlot,
-      isWalkIn: false
+      isWalkIn: false,
+      createdAt: nowIso
     };
 
-    if (isSupabaseConfigured()) {
-      const { data } = await supabase.from('appointments').insert([{
-        token_number: tokenNumber,
-        student_name: bookingData.name,
-        register_number: bookingData.registerNumber,
-        department: bookingData.department,
-        year: bookingData.year,
-        phone: bookingData.phone,
-        email: bookingData.email,
-        category: bookingData.category,
-        description: bookingData.description,
-        status: 'WAITING',
-        queue_position: queuePosition,
-        appointment_date: bookingData.date,
-        appointment_time: bookingData.timeSlot,
-        is_walk_in: false
-      }]).select('*').single();
+    // 1. Optimistic Local State Update (Instant Feedback)
+    const updated = [...appointments, newApt];
+    setAppointments(updated);
+    broadcastChange('SYNC', { appointments: updated });
 
-      if (data) {
-        newApt.id = data.id;
+    // 2. Persist to Supabase Cloud
+    if (isSupabaseConfigured()) {
+      try {
+        const { data, error } = await supabase.from('appointments').insert([{
+          token_number: tokenNumber,
+          student_name: bookingData.name,
+          register_number: bookingData.registerNumber,
+          department: bookingData.department,
+          year: bookingData.year,
+          phone: bookingData.phone,
+          email: bookingData.email,
+          category: bookingData.category,
+          description: bookingData.description,
+          status: 'WAITING',
+          queue_position: queuePosition,
+          appointment_date: bookingData.date,
+          appointment_time: bookingData.timeSlot,
+          is_walk_in: false
+        }]).select('*').single();
+
+        if (data) {
+          setAppointments(prev => prev.map(a => a.tokenNumber === tokenNumber ? {
+            ...a,
+            id: data.id,
+            createdAt: data.created_at || nowIso
+          } : a));
+        }
+      } catch (err) {
+        console.warn('Supabase booking insert error:', err);
       }
-    } else {
-      const updated = [...appointments, newApt];
-      setAppointments(updated);
-      broadcastChange('SYNC', { appointments: updated });
     }
 
     setTrackedToken(tokenNumber);
@@ -316,44 +346,64 @@ export function AppProvider({ children }) {
     let pos = activeWaiting.length + 1;
     if (walkInData.positionChoice === 'PRIORITY') pos = 1;
 
+    const nowIso = new Date().toISOString();
+    const todayDate = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`;
+    const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    const newApt = {
+      id: `apt-${Date.now()}`,
+      tokenNumber,
+      studentName: walkInData.name,
+      registerNumber: walkInData.registerNumber || 'WALK-IN',
+      department: walkInData.department,
+      year: walkInData.year || 'N/A',
+      phone: 'N/A',
+      email: 'N/A',
+      category: walkInData.category,
+      description: `[WALK-IN] ${walkInData.description || ''}`,
+      status: 'WAITING',
+      queuePosition: pos,
+      appointmentDate: todayDate,
+      appointmentTime: timeNow,
+      isWalkIn: true,
+      createdAt: nowIso
+    };
+
+    // 1. Optimistic Local State Update
+    const updated = [...appointments, newApt];
+    setAppointments(updated);
+    broadcastChange('SYNC', { appointments: updated });
+
+    // 2. Persist to Supabase Cloud
     if (isSupabaseConfigured()) {
-      await supabase.from('appointments').insert([{
-        token_number: tokenNumber,
-        student_name: walkInData.name,
-        register_number: walkInData.registerNumber || 'WALK-IN',
-        department: walkInData.department,
-        year: walkInData.year || 'N/A',
-        phone: 'N/A',
-        email: 'N/A',
-        category: walkInData.category,
-        description: `[WALK-IN] ${walkInData.description || ''}`,
-        status: 'WAITING',
-        queue_position: pos,
-        appointment_date: new Date().toISOString().split('T')[0],
-        appointment_time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        is_walk_in: true
-      }]);
-    } else {
-      const newApt = {
-        id: `apt-${Date.now()}`,
-        tokenNumber,
-        studentName: walkInData.name,
-        registerNumber: walkInData.registerNumber || 'WALK-IN',
-        department: walkInData.department,
-        year: walkInData.year || 'N/A',
-        phone: 'N/A',
-        email: 'N/A',
-        category: walkInData.category,
-        description: `[WALK-IN] ${walkInData.description || ''}`,
-        status: 'WAITING',
-        queuePosition: pos,
-        appointmentDate: new Date().toISOString().split('T')[0],
-        appointmentTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        isWalkIn: true
-      };
-      const updated = [...appointments, newApt];
-      setAppointments(updated);
-      broadcastChange('SYNC', { appointments: updated });
+      try {
+        const { data } = await supabase.from('appointments').insert([{
+          token_number: tokenNumber,
+          student_name: walkInData.name,
+          register_number: walkInData.registerNumber || 'WALK-IN',
+          department: walkInData.department,
+          year: walkInData.year || 'N/A',
+          phone: 'N/A',
+          email: 'N/A',
+          category: walkInData.category,
+          description: `[WALK-IN] ${walkInData.description || ''}`,
+          status: 'WAITING',
+          queue_position: pos,
+          appointment_date: todayDate,
+          appointment_time: timeNow,
+          is_walk_in: true
+        }]).select('*').single();
+
+        if (data) {
+          setAppointments(prev => prev.map(a => a.tokenNumber === tokenNumber ? {
+            ...a,
+            id: data.id,
+            createdAt: data.created_at || nowIso
+          } : a));
+        }
+      } catch (err) {
+        console.warn('Supabase walk-in error:', err);
+      }
     }
 
     showToast(`Walk-in added: ${tokenNumber}`, 'success');
@@ -363,12 +413,18 @@ export function AppProvider({ children }) {
     const apt = appointments.find(a => a.id === appointmentId);
     if (!apt) return;
 
+    // 1. Optimistic Local State Update
+    const updated = appointments.map(a => a.id === appointmentId ? { ...a, status: 'CALLED' } : a);
+    setAppointments(updated);
+    broadcastChange('SYNC', { appointments: updated });
+
+    // 2. Persist to Supabase Cloud
     if (isSupabaseConfigured()) {
-      await supabase.from('appointments').update({ status: 'CALLED' }).eq('id', appointmentId);
-    } else {
-      const updated = appointments.map(a => a.id === appointmentId ? { ...a, status: 'CALLED' } : a);
-      setAppointments(updated);
-      broadcastChange('SYNC', { appointments: updated });
+      try {
+        await supabase.from('appointments').update({ status: 'CALLED' }).eq('id', appointmentId);
+      } catch (err) {
+        console.warn('Supabase call error:', err);
+      }
     }
 
     playAlertSound();
@@ -377,14 +433,20 @@ export function AppProvider({ children }) {
 
   const startMeeting = async (appointmentId) => {
     const now = new Date().toISOString();
+    // 1. Optimistic Local State Update
+    const updated = appointments.map(a => a.id === appointmentId ? { ...a, status: 'IN_PROGRESS', startedAt: now } : a);
+    setAppointments(updated);
+    const active = updated.find(a => a.id === appointmentId);
+    setActiveMeeting(active || null);
+    broadcastChange('SYNC', { appointments: updated });
+
+    // 2. Persist to Supabase Cloud
     if (isSupabaseConfigured()) {
-      await supabase.from('appointments').update({ status: 'IN_PROGRESS', started_at: now }).eq('id', appointmentId);
-    } else {
-      const updated = appointments.map(a => a.id === appointmentId ? { ...a, status: 'IN_PROGRESS', startedAt: now } : a);
-      setAppointments(updated);
-      const active = updated.find(a => a.id === appointmentId);
-      setActiveMeeting(active);
-      broadcastChange('SYNC', { appointments: updated });
+      try {
+        await supabase.from('appointments').update({ status: 'IN_PROGRESS', started_at: now }).eq('id', appointmentId);
+      } catch (err) {
+        console.warn('Supabase start meeting error:', err);
+      }
     }
 
     showToast('Meeting started', 'success');
@@ -392,43 +454,61 @@ export function AppProvider({ children }) {
 
   const endMeeting = async (appointmentId, notes = '', durationMinutes = 11) => {
     const now = new Date().toISOString();
+    // 1. Optimistic Local State Update
+    const updated = appointments.map(a => a.id === appointmentId ? { ...a, status: 'COMPLETED', completedAt: now, notes, durationMinutes } : a);
+    setAppointments(updated);
+    setActiveMeeting(null);
+    broadcastChange('SYNC', { appointments: updated });
+
+    // 2. Persist to Supabase Cloud
     if (isSupabaseConfigured()) {
-      await supabase.from('appointments').update({
-        status: 'COMPLETED',
-        completed_at: now,
-        notes: notes || 'Consultation completed.',
-        duration_minutes: durationMinutes
-      }).eq('id', appointmentId);
-    } else {
-      const updated = appointments.map(a => a.id === appointmentId ? { ...a, status: 'COMPLETED', completedAt: now, notes, durationMinutes } : a);
-      setAppointments(updated);
-      setActiveMeeting(null);
-      broadcastChange('SYNC', { appointments: updated });
+      try {
+        await supabase.from('appointments').update({
+          status: 'COMPLETED',
+          completed_at: now,
+          notes: notes || 'Consultation completed.',
+          duration_minutes: durationMinutes
+        }).eq('id', appointmentId);
+      } catch (err) {
+        console.warn('Supabase end meeting error:', err);
+      }
     }
 
     showToast('Consultation completed', 'success');
   };
 
   const markNoShow = async (appointmentId) => {
+    // 1. Optimistic Local State Update
+    const updated = appointments.map(a => a.id === appointmentId ? { ...a, status: 'NO_SHOW', notes: 'Marked No-Show' } : a);
+    setAppointments(updated);
+    setActiveMeeting(null);
+    broadcastChange('SYNC', { appointments: updated });
+
+    // 2. Persist to Supabase Cloud
     if (isSupabaseConfigured()) {
-      await supabase.from('appointments').update({ status: 'NO_SHOW', notes: 'Marked No-Show' }).eq('id', appointmentId);
-    } else {
-      const updated = appointments.map(a => a.id === appointmentId ? { ...a, status: 'NO_SHOW' } : a);
-      setAppointments(updated);
-      setActiveMeeting(null);
-      broadcastChange('SYNC', { appointments: updated });
+      try {
+        await supabase.from('appointments').update({ status: 'NO_SHOW', notes: 'Marked No-Show' }).eq('id', appointmentId);
+      } catch (err) {
+        console.warn('Supabase mark no-show error:', err);
+      }
     }
 
     showToast('Marked student No-Show', 'warning');
   };
 
   const cancelAppointment = async (appointmentId) => {
+    // 1. Optimistic Local State Update
+    const updated = appointments.map(a => a.id === appointmentId ? { ...a, status: 'CANCELLED' } : a);
+    setAppointments(updated);
+    broadcastChange('SYNC', { appointments: updated });
+
+    // 2. Persist to Supabase Cloud
     if (isSupabaseConfigured()) {
-      await supabase.from('appointments').update({ status: 'CANCELLED' }).eq('id', appointmentId);
-    } else {
-      const updated = appointments.map(a => a.id === appointmentId ? { ...a, status: 'CANCELLED' } : a);
-      setAppointments(updated);
-      broadcastChange('SYNC', { appointments: updated });
+      try {
+        await supabase.from('appointments').update({ status: 'CANCELLED' }).eq('id', appointmentId);
+      } catch (err) {
+        console.warn('Supabase cancel appointment error:', err);
+      }
     }
 
     showToast('Appointment cancelled', 'info');

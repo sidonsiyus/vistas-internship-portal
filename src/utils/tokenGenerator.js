@@ -26,27 +26,57 @@ export function formatMinutesToReadable(minutes) {
   return `${hours} hr${hours > 1 ? 's' : ''} ${mins > 0 ? `${mins} min` : ''}`;
 }
 
-export function calculateQueueMetrics(appointments) {
+export function calculateQueueMetrics(appointments = []) {
   const now = new Date();
-  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-  const todayApts = appointments.filter(a => a.appointmentDate === todayStr);
-  
-  const completed = todayApts.filter(a => a.status === 'COMPLETED');
-  const waiting = todayApts.filter(a => a.status === 'WAITING');
-  const inProgress = todayApts.filter(a => a.status === 'IN_PROGRESS' || a.status === 'CALLED');
-  const noShow = todayApts.filter(a => a.status === 'NO_SHOW');
-  const cancelled = todayApts.filter(a => a.status === 'CANCELLED');
+  const yearStr = now.getFullYear();
+  const monthStr = String(now.getMonth() + 1).padStart(2, '0');
+  const dayStr = String(now.getDate()).padStart(2, '0');
+  const todayStr = `${yearStr}-${monthStr}-${dayStr}`;
+
+  const isMatchingDay = (dateVal) => {
+    if (!dateVal) return false;
+    if (typeof dateVal === 'string') {
+      if (dateVal.startsWith(todayStr)) return true;
+      const m = dateVal.match(/^\d{4}-\d{2}-\d{2}/);
+      if (m && m[0] === todayStr) return true;
+    }
+    try {
+      const d = new Date(dateVal);
+      if (!isNaN(d.getTime())) {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}` === todayStr;
+      }
+    } catch (e) {}
+    return false;
+  };
+
+  // 1. Total Booked Today: Non-cancelled appointments booked for today OR created/booked on today
+  const bookedTodayApts = appointments.filter(a => {
+    if (a.status === 'CANCELLED') return false;
+    return isMatchingDay(a.appointmentDate) || isMatchingDay(a.createdAt);
+  });
+
+  // 2. Active Queue: Students currently waiting or called in line
+  const waitingList = appointments.filter(a => a.status === 'WAITING' || a.status === 'CALLED');
+  const inProgress = appointments.find(a => a.status === 'IN_PROGRESS');
+
+  // Completed consultations
+  const completed = appointments.filter(a => a.status === 'COMPLETED');
+  const noShow = appointments.filter(a => a.status === 'NO_SHOW');
+  const cancelled = appointments.filter(a => a.status === 'CANCELLED');
 
   const totalDurations = completed.reduce((acc, curr) => acc + (curr.durationMinutes || 11), 0);
   const avgDuration = completed.length > 0 ? Math.round(totalDurations / completed.length) : 11;
-
-  const totalWaitMinutes = waiting.length * avgDuration;
+  const totalWaitMinutes = waitingList.length * avgDuration;
 
   return {
-    totalToday: todayApts.length,
+    totalToday: bookedTodayApts.length,
     completedCount: completed.length,
-    waitingCount: waiting.length + inProgress.length,
-    upcomingCount: waiting.length,
+    waitingCount: waitingList.length,
+    upcomingCount: waitingList.filter(a => a.status === 'WAITING').length,
+    inProgressCount: inProgress ? 1 : 0,
     noShowCount: noShow.length,
     cancelledCount: cancelled.length,
     avgDurationMinutes: avgDuration,
