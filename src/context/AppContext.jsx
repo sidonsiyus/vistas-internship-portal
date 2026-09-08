@@ -119,7 +119,8 @@ export function AppProvider({ children }) {
         }
 
         if (availData) {
-          setAvailability({
+          setAvailability(prev => ({
+            ...prev,
             status: availData.status,
             startTime: availData.start_time,
             endTime: availData.end_time,
@@ -127,10 +128,10 @@ export function AppProvider({ children }) {
             breakStartTime: availData.break_start_time,
             breakEndTime: availData.break_end_time,
             maxBookings: availData.max_bookings
-          });
+          }));
         }
 
-        if (stdData) {
+        if (stdData && stdData.length > 0) {
           setStudents(stdData.map(s => ({
             id: s.id,
             registerNumber: s.register_number,
@@ -150,6 +151,12 @@ export function AppProvider({ children }) {
 
     fetchSupabaseState();
 
+    // 🔄 Periodic Polling (every 3.5s) to guarantee real-time sync across devices
+    // even if WebSockets disconnect or network drops
+    const pollInterval = setInterval(() => {
+      fetchSupabaseState();
+    }, 3500);
+
     let channel;
     if (isSupabaseConfigured()) {
       channel = supabase
@@ -168,9 +175,10 @@ export function AppProvider({ children }) {
     }
 
     return () => {
+      clearInterval(pollInterval);
       if (channel) supabase.removeChannel(channel);
     };
-  }, [trackedToken]);
+  }, []);
 
   // Persist Local Storage fallback
   useEffect(() => {
@@ -427,17 +435,25 @@ export function AppProvider({ children }) {
   };
 
   const updateAvailabilityStatus = async (status) => {
+    const updated = { ...availability, status };
+    setAvailability(updated);
+    broadcastChange('SYNC', { availability: updated });
+
     if (isSupabaseConfigured()) {
-      await supabase.from('availability').update({ status }).eq('id', 1);
-    } else {
-      const updated = { ...availability, status };
-      setAvailability(updated);
-      broadcastChange('SYNC', { availability: updated });
+      try {
+        await supabase.from('availability').update({ status }).eq('id', 1);
+      } catch (err) {
+        console.warn('Supabase status update error:', err);
+      }
     }
     showToast(`Availability set to ${status}`, 'info');
   };
 
   const updateAvailabilityConfig = async (newConfig) => {
+    const updated = { ...availability, ...newConfig };
+    setAvailability(updated);
+    broadcastChange('SYNC', { availability: updated });
+
     if (isSupabaseConfigured()) {
       try {
         await supabase.from('availability').update({
@@ -453,9 +469,6 @@ export function AppProvider({ children }) {
       }
     }
 
-    const updated = { ...availability, ...newConfig };
-    setAvailability(updated);
-    broadcastChange('SYNC', { availability: updated });
     showToast('Availability & Working Days settings saved!', 'success');
   };
 
