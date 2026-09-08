@@ -1,3 +1,5 @@
+import studentsDatabase from '../data/studentsDatabase.json';
+
 export const QUERY_CATEGORIES = [
   { id: 'opportunity', label: 'Internship Opportunity', icon: 'Briefcase', color: 'blue' },
   { id: 'approval', label: 'Internship Approval (NOC)', icon: 'CheckCircle2', color: 'emerald' },
@@ -15,22 +17,22 @@ export const DEPARTMENTS = [
   'B.Sc Aeronautical Science',
   'B.Sc Aviation',
   'BBA Aviation Management',
+  'MBA (Master of Business Admin)',
   'B.Tech Computer Science & Engg',
   'B.Tech Mechanical Engineering',
   'B.Tech Electronics & Comm',
   'B.Sc Logistics & Supply Chain',
-  'B.Pharm (Pharmacy)',
-  'MBA (Master of Business Admin)'
+  'B.Pharm (Pharmacy)'
 ];
 
 export const OFFICE_LOCATION = '7th Floor Staff Room, Vels Hi-Tech Campus';
 
 export const INITIAL_AVAILABILITY = {
-  status: 'AVAILABLE', // AVAILABLE, ON_BREAK, UNAVAILABLE
+  status: 'AVAILABLE',
   todayDate: '2026-09-07',
-  startTime: '15:00', // Regular consultations start after 3:00 PM
-  endTime: '17:30',   // 5:30 PM
-  slotDuration: 15,    // 15 Mins / student
+  startTime: '15:00',
+  endTime: '17:30',
+  slotDuration: 15,
   breakStartTime: '16:15',
   breakEndTime: '16:30',
   maxBookings: 25,
@@ -39,4 +41,4 @@ export const INITIAL_AVAILABILITY = {
 };
 
 export const INITIAL_APPOINTMENTS = [];
-export const MOCK_STUDENTS = [];
+export const MOCK_STUDENTS = studentsDatabase;

@@ -1,11 +1,52 @@
 import React, { useState } from 'react';
-import { User, FileText, Phone, Mail, Building, GraduationCap, AlertTriangle } from 'lucide-react';
+import { User, FileText, Phone, Mail, Building, GraduationCap, AlertTriangle, CheckCircle2, Sparkles } from 'lucide-react';
 import { QUERY_CATEGORIES, DEPARTMENTS } from '../../../mock/sampleData';
 import { useApp } from '../../../context/AppContext';
+import studentsDatabase from '../../../data/studentsDatabase.json';
 
 export default function DetailsStep({ formData, setFormData, onSubmit, onBack }) {
   const { appointments } = useApp();
   const [errors, setErrors] = useState({});
+  const [matchedStudent, setMatchedStudent] = useState(() => {
+    if (formData.registerNumber) {
+      return studentsDatabase.find(s => s.registerNumber.toLowerCase() === formData.registerNumber.toLowerCase().trim()) || null;
+    }
+    return null;
+  });
+
+  const handleRegisterNumberChange = (value) => {
+    const clean = value.trim();
+    setFormData(prev => ({ ...prev, registerNumber: value }));
+
+    if (errors.registerNumber) {
+      setErrors(prev => ({ ...prev, registerNumber: null }));
+    }
+
+    if (clean.length >= 4) {
+      const match = studentsDatabase.find(s => s.registerNumber.toLowerCase() === clean.toLowerCase());
+      if (match) {
+        setMatchedStudent(match);
+        setFormData(prev => ({
+          ...prev,
+          registerNumber: value,
+          name: match.name,
+          department: match.department,
+          year: match.year,
+          email: prev.email || match.email
+        }));
+        // clear errors for auto-filled fields
+        setErrors(prev => ({
+          ...prev,
+          name: null,
+          department: null,
+          year: null,
+          email: null
+        }));
+        return;
+      }
+    }
+    setMatchedStudent(null);
+  };
 
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -18,11 +59,11 @@ export default function DetailsStep({ formData, setFormData, onSubmit, onBack })
     e.preventDefault();
     const newErrors = {};
 
-    if (!formData.name.trim()) newErrors.name = 'Full Name is required';
     if (!formData.registerNumber.trim()) newErrors.registerNumber = 'Register Number is required';
+    if (!formData.name.trim()) newErrors.name = 'Full Name is required';
     if (!formData.department) newErrors.department = 'Department selection is required';
     if (!formData.year) newErrors.year = 'Year of study is required';
-    if (!formData.phone.trim()) newErrors.phone = 'Phone number is required';
+    if (!formData.phone.trim()) newErrors.phone = 'Mobile number is required for updates';
     if (!formData.email.trim() || !formData.email.includes('@')) newErrors.email = 'Valid university email is required';
     if (!formData.category) newErrors.category = 'Query category is required';
 
@@ -45,23 +86,23 @@ export default function DetailsStep({ formData, setFormData, onSubmit, onBack })
   };
 
   return (
-    <form onSubmit={validateAndSubmit} className="space-y-6">
+    <form onSubmit={validateAndSubmit} className="space-y-6 font-sans">
       <div>
         <h3 className="text-xl font-bold text-white flex items-center gap-2">
           <User className="w-5 h-5 text-blue-400" />
           <span>Step 3: Student Consultation Details</span>
         </h3>
         <p className="text-xs text-slate-400 mt-1">
-          Provide your official university details so the Internship Coordinator can prepare your file.
+          Type your University Register Number to auto-fill your verified student record.
         </p>
       </div>
 
       {/* Query Categories Selection */}
       <div className="space-y-2">
-        <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+        <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
           Internship Query Category <span className="text-rose-500">*</span>
         </label>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {QUERY_CATEGORIES.map((cat) => {
             const isSelected = formData.category === cat.label;
             return (
@@ -69,10 +110,10 @@ export default function DetailsStep({ formData, setFormData, onSubmit, onBack })
                 type="button"
                 key={cat.id}
                 onClick={() => handleChange('category', cat.label)}
-                className={`p-3 rounded-xl border text-left flex items-center gap-2 transition-all ${
+                className={`p-2.5 rounded-xl border text-left flex items-center gap-2 transition-all ${
                   isSelected
-                    ? 'bg-blue-600/20 border-blue-500 text-white font-bold ring-2 ring-blue-500/50'
-                    : 'bg-slate-900 border-slate-800 text-slate-300 hover:border-slate-700'
+                    ? 'bg-blue-600/20 border-blue-500 text-white font-semibold ring-1 ring-blue-500/50'
+                    : 'bg-[#0b101b] border-slate-800 text-slate-300 hover:border-slate-700'
                 }`}
               >
                 <span className={`w-2 h-2 rounded-full bg-${cat.color}-400 shrink-0`} />
@@ -89,7 +130,51 @@ export default function DetailsStep({ formData, setFormData, onSubmit, onBack })
       </div>
 
       {/* Primary Input Fields */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+        
+        {/* Register Number (First for Auto-Fill) */}
+        <div className="space-y-1 sm:col-span-2">
+          <div className="flex items-center justify-between">
+            <label className="block text-xs font-semibold text-slate-300">
+              University Register Number <span className="text-rose-500">*</span>
+            </label>
+            <span className="text-[10px] text-blue-400 flex items-center gap-1 font-medium">
+              <Sparkles className="w-3 h-3" />
+              <span>Auto-detects from official 26-27 student list</span>
+            </span>
+          </div>
+          <div className="relative">
+            <GraduationCap className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+            <input
+              type="text"
+              placeholder="e.g. 25326101 or 24156101"
+              value={formData.registerNumber}
+              onChange={(e) => handleRegisterNumberChange(e.target.value)}
+              className="w-full pl-9 pr-3 py-2.5 bg-[#0b101b] border border-slate-800 rounded-xl text-sm text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 font-mono tracking-wide"
+            />
+          </div>
+          {errors.registerNumber && (
+            <p className="text-xs text-rose-400 font-medium flex items-center gap-1 mt-1">
+              <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> {errors.registerNumber}
+            </p>
+          )}
+        </div>
+
+        {/* Verified Student Banner if Matched */}
+        {matchedStudent && (
+          <div className="sm:col-span-2 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-between text-xs text-emerald-400 animate-fadeIn">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>
+                <strong>Verified Enrolled Student:</strong> {matchedStudent.name} ({matchedStudent.department} • {matchedStudent.year})
+              </span>
+            </div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono">
+              OFFICIAL RECORD
+            </span>
+          </div>
+        )}
+
         {/* Full Name */}
         <div className="space-y-1">
           <label className="block text-xs font-semibold text-slate-300">
@@ -102,32 +187,10 @@ export default function DetailsStep({ formData, setFormData, onSubmit, onBack })
               placeholder="e.g. Rahul Kumar"
               value={formData.name}
               onChange={(e) => handleChange('name', e.target.value)}
-              className="w-full pl-9 pr-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className="w-full pl-9 pr-3 py-2 bg-[#0b101b] border border-slate-800 rounded-xl text-xs text-white placeholder-slate-600 focus:outline-none focus:border-blue-500"
             />
           </div>
           {errors.name && <p className="text-xs text-rose-400 font-medium">{errors.name}</p>}
-        </div>
-
-        {/* Register Number */}
-        <div className="space-y-1">
-          <label className="block text-xs font-semibold text-slate-300">
-            University Register Number <span className="text-rose-500">*</span>
-          </label>
-          <div className="relative">
-            <GraduationCap className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
-            <input
-              type="text"
-              placeholder="e.g. 22104821"
-              value={formData.registerNumber}
-              onChange={(e) => handleChange('registerNumber', e.target.value)}
-              className="w-full pl-9 pr-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono"
-            />
-          </div>
-          {errors.registerNumber && (
-            <p className="text-xs text-rose-400 font-medium flex items-center gap-1">
-              <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> {errors.registerNumber}
-            </p>
-          )}
         </div>
 
         {/* Department */}
@@ -140,7 +203,7 @@ export default function DetailsStep({ formData, setFormData, onSubmit, onBack })
             <select
               value={formData.department}
               onChange={(e) => handleChange('department', e.target.value)}
-              className="w-full pl-9 pr-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className="w-full pl-9 pr-3 py-2 bg-[#0b101b] border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-blue-500"
             >
               <option value="">-- Select Department --</option>
               {DEPARTMENTS.map(dept => (
@@ -159,13 +222,13 @@ export default function DetailsStep({ formData, setFormData, onSubmit, onBack })
           <select
             value={formData.year}
             onChange={(e) => handleChange('year', e.target.value)}
-            className="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            className="w-full px-3 py-2 bg-[#0b101b] border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-blue-500"
           >
             <option value="">-- Select Year --</option>
             <option value="1st Year">1st Year</option>
             <option value="2nd Year">2nd Year</option>
             <option value="3rd Year">3rd Year</option>
-            <option value="4th Year">4th Year (Final Year)</option>
+            <option value="4th Year (Final Year)">4th Year (Final Year)</option>
           </select>
           {errors.year && <p className="text-xs text-rose-400 font-medium">{errors.year}</p>}
         </div>
@@ -182,14 +245,14 @@ export default function DetailsStep({ formData, setFormData, onSubmit, onBack })
               placeholder="+91 98765 43210"
               value={formData.phone}
               onChange={(e) => handleChange('phone', e.target.value)}
-              className="w-full pl-9 pr-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className="w-full pl-9 pr-3 py-2 bg-[#0b101b] border border-slate-800 rounded-xl text-xs text-white placeholder-slate-600 focus:outline-none focus:border-blue-500"
             />
           </div>
           {errors.phone && <p className="text-xs text-rose-400 font-medium">{errors.phone}</p>}
         </div>
 
         {/* Email */}
-        <div className="space-y-1">
+        <div className="space-y-1 sm:col-span-2">
           <label className="block text-xs font-semibold text-slate-300">
             University Email Address <span className="text-rose-500">*</span>
           </label>
@@ -197,10 +260,10 @@ export default function DetailsStep({ formData, setFormData, onSubmit, onBack })
             <Mail className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
             <input
               type="email"
-              placeholder="student@vistas.edu.in"
+              placeholder="student@velshitech.edu.in"
               value={formData.email}
               onChange={(e) => handleChange('email', e.target.value)}
-              className="w-full pl-9 pr-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className="w-full pl-9 pr-3 py-2 bg-[#0b101b] border border-slate-800 rounded-xl text-xs text-white placeholder-slate-600 focus:outline-none focus:border-blue-500"
             />
           </div>
           {errors.email && <p className="text-xs text-rose-400 font-medium">{errors.email}</p>}
@@ -215,28 +278,28 @@ export default function DetailsStep({ formData, setFormData, onSubmit, onBack })
         <div className="relative">
           <FileText className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
           <textarea
-            rows="3"
+            rows="2"
             placeholder="Briefly describe what you need assistance with (e.g. NOC approval, LOR request, company recommendation)..."
             value={formData.description}
             onChange={(e) => handleChange('description', e.target.value)}
-            className="w-full pl-9 pr-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 resize-none"
+            className="w-full pl-9 pr-3 py-2 bg-[#0b101b] border border-slate-800 rounded-xl text-xs text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 resize-none"
           />
         </div>
       </div>
 
       {/* Action Buttons */}
-      <div className="flex items-center justify-between pt-4">
+      <div className="flex items-center justify-between pt-3">
         <button
           type="button"
           onClick={onBack}
-          className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 font-semibold text-sm border border-slate-800 transition-all"
+          className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 font-medium text-xs border border-slate-800 transition-all"
         >
           ← Back to Time
         </button>
 
         <button
           type="submit"
-          className="px-8 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm shadow-xl shadow-blue-600/25 transition-all transform hover:-translate-y-0.5 active:translate-y-0"
+          className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs shadow-md transition-all transform hover:-translate-y-0.5"
         >
           GENERATE TOKEN & BOOK NOW →
         </button>

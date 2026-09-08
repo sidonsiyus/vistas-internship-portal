@@ -18,8 +18,14 @@ export function AppProvider({ children }) {
   });
 
   const [students, setStudents] = useState(() => {
-    const saved = localStorage.getItem('vistas_students');
-    return saved ? JSON.parse(saved) : MOCK_STUDENTS;
+    try {
+      const saved = localStorage.getItem('vistas_students');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return MOCK_STUDENTS;
   });
 
   const [activeMeeting, setActiveMeeting] = useState(null);

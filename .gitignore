@@ -25,3 +25,6 @@ server/*.db
 server/*.db-journal
 server/*.db-wal
 server/*.db-shm
+
+# Raw local data files
+/data/
