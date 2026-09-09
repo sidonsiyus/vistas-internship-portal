@@ -85,15 +85,21 @@ CREATE TABLE IF NOT EXISTS public.announcements (
     type TEXT NOT NULL DEFAULT 'GENERAL', -- GENERAL, INTERNSHIP_UPDATE, COMPANY_REPLY, URGENT
     category TEXT DEFAULT 'Important',
     company_name TEXT,
-    company_status TEXT, -- REPLY_RECEIVED, OPPORTUNITY_AVAILABLE, CAN_APPLY, INFO_REQUIRED, CLOSED, NO_ACTION
+    company_location TEXT,
+    company_contact_email TEXT,
+    request_sent_date DATE,
+    email_reference TEXT,
+    company_status TEXT, -- REPLY_RECEIVED, INTERNSHIP_APPROVED, INTERNSHIP_CONFIRMED, INFO_REQUIRED, PENDING_STUDENT_ACTION, CLOSED, REJECTED
     reply_date DATE DEFAULT CURRENT_DATE,
     department TEXT,
     duration TEXT,
     eligibility TEXT,
     deadline DATE,
+    required_documents TEXT,
     action_required TEXT,
     coordinator_notes TEXT,
     apply_link TEXT,
+    students_included JSONB DEFAULT '[]',
     is_pinned BOOLEAN DEFAULT FALSE,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMPTZ DEFAULT NOW(),

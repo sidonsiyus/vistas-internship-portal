@@ -17,7 +17,12 @@ import {
   FileText,
   AlertTriangle,
   Briefcase,
-  Megaphone
+  Megaphone,
+  Users,
+  MapPin,
+  Send,
+  FileCheck,
+  Check
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { DEPARTMENTS } from '../../mock/sampleData';
@@ -28,6 +33,7 @@ export default function InternshipUpdatesView({ setActiveTab }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('ALL');
   const [selectedDept, setSelectedDept] = useState('ALL');
+  const [cardStudentFilters, setCardStudentFilters] = useState({});
 
   // Mark all updates as read when viewing this hub
   useEffect(() => {
@@ -36,6 +42,16 @@ export default function InternshipUpdatesView({ setActiveTab }) {
 
   const getStatusBadge = (status) => {
     switch (status) {
+      case 'INTERNSHIP_APPROVED':
+        return {
+          label: 'Internship Approved',
+          classes: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+        };
+      case 'INTERNSHIP_CONFIRMED':
+        return {
+          label: 'Internship Confirmed',
+          classes: 'bg-green-500/15 text-green-300 border-green-500/30'
+        };
       case 'OPPORTUNITY_AVAILABLE':
         return {
           label: 'Opportunity Available',
@@ -51,6 +67,11 @@ export default function InternshipUpdatesView({ setActiveTab }) {
           label: 'Reply Received',
           classes: 'bg-teal-500/15 text-teal-300 border-teal-500/30'
         };
+      case 'PENDING_STUDENT_ACTION':
+        return {
+          label: 'Pending Student Action',
+          classes: 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+        };
       case 'INFO_REQUIRED':
         return {
           label: 'More Info Required',
@@ -60,6 +81,11 @@ export default function InternshipUpdatesView({ setActiveTab }) {
         return {
           label: 'Opportunity Closed',
           classes: 'bg-slate-800 text-slate-400 border-slate-700'
+        };
+      case 'REJECTED':
+        return {
+          label: 'Not Feasible / Rejected',
+          classes: 'bg-rose-500/15 text-rose-400 border-rose-500/30'
         };
       case 'NO_ACTION':
         return {
@@ -94,13 +120,27 @@ export default function InternshipUpdatesView({ setActiveTab }) {
     .filter(a => {
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase();
-      return (
+      const matchBasic = (
         (a.title && a.title.toLowerCase().includes(q)) ||
         (a.content && a.content.toLowerCase().includes(q)) ||
         (a.companyName && a.companyName.toLowerCase().includes(q)) ||
+        (a.companyLocation && a.companyLocation.toLowerCase().includes(q)) ||
+        (a.emailReference && a.emailReference.toLowerCase().includes(q)) ||
+        (a.requiredDocuments && a.requiredDocuments.toLowerCase().includes(q)) ||
         (a.coordinatorNotes && a.coordinatorNotes.toLowerCase().includes(q)) ||
         (a.actionRequired && a.actionRequired.toLowerCase().includes(q))
       );
+      if (matchBasic) return true;
+
+      // Check students included in this reply
+      if (Array.isArray(a.studentsIncluded)) {
+        return a.studentsIncluded.some(s => 
+          (s.name && s.name.toLowerCase().includes(q)) ||
+          (s.registerNumber && s.registerNumber.toLowerCase().includes(q)) ||
+          (s.department && s.department.toLowerCase().includes(q))
+        );
+      }
+      return false;
     })
     .sort((a, b) => {
       if (a.isPinned && !b.isPinned) return -1;
@@ -278,12 +318,41 @@ export default function InternshipUpdatesView({ setActiveTab }) {
                         </span>
                       )}
 
+                      {/* Location Badge */}
+                      {ann.companyLocation && (
+                        <span className="text-[11px] text-slate-300 bg-slate-800/70 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                          <MapPin className="w-3 h-3 text-blue-400" />
+                          <span>{ann.companyLocation}</span>
+                        </span>
+                      )}
+
+                      {/* Students Included Count Pill */}
+                      {ann.studentsIncluded && ann.studentsIncluded.length > 0 && (
+                        <span className="text-[10px] font-bold text-blue-300 bg-blue-500/15 border border-blue-500/30 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                          <Users className="w-3 h-3 text-blue-400" />
+                          <span>{ann.studentsIncluded.length} Students Listed</span>
+                        </span>
+                      )}
+
                     </div>
 
-                    {/* Reply / Publication Date */}
-                    <div className="text-[11px] text-slate-400 flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5 text-slate-500" />
-                      <span>{isCompanyReply ? `Reply Date: ${ann.replyDate || 'Recent'}` : `Published: ${ann.replyDate || 'Recent'}`}</span>
+                    {/* Dates & Reference */}
+                    <div className="flex flex-wrap items-center gap-2.5 text-[11px] text-slate-400">
+                      {ann.requestSentDate && (
+                        <span className="flex items-center gap-1">
+                          <Send className="w-3 h-3 text-slate-500" />
+                          <span>Sent: <strong>{ann.requestSentDate}</strong></span>
+                        </span>
+                      )}
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5 text-slate-500" />
+                        <span>{isCompanyReply ? `Reply: ${ann.replyDate || 'Recent'}` : `Posted: ${ann.replyDate || 'Recent'}`}</span>
+                      </span>
+                      {ann.emailReference && (
+                        <span className="font-mono text-[10px] text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">
+                          Ref: {ann.emailReference}
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -313,6 +382,88 @@ export default function InternshipUpdatesView({ setActiveTab }) {
                     {ann.content}
                   </p>
 
+                  {/* PROMINENT DISCLAIMER / NOTICE FOR TARGETED COMPANY REPLIES */}
+                  {isCompanyReply && (
+                    <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3.5 flex items-start gap-3">
+                      <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                      <div className="space-y-0.5">
+                        <span className="text-[11px] font-bold text-amber-300 uppercase tracking-wide block">
+                          Important Notice: Targeted Opportunity
+                        </span>
+                        <p className="text-xs text-slate-200 leading-relaxed">
+                          This company reply and internship opportunity apply <strong className="text-amber-300 font-semibold">only to the students listed below</strong>, as they were included in the original internship request sent to the company. Other students need not follow these instructions or book consultation appointments for this specific response.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* STUDENTS INCLUDED IN THIS REQUEST SECTION */}
+                  {ann.studentsIncluded && ann.studentsIncluded.length > 0 && (
+                    <div className="bg-slate-950 border border-slate-800/90 rounded-xl p-4 space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/80 pb-2.5">
+                        <div className="flex items-center gap-2">
+                          <Users className="w-4 h-4 text-blue-400" />
+                          <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                            Students Included in This Request
+                          </h4>
+                          <span className="px-2 py-0.5 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-300 text-[10px] font-mono font-bold">
+                            {ann.studentsIncluded.length} Students
+                          </span>
+                        </div>
+
+                        {/* Search / filter within this card if students > 3 */}
+                        {ann.studentsIncluded.length > 3 && (
+                          <div className="relative w-full sm:w-56">
+                            <Search className="w-3 h-3 text-slate-500 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                            <input
+                              type="text"
+                              placeholder="Filter student or reg no..."
+                              value={cardStudentFilters[ann.id] || ''}
+                              onChange={(e) => setCardStudentFilters({ ...cardStudentFilters, [ann.id]: e.target.value })}
+                              className="w-full pl-7 pr-2.5 py-1 bg-slate-900 border border-slate-800 rounded-lg text-[11px] text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Students Table */}
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs">
+                          <thead>
+                            <tr className="text-[10px] uppercase text-slate-500 border-b border-slate-800/80">
+                              <th className="pb-2 font-semibold">#</th>
+                              <th className="pb-2 font-semibold">Student Name</th>
+                              <th className="pb-2 font-semibold">Register Number</th>
+                              <th className="pb-2 font-semibold">Department</th>
+                              <th className="pb-2 font-semibold">Year & Sec</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-800/50 text-slate-300 font-medium">
+                            {ann.studentsIncluded
+                              .filter(s => {
+                                const filter = (cardStudentFilters[ann.id] || '').toLowerCase().trim();
+                                if (!filter) return true;
+                                return (
+                                  (s.name && s.name.toLowerCase().includes(filter)) ||
+                                  (s.registerNumber && s.registerNumber.toLowerCase().includes(filter)) ||
+                                  (s.department && s.department.toLowerCase().includes(filter))
+                                );
+                              })
+                              .map((s, idx) => (
+                                <tr key={idx} className="hover:bg-slate-900/40 transition-colors">
+                                  <td className="py-2 font-mono text-[10px] text-slate-500">{idx + 1}</td>
+                                  <td className="py-2 font-semibold text-white">{s.name}</td>
+                                  <td className="py-2 font-mono text-blue-400 font-semibold">{s.registerNumber}</td>
+                                  <td className="py-2 text-slate-400">{s.department || '-'}</td>
+                                  <td className="py-2 text-slate-400">{s.year || ''} {s.section || ''}</td>
+                                </tr>
+                              ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Key Metadata Grid (for company replies or internship opportunities) */}
                   {(ann.department || ann.duration || ann.eligibility || ann.deadline) && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 bg-slate-900/70 border border-slate-800/80 p-3.5 rounded-xl text-xs">
@@ -336,13 +487,26 @@ export default function InternshipUpdatesView({ setActiveTab }) {
                       )}
                       {ann.deadline && (
                         <div>
-                          <span className="text-[10px] uppercase font-semibold text-slate-400 block mb-0.5">Deadline</span>
+                          <span className="text-[10px] uppercase font-semibold text-slate-400 block mb-0.5">Reporting / Deadline</span>
                           <span className="font-semibold text-rose-300 flex items-center gap-1">
                             <Calendar className="w-3 h-3 text-rose-400" />
                             {ann.deadline}
                           </span>
                         </div>
                       )}
+                    </div>
+                  )}
+
+                  {/* Highlighted Required Documents Box */}
+                  {ann.requiredDocuments && (
+                    <div className="bg-blue-950/20 border border-blue-500/30 p-3.5 rounded-xl flex items-start gap-2.5">
+                      <FileCheck className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                      <div className="space-y-0.5">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-blue-300 block">Required Documents to Submit / Carry:</span>
+                        <p className="text-xs text-slate-200 leading-relaxed">
+                          {ann.requiredDocuments}
+                        </p>
+                      </div>
                     </div>
                   )}
 

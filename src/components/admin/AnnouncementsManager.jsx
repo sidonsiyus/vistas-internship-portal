@@ -18,23 +18,37 @@ import {
   Briefcase,
   Layers,
   Sparkles,
-  Info
+  Info,
+  Users,
+  UserPlus,
+  UserCheck,
+  MapPin,
+  Mail,
+  Send,
+  FileCheck,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { DEPARTMENTS } from '../../mock/sampleData';
 
 const COMPANY_STATUS_OPTIONS = [
   { value: 'REPLY_RECEIVED', label: 'Reply Received' },
+  { value: 'INTERNSHIP_APPROVED', label: 'Internship Approved' },
+  { value: 'INTERNSHIP_CONFIRMED', label: 'Internship Confirmed' },
+  { value: 'INFO_REQUIRED', label: 'More Information Required' },
+  { value: 'PENDING_STUDENT_ACTION', label: 'Pending Student Action' },
+  { value: 'CLOSED', label: 'Closed' },
+  { value: 'REJECTED', label: 'Rejected' },
   { value: 'OPPORTUNITY_AVAILABLE', label: 'Opportunity Available' },
   { value: 'CAN_APPLY', label: 'Students Can Apply' },
-  { value: 'INFO_REQUIRED', label: 'More Information Required' },
-  { value: 'CLOSED', label: 'Closed' },
   { value: 'NO_ACTION', label: 'No Further Action Required' }
 ];
 
 export default function AnnouncementsManager() {
   const { 
     announcements, 
+    students = [],
     createAnnouncement, 
     updateAnnouncement, 
     deleteAnnouncement, 
@@ -50,48 +64,41 @@ export default function AnnouncementsManager() {
   const [editingId, setEditingId] = useState(null);
   
   // Form State
-  const [formData, setFormData] = useState({
+  const defaultFormState = {
     type: 'COMPANY_REPLY',
     category: 'Company Reply',
     title: '',
     content: '',
     companyName: '',
-    companyStatus: 'OPPORTUNITY_AVAILABLE',
+    companyLocation: '',
+    companyContactEmail: '',
+    requestSentDate: '',
+    emailReference: '',
+    companyStatus: 'INTERNSHIP_APPROVED',
     replyDate: new Date().toISOString().split('T')[0],
     department: 'All Departments',
     duration: '',
     eligibility: '',
     deadline: '',
+    requiredDocuments: '',
     actionRequired: '',
     coordinatorNotes: '',
     applyLink: '',
+    studentsIncluded: [],
     isPinned: false,
     isActive: true
-  });
+  };
 
+  const [formData, setFormData] = useState(defaultFormState);
   const [formErrors, setFormErrors] = useState({});
+  const [studentDirectorySearch, setStudentDirectorySearch] = useState('');
+  const [expandedStudentsCardId, setExpandedStudentsCardId] = useState(null);
 
   const handleOpenCreate = () => {
     setEditingId(null);
-    setFormData({
-      type: 'COMPANY_REPLY',
-      category: 'Company Reply',
-      title: '',
-      content: '',
-      companyName: '',
-      companyStatus: 'OPPORTUNITY_AVAILABLE',
-      replyDate: new Date().toISOString().split('T')[0],
-      department: 'All Departments',
-      duration: '',
-      eligibility: '',
-      deadline: '',
-      actionRequired: '',
-      coordinatorNotes: '',
-      applyLink: '',
-      isPinned: false,
-      isActive: true
-    });
+    setFormData(defaultFormState);
     setFormErrors({});
+    setStudentDirectorySearch('');
     setIsModalOpen(true);
   };
 
@@ -103,20 +110,81 @@ export default function AnnouncementsManager() {
       title: ann.title || '',
       content: ann.content || '',
       companyName: ann.companyName || '',
-      companyStatus: ann.companyStatus || 'REPLY_RECEIVED',
+      companyLocation: ann.companyLocation || '',
+      companyContactEmail: ann.companyContactEmail || '',
+      requestSentDate: ann.requestSentDate || '',
+      emailReference: ann.emailReference || '',
+      companyStatus: ann.companyStatus || 'INTERNSHIP_APPROVED',
       replyDate: ann.replyDate || '',
       department: ann.department || 'All Departments',
       duration: ann.duration || '',
       eligibility: ann.eligibility || '',
       deadline: ann.deadline || '',
+      requiredDocuments: ann.requiredDocuments || '',
       actionRequired: ann.actionRequired || '',
       coordinatorNotes: ann.coordinatorNotes || '',
       applyLink: ann.applyLink || '',
+      studentsIncluded: Array.isArray(ann.studentsIncluded) ? [...ann.studentsIncluded] : [],
       isPinned: Boolean(ann.isPinned),
       isActive: ann.isActive !== false
     });
     setFormErrors({});
+    setStudentDirectorySearch('');
     setIsModalOpen(true);
+  };
+
+  // Student list helpers
+  const handleAddStudentFromDirectory = (std) => {
+    // Check if already in list
+    const alreadyExists = formData.studentsIncluded.some(
+      s => (s.registerNumber && s.registerNumber === std.registerNumber)
+    );
+    if (alreadyExists) return;
+
+    const newStudent = {
+      name: std.name || '',
+      registerNumber: std.registerNumber || '',
+      department: std.department || (formData.department !== 'All Departments' ? formData.department : ''),
+      year: std.year || '',
+      section: std.section || '',
+      contact: std.phone || std.email || ''
+    };
+
+    setFormData(prev => ({
+      ...prev,
+      studentsIncluded: [...prev.studentsIncluded, newStudent]
+    }));
+    setStudentDirectorySearch('');
+  };
+
+  const handleAddManualStudent = () => {
+    const newStudent = {
+      name: '',
+      registerNumber: '',
+      department: formData.department !== 'All Departments' ? formData.department : '',
+      year: '',
+      section: '',
+      contact: ''
+    };
+    setFormData(prev => ({
+      ...prev,
+      studentsIncluded: [...prev.studentsIncluded, newStudent]
+    }));
+  };
+
+  const handleUpdateStudent = (index, field, value) => {
+    setFormData(prev => {
+      const updated = [...prev.studentsIncluded];
+      updated[index] = { ...updated[index], [field]: value };
+      return { ...prev, studentsIncluded: updated };
+    });
+  };
+
+  const handleRemoveStudent = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      studentsIncluded: prev.studentsIncluded.filter((_, i) => i !== index)
+    }));
   };
 
   const handleFormSubmit = async (e) => {
@@ -304,6 +372,13 @@ export default function AnnouncementsManager() {
                       {ann.type === 'COMPANY_REPLY' ? 'Company Reply' : ann.type === 'URGENT' ? 'Urgent' : ann.category || 'General'}
                     </span>
 
+                    {/* Company Response Status if Company Reply */}
+                    {ann.type === 'COMPANY_REPLY' && ann.companyStatus && (
+                      <span className="text-[10px] font-bold text-teal-300 bg-teal-500/15 border border-teal-500/30 px-2 py-0.5 rounded-full">
+                        {COMPANY_STATUS_OPTIONS.find(o => o.value === ann.companyStatus)?.label || ann.companyStatus}
+                      </span>
+                    )}
+
                     {ann.isActive ? (
                       <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
                         ACTIVE
@@ -315,18 +390,49 @@ export default function AnnouncementsManager() {
                     )}
 
                     {ann.companyName && (
-                      <span className="text-[11px] text-slate-300 font-semibold bg-slate-800 px-2 py-0.5 rounded">
+                      <span className="text-[11px] text-slate-200 font-semibold bg-slate-800 px-2 py-0.5 rounded flex items-center gap-1">
+                        <Building2 className="w-3 h-3 text-blue-400" />
                         {ann.companyName}
                       </span>
                     )}
 
-                    {ann.replyDate && (
-                      <span className="text-[11px] text-slate-500 flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {ann.replyDate}
+                    {ann.companyLocation && (
+                      <span className="text-[11px] text-slate-400 bg-slate-800/60 px-2 py-0.5 rounded flex items-center gap-1">
+                        <MapPin className="w-2.5 h-2.5 text-slate-400" />
+                        {ann.companyLocation}
+                      </span>
+                    )}
+
+                    {ann.studentsIncluded && ann.studentsIncluded.length > 0 && (
+                      <span className="text-[10px] font-bold text-blue-300 bg-blue-500/15 border border-blue-500/30 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <Users className="w-3 h-3 text-blue-400" />
+                        {ann.studentsIncluded.length} Students Included
                       </span>
                     )}
                   </div>
+
+                  {/* Dates & Reference Subline */}
+                  {(ann.requestSentDate || ann.replyDate || ann.emailReference) && (
+                    <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-400 pt-0.5">
+                      {ann.requestSentDate && (
+                        <span className="flex items-center gap-1">
+                          <Send className="w-3 h-3 text-slate-500" />
+                          <span>Request Sent: <strong>{ann.requestSentDate}</strong></span>
+                        </span>
+                      )}
+                      {ann.replyDate && (
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-slate-500" />
+                          <span>Reply Date: <strong>{ann.replyDate}</strong></span>
+                        </span>
+                      )}
+                      {ann.emailReference && (
+                        <span className="font-mono text-[10px] text-slate-400 bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800">
+                          Ref: {ann.emailReference}
+                        </span>
+                      )}
+                    </div>
+                  )}
 
                   {/* Title & Message */}
                   <div>
@@ -343,6 +449,57 @@ export default function AnnouncementsManager() {
                     <div className="text-[11px] text-emerald-400 flex items-center gap-1.5 pt-0.5">
                       <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
                       <span className="truncate"><strong>Action:</strong> {ann.actionRequired}</span>
+                    </div>
+                  )}
+
+                  {/* Students Included Quick Toggle in Card */}
+                  {ann.studentsIncluded && ann.studentsIncluded.length > 0 && (
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setExpandedStudentsCardId(expandedStudentsCardId === ann.id ? null : ann.id)}
+                        className="inline-flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 font-semibold transition-colors"
+                      >
+                        <Users className="w-3.5 h-3.5" />
+                        <span>
+                          {expandedStudentsCardId === ann.id ? 'Hide Included Students' : `View Included Students (${ann.studentsIncluded.length})`}
+                        </span>
+                        {expandedStudentsCardId === ann.id ? (
+                          <ChevronUp className="w-3.5 h-3.5" />
+                        ) : (
+                          <ChevronDown className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+
+                      {/* Expandable Students Table */}
+                      {expandedStudentsCardId === ann.id && (
+                        <div className="mt-2.5 p-3 rounded-xl bg-slate-950 border border-slate-800 overflow-x-auto">
+                          <table className="w-full text-left text-xs">
+                            <thead>
+                              <tr className="text-[10px] uppercase text-slate-500 border-b border-slate-800">
+                                <th className="pb-1.5 font-semibold">#</th>
+                                <th className="pb-1.5 font-semibold">Name</th>
+                                <th className="pb-1.5 font-semibold">Reg No</th>
+                                <th className="pb-1.5 font-semibold">Department</th>
+                                <th className="pb-1.5 font-semibold">Year & Sec</th>
+                                <th className="pb-1.5 font-semibold">Contact</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-800/60 font-medium text-slate-300">
+                              {ann.studentsIncluded.map((s, idx) => (
+                                <tr key={idx} className="hover:bg-slate-900/50">
+                                  <td className="py-1.5 font-mono text-[10px] text-slate-500">{idx + 1}</td>
+                                  <td className="py-1.5 text-white font-semibold">{s.name}</td>
+                                  <td className="py-1.5 font-mono text-blue-400">{s.registerNumber}</td>
+                                  <td className="py-1.5 text-slate-400">{s.department || '-'}</td>
+                                  <td className="py-1.5 text-slate-400">{s.year || ''} {s.section || ''}</td>
+                                  <td className="py-1.5 text-slate-400 text-[11px]">{s.contact || '-'}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -474,10 +631,15 @@ export default function AnnouncementsManager() {
 
               {/* DYNAMIC COMPANY REPLY FIELDS */}
               {formData.type === 'COMPANY_REPLY' && (
-                <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-4">
-                  <div className="flex items-center gap-2 text-xs font-bold uppercase text-emerald-400">
-                    <Building2 className="w-3.5 h-3.5" />
-                    <span>Company Reply Specific Fields</span>
+                <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xs font-bold uppercase text-emerald-400">
+                      <Building2 className="w-3.5 h-3.5" />
+                      <span>Company Reply & Student Specifics</span>
+                    </div>
+                    <span className="text-[11px] text-slate-400">
+                      Applies only to targeted students
+                    </span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -487,7 +649,7 @@ export default function AnnouncementsManager() {
                       <label className="block text-xs font-semibold text-slate-300 mb-1">Company Name *</label>
                       <input
                         type="text"
-                        placeholder="e.g. IndiGo Airlines, Zoho Corp"
+                        placeholder="e.g. IndiGo Airlines, Air India SATS"
                         value={formData.companyName}
                         onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
                         className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
@@ -511,6 +673,41 @@ export default function AnnouncementsManager() {
                       </select>
                     </div>
 
+                    {/* Company Location / Branch */}
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Company Location / Branch</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Chennai Airport Terminal 2 / Guindy Tech Park"
+                        value={formData.companyLocation}
+                        onChange={(e) => setFormData({ ...formData, companyLocation: e.target.value })}
+                        className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+
+                    {/* Company Contact / HR Email */}
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">HR / Coordinator Contact Email</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. hr.recruitment@company.com"
+                        value={formData.companyContactEmail}
+                        onChange={(e) => setFormData({ ...formData, companyContactEmail: e.target.value })}
+                        className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+
+                    {/* Date Request Sent */}
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Date Request Sent</label>
+                      <input
+                        type="date"
+                        value={formData.requestSentDate}
+                        onChange={(e) => setFormData({ ...formData, requestSentDate: e.target.value })}
+                        className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs text-white focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+
                     {/* Reply Date */}
                     <div>
                       <label className="block text-xs font-semibold text-slate-300 mb-1">Date Reply Received</label>
@@ -519,6 +716,18 @@ export default function AnnouncementsManager() {
                         value={formData.replyDate}
                         onChange={(e) => setFormData({ ...formData, replyDate: e.target.value })}
                         className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs text-white focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+
+                    {/* Email / Letter Reference */}
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Reference / Dispatch No.</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. VELS/INT/2026/XYZ-042"
+                        value={formData.emailReference}
+                        onChange={(e) => setFormData({ ...formData, emailReference: e.target.value })}
+                        className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
                       />
                     </div>
 
@@ -542,7 +751,7 @@ export default function AnnouncementsManager() {
                       <label className="block text-xs font-semibold text-slate-300 mb-1">Internship Duration</label>
                       <input
                         type="text"
-                        placeholder="e.g. 3 Months / 6 Months"
+                        placeholder="e.g. 1 Month / 3 Months (Full-Time)"
                         value={formData.duration}
                         onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
                         className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
@@ -551,7 +760,7 @@ export default function AnnouncementsManager() {
 
                     {/* Application Deadline */}
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1">Application Deadline</label>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1">Reporting / Acceptance Deadline</label>
                       <input
                         type="date"
                         value={formData.deadline}
@@ -559,6 +768,187 @@ export default function AnnouncementsManager() {
                         className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs text-white focus:outline-none focus:border-blue-500"
                       />
                     </div>
+
+                  </div>
+
+                  {/* Required Documents */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">Required Documents to Bring / Submit</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. College ID Card, 2 Passport Photos, Signed Indemnity Bond"
+                      value={formData.requiredDocuments}
+                      onChange={(e) => setFormData({ ...formData, requiredDocuments: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+
+                  {/* STUDENTS INCLUDED IN THIS COMPANY REQUEST */}
+                  <div className="pt-2 border-t border-slate-800 space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <div className="flex items-center gap-2 text-xs font-bold uppercase text-blue-400">
+                          <Users className="w-3.5 h-3.5" />
+                          <span>Students Included in This Company Request</span>
+                          <span className="px-2 py-0.5 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-300 text-[10px] font-mono font-bold">
+                            {formData.studentsIncluded.length} Students
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-400 mt-0.5">
+                          Specify the students who were included in the institutional request email to the company.
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleAddManualStudent}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 text-xs font-semibold self-start sm:self-auto transition-colors"
+                      >
+                        <UserPlus className="w-3.5 h-3.5" />
+                        <span>Add Student Row</span>
+                      </button>
+                    </div>
+
+                    {/* Quick Search Student Directory */}
+                    <div className="relative">
+                      <div className="relative">
+                        <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          placeholder="Quick search student database by name or reg no (e.g. Aakash, 25326101)..."
+                          value={studentDirectorySearch}
+                          onChange={(e) => setStudentDirectorySearch(e.target.value)}
+                          className="w-full pl-8 pr-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+
+                      {/* Dropdown matching results */}
+                      {studentDirectorySearch.trim().length >= 2 && (
+                        <div className="absolute z-20 left-0 right-0 mt-1 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl max-h-48 overflow-y-auto divide-y divide-slate-800">
+                          {students
+                            .filter(s => {
+                              const q = studentDirectorySearch.toLowerCase();
+                              const inList = formData.studentsIncluded.some(item => item.registerNumber === s.registerNumber);
+                              if (inList) return false;
+                              return (
+                                (s.name && s.name.toLowerCase().includes(q)) ||
+                                (s.registerNumber && s.registerNumber.toLowerCase().includes(q)) ||
+                                (s.department && s.department.toLowerCase().includes(q))
+                              );
+                            })
+                            .slice(0, 6)
+                            .map(s => (
+                              <button
+                                key={s.id || s.registerNumber}
+                                type="button"
+                                onClick={() => handleAddStudentFromDirectory(s)}
+                                className="w-full text-left px-3 py-2 hover:bg-blue-600/15 flex items-center justify-between text-xs transition-colors"
+                              >
+                                <div>
+                                  <span className="font-semibold text-white block">{s.name}</span>
+                                  <span className="text-[10px] text-slate-400">
+                                    {s.registerNumber} • {s.department} • {s.year} {s.section}
+                                  </span>
+                                </div>
+                                <span className="text-[10px] font-semibold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">
+                                  + Select
+                                </span>
+                              </button>
+                            ))}
+                          {students.filter(s => {
+                            const q = studentDirectorySearch.toLowerCase();
+                            return (
+                              (s.name && s.name.toLowerCase().includes(q)) ||
+                              (s.registerNumber && s.registerNumber.toLowerCase().includes(q))
+                            );
+                          }).length === 0 && (
+                            <div className="p-3 text-center text-xs text-slate-500">
+                              No matching students found. Use "Add Student Row" to input manually.
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Students Table / Rows */}
+                    {formData.studentsIncluded.length === 0 ? (
+                      <div className="p-4 rounded-xl border border-dashed border-slate-800 text-center space-y-1">
+                        <Users className="w-6 h-6 text-slate-600 mx-auto" />
+                        <p className="text-xs text-slate-400 font-medium">No students attached to this company reply yet.</p>
+                        <p className="text-[10px] text-slate-500">
+                          Search from student database above or click "+ Add Student Row" to add.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                        {formData.studentsIncluded.map((std, idx) => (
+                          <div
+                            key={idx}
+                            className="bg-slate-900 border border-slate-800 p-2.5 rounded-xl grid grid-cols-1 sm:grid-cols-12 gap-2 items-center"
+                          >
+                            <div className="sm:col-span-1 flex items-center justify-center font-mono text-[10px] text-slate-500 font-bold">
+                              #{idx + 1}
+                            </div>
+                            
+                            {/* Student Name */}
+                            <div className="sm:col-span-3">
+                              <input
+                                type="text"
+                                placeholder="Student Name *"
+                                value={std.name}
+                                onChange={(e) => handleUpdateStudent(idx, 'name', e.target.value)}
+                                className="w-full px-2 py-1 bg-slate-950 border border-slate-800 rounded text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                              />
+                            </div>
+
+                            {/* Register Number */}
+                            <div className="sm:col-span-2">
+                              <input
+                                type="text"
+                                placeholder="Reg No *"
+                                value={std.registerNumber}
+                                onChange={(e) => handleUpdateStudent(idx, 'registerNumber', e.target.value)}
+                                className="w-full px-2 py-1 bg-slate-950 border border-slate-800 rounded text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 font-mono"
+                              />
+                            </div>
+
+                            {/* Department */}
+                            <div className="sm:col-span-3">
+                              <input
+                                type="text"
+                                placeholder="Department"
+                                value={std.department}
+                                onChange={(e) => handleUpdateStudent(idx, 'department', e.target.value)}
+                                className="w-full px-2 py-1 bg-slate-950 border border-slate-800 rounded text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                              />
+                            </div>
+
+                            {/* Year / Sec */}
+                            <div className="sm:col-span-2">
+                              <input
+                                type="text"
+                                placeholder="Year & Sec"
+                                value={std.year ? `${std.year} ${std.section || ''}`.trim() : (std.section || '')}
+                                onChange={(e) => handleUpdateStudent(idx, 'year', e.target.value)}
+                                className="w-full px-2 py-1 bg-slate-950 border border-slate-800 rounded text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                              />
+                            </div>
+
+                            {/* Remove button */}
+                            <div className="sm:col-span-1 flex justify-end">
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveStudent(idx)}
+                                className="p-1 rounded text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                                title="Remove student"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
                   </div>
 

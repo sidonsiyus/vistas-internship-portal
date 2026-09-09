@@ -11,7 +11,8 @@ import {
   Building2, 
   Clock,
   Sparkles,
-  ChevronLeft
+  ChevronLeft,
+  Users
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 
@@ -115,6 +116,13 @@ export default function AnnouncementBanner({ setActiveTab }) {
                     </span>
                   )}
 
+                  {current.type === 'COMPANY_REPLY' && current.studentsIncluded && current.studentsIncluded.length > 0 && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-300 bg-blue-500/15 border border-blue-500/30 px-2.5 py-0.5 rounded-full">
+                      <Users className="w-3 h-3 text-blue-400" />
+                      <strong>{current.studentsIncluded.length} Students Listed</strong>
+                    </span>
+                  )}
+
                   {current.replyDate && (
                     <span className="text-[11px] text-slate-400 flex items-center gap-1">
                       <Calendar className="w-3 h-3 text-slate-500" />
@@ -132,6 +140,13 @@ export default function AnnouncementBanner({ setActiveTab }) {
                 <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">
                   {current.content}
                 </p>
+
+                {/* Targeted note if Company Reply with students */}
+                {current.type === 'COMPANY_REPLY' && current.studentsIncluded && current.studentsIncluded.length > 0 && (
+                  <div className="pt-0.5 text-[11px] text-amber-300/90 font-medium">
+                    ⚡ <em>Applies specifically to the {current.studentsIncluded.length} students included in the initial request. Click below to verify names.</em>
+                  </div>
+                )}
 
                 {/* Action Required preview if Company Reply */}
                 {current.actionRequired && (
@@ -176,7 +191,7 @@ export default function AnnouncementBanner({ setActiveTab }) {
                 onClick={() => setActiveTab('updates')}
                 className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs transition-all shadow-sm hover:shadow-blue-500/20"
               >
-                <span>View All Updates</span>
+                <span>{current.type === 'COMPANY_REPLY' ? 'View Included Students & Details' : 'View All Updates'}</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
 

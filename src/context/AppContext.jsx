@@ -190,15 +190,21 @@ export function AppProvider({ children }) {
               type: a.type || 'GENERAL',
               category: a.category || 'Important',
               companyName: a.company_name || '',
+              companyLocation: a.company_location || '',
+              companyContactEmail: a.company_contact_email || '',
+              requestSentDate: a.request_sent_date || '',
+              emailReference: a.email_reference || '',
               companyStatus: a.company_status || '',
               replyDate: a.reply_date || '',
               department: a.department || '',
               duration: a.duration || '',
               eligibility: a.eligibility || '',
               deadline: a.deadline || '',
+              requiredDocuments: a.required_documents || '',
               actionRequired: a.action_required || '',
               coordinatorNotes: a.coordinator_notes || '',
               applyLink: a.apply_link || '',
+              studentsIncluded: Array.isArray(a.students_included) ? a.students_included : [],
               isPinned: Boolean(a.is_pinned),
               isActive: a.is_active !== false,
               createdAt: a.created_at,
@@ -637,15 +643,21 @@ export function AppProvider({ children }) {
       type: data.type || 'GENERAL',
       category: data.category || (data.type === 'COMPANY_REPLY' ? 'Company Reply' : 'Important'),
       companyName: data.companyName || '',
+      companyLocation: data.companyLocation || '',
+      companyContactEmail: data.companyContactEmail || '',
+      requestSentDate: data.requestSentDate || '',
+      emailReference: data.emailReference || '',
       companyStatus: data.companyStatus || 'REPLY_RECEIVED',
       replyDate: data.replyDate || new Date().toISOString().split('T')[0],
       department: data.department || '',
       duration: data.duration || '',
       eligibility: data.eligibility || '',
       deadline: data.deadline || '',
+      requiredDocuments: data.requiredDocuments || '',
       actionRequired: data.actionRequired || '',
       coordinatorNotes: data.coordinatorNotes || '',
       applyLink: data.applyLink || '',
+      studentsIncluded: Array.isArray(data.studentsIncluded) ? data.studentsIncluded : [],
       isPinned: Boolean(data.isPinned),
       isActive: data.isActive !== false,
       createdAt: nowIso,
@@ -664,15 +676,21 @@ export function AppProvider({ children }) {
           type: newAnn.type,
           category: newAnn.category,
           company_name: newAnn.companyName,
+          company_location: newAnn.companyLocation,
+          company_contact_email: newAnn.companyContactEmail,
+          request_sent_date: newAnn.requestSentDate || null,
+          email_reference: newAnn.emailReference,
           company_status: newAnn.companyStatus,
           reply_date: newAnn.replyDate || null,
           department: newAnn.department,
           duration: newAnn.duration,
           eligibility: newAnn.eligibility,
           deadline: newAnn.deadline || null,
+          required_documents: newAnn.requiredDocuments,
           action_required: newAnn.actionRequired,
           coordinator_notes: newAnn.coordinatorNotes,
           apply_link: newAnn.applyLink,
+          students_included: newAnn.studentsIncluded,
           is_pinned: newAnn.isPinned,
           is_active: newAnn.isActive
         }]).select('*').single();
@@ -703,15 +721,21 @@ export function AppProvider({ children }) {
         if (updatedFields.type !== undefined) payload.type = updatedFields.type;
         if (updatedFields.category !== undefined) payload.category = updatedFields.category;
         if (updatedFields.companyName !== undefined) payload.company_name = updatedFields.companyName;
+        if (updatedFields.companyLocation !== undefined) payload.company_location = updatedFields.companyLocation;
+        if (updatedFields.companyContactEmail !== undefined) payload.company_contact_email = updatedFields.companyContactEmail;
+        if (updatedFields.requestSentDate !== undefined) payload.request_sent_date = updatedFields.requestSentDate || null;
+        if (updatedFields.emailReference !== undefined) payload.email_reference = updatedFields.emailReference;
         if (updatedFields.companyStatus !== undefined) payload.company_status = updatedFields.companyStatus;
         if (updatedFields.replyDate !== undefined) payload.reply_date = updatedFields.replyDate || null;
         if (updatedFields.department !== undefined) payload.department = updatedFields.department;
         if (updatedFields.duration !== undefined) payload.duration = updatedFields.duration;
         if (updatedFields.eligibility !== undefined) payload.eligibility = updatedFields.eligibility;
         if (updatedFields.deadline !== undefined) payload.deadline = updatedFields.deadline || null;
+        if (updatedFields.requiredDocuments !== undefined) payload.required_documents = updatedFields.requiredDocuments;
         if (updatedFields.actionRequired !== undefined) payload.action_required = updatedFields.actionRequired;
         if (updatedFields.coordinatorNotes !== undefined) payload.coordinator_notes = updatedFields.coordinatorNotes;
         if (updatedFields.applyLink !== undefined) payload.apply_link = updatedFields.applyLink;
+        if (updatedFields.studentsIncluded !== undefined) payload.students_included = updatedFields.studentsIncluded;
         if (updatedFields.isPinned !== undefined) payload.is_pinned = updatedFields.isPinned;
         if (updatedFields.isActive !== undefined) payload.is_active = updatedFields.isActive;
         payload.updated_at = nowIso;
