@@ -19,15 +19,34 @@ import { useApp } from '../../context/AppContext';
 export default function AnnouncementBanner({ setActiveTab }) {
   const { announcements } = useApp();
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
 
-  // Filter only active announcements, sort pinned first, then newest
+  // Filter only active announcements, sort pinned first, then newest updated
   const activeAnnouncements = (announcements || [])
     .filter(a => a.isActive !== false)
     .sort((a, b) => {
       if (a.isPinned && !b.isPinned) return -1;
       if (!a.isPinned && b.isPinned) return 1;
-      return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+      const timeB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+      const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+      return timeB - timeA;
     });
+
+  // Auto-rotate every 6 seconds when not hovered
+  React.useEffect(() => {
+    if (activeAnnouncements.length <= 1 || isPaused) return;
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % activeAnnouncements.length);
+    }, 6000);
+    return () => clearInterval(interval);
+  }, [activeAnnouncements.length, isPaused]);
+
+  // Keep index within bounds
+  React.useEffect(() => {
+    if (currentIndex >= activeAnnouncements.length) {
+      setCurrentIndex(0);
+    }
+  }, [activeAnnouncements.length, currentIndex]);
 
   if (activeAnnouncements.length === 0) {
     return null;
@@ -82,7 +101,11 @@ export default function AnnouncementBanner({ setActiveTab }) {
   return (
     <div className="w-full bg-[#080d19] border-b border-slate-800/80 font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
-        <div className={`relative rounded-xl bg-gradient-to-r from-slate-900 via-[#0b1222] to-slate-900 border ${badge.border} p-4 shadow-lg transition-all`}>
+        <div 
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => setIsPaused(false)}
+          className={`relative rounded-xl bg-gradient-to-r from-slate-900 via-[#0b1222] to-slate-900 border ${badge.border} p-4 shadow-lg transition-all`}
+        >
           
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             
@@ -163,23 +186,38 @@ export default function AnnouncementBanner({ setActiveTab }) {
             {/* Right Action & Multi-Notice Controls */}
             <div className="flex items-center justify-between lg:justify-end gap-3 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-800/80">
               
-              {/* Pagination controls if multiple notices */}
+              {/* Pagination & Dot indicators if multiple notices */}
               {activeAnnouncements.length > 1 && (
-                <div className="flex items-center gap-1 text-xs text-slate-400 bg-slate-900/80 px-2 py-1 rounded-lg border border-slate-800">
+                <div className="flex items-center gap-2 text-xs text-slate-400 bg-slate-900/80 px-2.5 py-1 rounded-lg border border-slate-800">
                   <button 
                     onClick={prevAnnouncement}
                     className="p-1 hover:text-white rounded hover:bg-slate-800 transition-colors"
-                    title="Previous announcement"
+                    title="Previous notice"
                   >
                     <ChevronLeft className="w-3.5 h-3.5" />
                   </button>
-                  <span className="font-mono text-[11px] px-1 text-slate-300">
-                    {currentIndex + 1} / {activeAnnouncements.length}
+
+                  <div className="flex items-center gap-1.5 px-1">
+                    {activeAnnouncements.map((_, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setCurrentIndex(idx)}
+                        className={`h-1.5 rounded-full transition-all ${
+                          currentIndex === idx ? 'w-4 bg-blue-400' : 'w-1.5 bg-slate-700 hover:bg-slate-500'
+                        }`}
+                        title={`Go to notice ${idx + 1}`}
+                      />
+                    ))}
+                  </div>
+
+                  <span className="font-mono text-[10px] text-slate-400">
+                    {currentIndex + 1}/{activeAnnouncements.length}
                   </span>
+
                   <button 
                     onClick={nextAnnouncement}
                     className="p-1 hover:text-white rounded hover:bg-slate-800 transition-colors"
-                    title="Next announcement"
+                    title="Next notice"
                   >
                     <ChevronRight className="w-3.5 h-3.5" />
                   </button>
