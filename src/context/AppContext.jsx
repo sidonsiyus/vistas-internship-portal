@@ -111,6 +111,55 @@ export function AppProvider({ children }) {
   };
 
   // --- SUPABASE REALTIME & FETCH ---
+  // Cloud Sync Helpers
+  const syncAnnouncementsToSupabase = async (updatedList) => {
+    if (!isSupabaseConfigured()) return;
+    try {
+      // 1. Always persist full announcements state to __SYS_ANNOUNCEMENTS__ in Supabase
+      await supabase.from('students').upsert({
+        register_number: '__SYS_ANNOUNCEMENTS__',
+        name: 'SYSTEM_ANNOUNCEMENTS',
+        department: 'SYSTEM',
+        year: 'ALL',
+        email: 'sys_ann@vistas.internal',
+        phone: '',
+        private_notes: JSON.stringify(updatedList)
+      }, { onConflict: 'register_number' });
+    } catch (e) {
+      console.warn('Sync announcements error:', e);
+    }
+  };
+
+  const syncAvailabilityToSupabase = async (updatedAvail) => {
+    if (!isSupabaseConfigured()) return;
+    try {
+      // 1. Update standard columns in availability table
+      await supabase.from('availability').update({
+        status: updatedAvail.status,
+        start_time: updatedAvail.startTime,
+        end_time: updatedAvail.endTime,
+        slot_duration: updatedAvail.slotDuration,
+        break_start_time: updatedAvail.breakStartTime,
+        break_end_time: updatedAvail.breakEndTime,
+        max_bookings: updatedAvail.maxBookings
+      }).eq('id', 1);
+
+      // 2. Persist complete availability state (including workingDays & dateOverrides) to __SYS_AVAILABILITY__
+      await supabase.from('students').upsert({
+        register_number: '__SYS_AVAILABILITY__',
+        name: 'SYSTEM_AVAILABILITY',
+        department: 'SYSTEM',
+        year: 'ALL',
+        email: 'sys_avail@vistas.internal',
+        phone: '',
+        private_notes: JSON.stringify(updatedAvail)
+      }, { onConflict: 'register_number' });
+    } catch (e) {
+      console.warn('Sync availability error:', e);
+    }
+  };
+
+  // --- SUPABASE REALTIME & FETCH ---
   useEffect(() => {
     const fetchSupabaseState = async () => {
       if (!isSupabaseConfigured()) return;
@@ -163,19 +212,53 @@ export function AppProvider({ children }) {
         }
 
         if (stdData && stdData.length > 0) {
-          setStudents(stdData.map(s => ({
-            id: s.id,
-            registerNumber: s.register_number,
-            name: s.name,
-            department: s.department,
-            year: s.year,
-            email: s.email,
-            phone: s.phone,
-            historyCount: s.history_count,
-            privateNotes: s.private_notes
-          })));
+          // Check for cross-device synchronized system records
+          const annRecord = stdData.find(s => s.register_number === '__SYS_ANNOUNCEMENTS__');
+          if (annRecord && annRecord.private_notes) {
+            try {
+              const parsedAnn = JSON.parse(annRecord.private_notes);
+              if (Array.isArray(parsedAnn)) {
+                setAnnouncements(parsedAnn);
+                localStorage.setItem('vistas_announcements', JSON.stringify(parsedAnn));
+              }
+            } catch (e) {}
+          }
+
+          const availRecord = stdData.find(s => s.register_number === '__SYS_AVAILABILITY__');
+          if (availRecord && availRecord.private_notes) {
+            try {
+              const parsedAvail = JSON.parse(availRecord.private_notes);
+              if (parsedAvail && typeof parsedAvail === 'object') {
+                setAvailability(prev => ({
+                  ...prev,
+                  ...parsedAvail,
+                  status: (availData && availData.status) || parsedAvail.status || prev.status
+                }));
+                localStorage.setItem('vistas_availability', JSON.stringify({ ...parsedAvail }));
+              }
+            } catch (e) {}
+          }
+
+          // Filter out internal system sync records from student list
+          const realStudents = stdData
+            .filter(s => !s.register_number.startsWith('__SYS_'))
+            .map(s => ({
+              id: s.id,
+              registerNumber: s.register_number,
+              name: s.name,
+              department: s.department,
+              year: s.year,
+              email: s.email,
+              phone: s.phone,
+              historyCount: s.history_count,
+              privateNotes: s.private_notes
+            }));
+          if (realStudents.length > 0) {
+            setStudents(realStudents);
+          }
         }
 
+        // Try standard announcements table if present
         try {
           const { data: annData } = await supabase
             .from('announcements')
@@ -183,7 +266,7 @@ export function AppProvider({ children }) {
             .order('created_at', { ascending: false });
 
           if (annData && annData.length > 0) {
-            setAnnouncements(annData.map(a => ({
+            const formattedAnn = annData.map(a => ({
               id: a.id,
               title: a.title,
               content: a.content,
@@ -209,11 +292,11 @@ export function AppProvider({ children }) {
               isActive: a.is_active !== false,
               createdAt: a.created_at,
               updatedAt: a.updated_at
-            })));
+            }));
+            setAnnouncements(formattedAnn);
+            localStorage.setItem('vistas_announcements', JSON.stringify(formattedAnn));
           }
-        } catch (annErr) {
-          // Table may not exist yet if SQL migration isn't run, fallback to localStorage
-        }
+        } catch (annErr) {}
       } catch (e) {
         console.warn('Supabase fetch error', e);
       }
@@ -221,11 +304,10 @@ export function AppProvider({ children }) {
 
     fetchSupabaseState();
 
-    // 🔄 Periodic Polling (every 3.5s) to guarantee real-time sync across devices
-    // even if WebSockets disconnect or network drops
+    // 🔄 Periodic Polling (every 3s) to guarantee real-time sync across devices
     const pollInterval = setInterval(() => {
       fetchSupabaseState();
-    }, 3500);
+    }, 3000);
 
     let channel;
     if (isSupabaseConfigured()) {
@@ -239,6 +321,9 @@ export function AppProvider({ children }) {
           }
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'availability' }, () => {
+          fetchSupabaseState();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, () => {
           fetchSupabaseState();
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, () => {
@@ -495,12 +580,21 @@ export function AppProvider({ children }) {
     // 1. Optimistic Local State Update
     const updated = appointments.map(a => a.id === appointmentId ? { ...a, status: 'CALLED' } : a);
     setAppointments(updated);
+    try {
+      localStorage.setItem('vistas_appointments', JSON.stringify(updated));
+    } catch (e) {}
     broadcastChange('SYNC', { appointments: updated });
 
     // 2. Persist to Supabase Cloud
     if (isSupabaseConfigured()) {
       try {
-        await supabase.from('appointments').update({ status: 'CALLED' }).eq('id', appointmentId);
+        let q = supabase.from('appointments').update({ status: 'CALLED' });
+        if (apt?.tokenNumber) {
+          q = q.or(`id.eq.${appointmentId},token_number.eq.${apt.tokenNumber}`);
+        } else {
+          q = q.eq('id', appointmentId);
+        }
+        await q;
       } catch (err) {
         console.warn('Supabase call error:', err);
       }
@@ -512,9 +606,13 @@ export function AppProvider({ children }) {
 
   const startMeeting = async (appointmentId) => {
     const now = new Date().toISOString();
+    const apt = appointments.find(a => a.id === appointmentId);
     // 1. Optimistic Local State Update
     const updated = appointments.map(a => a.id === appointmentId ? { ...a, status: 'IN_PROGRESS', startedAt: now } : a);
     setAppointments(updated);
+    try {
+      localStorage.setItem('vistas_appointments', JSON.stringify(updated));
+    } catch (e) {}
     const active = updated.find(a => a.id === appointmentId);
     setActiveMeeting(active || null);
     broadcastChange('SYNC', { appointments: updated });
@@ -522,7 +620,13 @@ export function AppProvider({ children }) {
     // 2. Persist to Supabase Cloud
     if (isSupabaseConfigured()) {
       try {
-        await supabase.from('appointments').update({ status: 'IN_PROGRESS', started_at: now }).eq('id', appointmentId);
+        let q = supabase.from('appointments').update({ status: 'IN_PROGRESS', started_at: now });
+        if (apt?.tokenNumber) {
+          q = q.or(`id.eq.${appointmentId},token_number.eq.${apt.tokenNumber}`);
+        } else {
+          q = q.eq('id', appointmentId);
+        }
+        await q;
       } catch (err) {
         console.warn('Supabase start meeting error:', err);
       }
@@ -533,21 +637,31 @@ export function AppProvider({ children }) {
 
   const endMeeting = async (appointmentId, notes = '', durationMinutes = 11) => {
     const now = new Date().toISOString();
+    const apt = appointments.find(a => a.id === appointmentId);
     // 1. Optimistic Local State Update
     const updated = appointments.map(a => a.id === appointmentId ? { ...a, status: 'COMPLETED', completedAt: now, notes, durationMinutes } : a);
     setAppointments(updated);
+    try {
+      localStorage.setItem('vistas_appointments', JSON.stringify(updated));
+    } catch (e) {}
     setActiveMeeting(null);
     broadcastChange('SYNC', { appointments: updated });
 
     // 2. Persist to Supabase Cloud
     if (isSupabaseConfigured()) {
       try {
-        await supabase.from('appointments').update({
+        let q = supabase.from('appointments').update({
           status: 'COMPLETED',
           completed_at: now,
           notes: notes || 'Consultation completed.',
           duration_minutes: durationMinutes
-        }).eq('id', appointmentId);
+        });
+        if (apt?.tokenNumber) {
+          q = q.or(`id.eq.${appointmentId},token_number.eq.${apt.tokenNumber}`);
+        } else {
+          q = q.eq('id', appointmentId);
+        }
+        await q;
       } catch (err) {
         console.warn('Supabase end meeting error:', err);
       }
@@ -557,16 +671,26 @@ export function AppProvider({ children }) {
   };
 
   const markNoShow = async (appointmentId) => {
+    const apt = appointments.find(a => a.id === appointmentId);
     // 1. Optimistic Local State Update
     const updated = appointments.map(a => a.id === appointmentId ? { ...a, status: 'NO_SHOW', notes: 'Marked No-Show' } : a);
     setAppointments(updated);
+    try {
+      localStorage.setItem('vistas_appointments', JSON.stringify(updated));
+    } catch (e) {}
     setActiveMeeting(null);
     broadcastChange('SYNC', { appointments: updated });
 
     // 2. Persist to Supabase Cloud
     if (isSupabaseConfigured()) {
       try {
-        await supabase.from('appointments').update({ status: 'NO_SHOW', notes: 'Marked No-Show' }).eq('id', appointmentId);
+        let q = supabase.from('appointments').update({ status: 'NO_SHOW', notes: 'Marked No-Show' });
+        if (apt?.tokenNumber) {
+          q = q.or(`id.eq.${appointmentId},token_number.eq.${apt.tokenNumber}`);
+        } else {
+          q = q.eq('id', appointmentId);
+        }
+        await q;
       } catch (err) {
         console.warn('Supabase mark no-show error:', err);
       }
@@ -576,15 +700,25 @@ export function AppProvider({ children }) {
   };
 
   const cancelAppointment = async (appointmentId) => {
+    const apt = appointments.find(a => a.id === appointmentId);
     // 1. Optimistic Local State Update
     const updated = appointments.map(a => a.id === appointmentId ? { ...a, status: 'CANCELLED' } : a);
     setAppointments(updated);
+    try {
+      localStorage.setItem('vistas_appointments', JSON.stringify(updated));
+    } catch (e) {}
     broadcastChange('SYNC', { appointments: updated });
 
     // 2. Persist to Supabase Cloud
     if (isSupabaseConfigured()) {
       try {
-        await supabase.from('appointments').update({ status: 'CANCELLED' }).eq('id', appointmentId);
+        let q = supabase.from('appointments').update({ status: 'CANCELLED' });
+        if (apt?.tokenNumber) {
+          q = q.or(`id.eq.${appointmentId},token_number.eq.${apt.tokenNumber}`);
+        } else {
+          q = q.eq('id', appointmentId);
+        }
+        await q;
       } catch (err) {
         console.warn('Supabase cancel appointment error:', err);
       }
@@ -596,38 +730,22 @@ export function AppProvider({ children }) {
   const updateAvailabilityStatus = async (status) => {
     const updated = { ...availability, status };
     setAvailability(updated);
+    try {
+      localStorage.setItem('vistas_availability', JSON.stringify(updated));
+    } catch (e) {}
     broadcastChange('SYNC', { availability: updated });
-
-    if (isSupabaseConfigured()) {
-      try {
-        await supabase.from('availability').update({ status }).eq('id', 1);
-      } catch (err) {
-        console.warn('Supabase status update error:', err);
-      }
-    }
+    await syncAvailabilityToSupabase(updated);
     showToast(`Availability set to ${status}`, 'info');
   };
 
   const updateAvailabilityConfig = async (newConfig) => {
     const updated = { ...availability, ...newConfig };
     setAvailability(updated);
+    try {
+      localStorage.setItem('vistas_availability', JSON.stringify(updated));
+    } catch (e) {}
     broadcastChange('SYNC', { availability: updated });
-
-    if (isSupabaseConfigured()) {
-      try {
-        await supabase.from('availability').update({
-          start_time: newConfig.startTime,
-          end_time: newConfig.endTime,
-          slot_duration: newConfig.slotDuration,
-          break_start_time: newConfig.breakStartTime,
-          break_end_time: newConfig.breakEndTime,
-          max_bookings: newConfig.maxBookings
-        }).eq('id', 1);
-      } catch (e) {
-        console.warn('Supabase availability sync error', e);
-      }
-    }
-
+    await syncAvailabilityToSupabase(updated);
     showToast('Availability & Working Days settings saved!', 'success');
   };
 
@@ -666,7 +784,11 @@ export function AppProvider({ children }) {
 
     const updated = [newAnn, ...announcements];
     setAnnouncements(updated);
+    try {
+      localStorage.setItem('vistas_announcements', JSON.stringify(updated));
+    } catch (e) {}
     broadcastChange('SYNC', { announcements: updated });
+    await syncAnnouncementsToSupabase(updated);
 
     if (isSupabaseConfigured()) {
       try {
@@ -711,7 +833,11 @@ export function AppProvider({ children }) {
     const nowIso = new Date().toISOString();
     const updated = announcements.map(a => a.id === id ? { ...a, ...updatedFields, updatedAt: nowIso } : a);
     setAnnouncements(updated);
+    try {
+      localStorage.setItem('vistas_announcements', JSON.stringify(updated));
+    } catch (e) {}
     broadcastChange('SYNC', { announcements: updated });
+    await syncAnnouncementsToSupabase(updated);
 
     if (isSupabaseConfigured()) {
       try {
@@ -752,7 +878,11 @@ export function AppProvider({ children }) {
   const deleteAnnouncement = async (id) => {
     const updated = announcements.filter(a => a.id !== id);
     setAnnouncements(updated);
+    try {
+      localStorage.setItem('vistas_announcements', JSON.stringify(updated));
+    } catch (e) {}
     broadcastChange('SYNC', { announcements: updated });
+    await syncAnnouncementsToSupabase(updated);
 
     if (isSupabaseConfigured()) {
       try {
