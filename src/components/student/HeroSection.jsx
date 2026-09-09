@@ -1,11 +1,16 @@
 import React from 'react';
-import { Ticket, Clock, ArrowRight, ShieldCheck, MapPin, AlertCircle } from 'lucide-react';
+import { Ticket, Clock, ArrowRight, ShieldCheck, MapPin, AlertCircle, Building2 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import StatusBadge from '../common/StatusBadge';
 import { OFFICE_LOCATION } from '../../mock/sampleData';
 
-export default function HeroSection({ setActiveTab }) {
+export default function HeroSection({ setActiveTab, onBookClick }) {
   const { availability } = useApp();
+
+  const handleBook = () => {
+    if (onBookClick) onBookClick();
+    else setActiveTab('book');
+  };
 
   return (
     <section className="relative overflow-hidden pt-12 pb-16 md:pt-20 md:pb-24 border-b border-slate-800/60 bg-gradient-to-b from-[#0c1220] to-[#090d16] font-sans">
@@ -47,7 +52,7 @@ export default function HeroSection({ setActiveTab }) {
           {/* Minimalist Action Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
             <button
-              onClick={() => setActiveTab('book')}
+              onClick={handleBook}
               className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm shadow-md transition-all transform hover:-translate-y-0.5"
             >
               <Ticket className="w-4 h-4 text-blue-100" />
@@ -61,6 +66,17 @@ export default function HeroSection({ setActiveTab }) {
             >
               <Clock className="w-4 h-4 text-blue-400" />
               <span>TRACK MY TOKEN LIVE</span>
+            </button>
+          </div>
+
+          {/* Company Response Reminder Pill */}
+          <div className="pt-1">
+            <button 
+              onClick={() => setActiveTab('updates')}
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900/90 hover:bg-slate-800/90 border border-blue-500/30 text-blue-300 text-xs font-medium transition-all hover:border-blue-400 shadow-sm"
+            >
+              <Building2 className="w-3.5 h-3.5 text-blue-400" />
+              <span>Checking on company email replies? <strong className="text-white hover:underline">View Company Response Updates →</strong></span>
             </button>
           </div>
 

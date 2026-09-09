@@ -10,6 +10,9 @@ import HowItWorks from './components/student/HowItWorks';
 import BookingWizard from './components/student/BookingWizard';
 import LiveTokenTracker from './components/student/LiveTokenTracker';
 import CoordinatorStatusView from './components/student/CoordinatorStatusView';
+import AnnouncementBanner from './components/student/AnnouncementBanner';
+import InternshipUpdatesView from './components/student/InternshipUpdatesView';
+import PreBookingModal from './components/student/PreBookingModal';
 
 // Admin views
 import AdminLogin from './components/admin/AdminLogin';
@@ -21,22 +24,37 @@ import AvailabilityConfig from './components/admin/AvailabilityConfig';
 import StudentDirectory from './components/admin/StudentDirectory';
 import AnalyticsReports from './components/admin/AnalyticsReports';
 import SettingsPage from './components/admin/SettingsPage';
+import AnnouncementsManager from './components/admin/AnnouncementsManager';
 
 function AppContent() {
   const { adminAuth, toastNotification } = useApp();
 
-  // Top level navigation state: 'home', 'book', 'track', 'status', 'admin'
+  // Top level navigation state: 'home', 'updates', 'book', 'track', 'status', 'admin'
   const [activeTab, setActiveTab] = useState('home');
 
-  // Admin sub-page state: 'overview', 'live-queue', 'appointments', 'availability', 'students', 'reports', 'settings'
+  // Pre-booking advisory modal state
+  const [isPreBookingModalOpen, setIsPreBookingModalOpen] = useState(false);
+
+  // Admin sub-page state: 'overview', 'live-queue', 'announcements', 'appointments', 'availability', 'students', 'reports', 'settings'
   const [activeAdminPage, setActiveAdminPage] = useState('overview');
+
+  const handleBookTrigger = () => {
+    try {
+      const suppressed = localStorage.getItem('vistas_suppress_prebooking_advisory');
+      if (suppressed === 'true') {
+        setActiveTab('book');
+        return;
+      }
+    } catch (e) {}
+    setIsPreBookingModalOpen(true);
+  };
 
   // Render Admin View
   if (activeTab === 'admin') {
     if (!adminAuth?.isAuthenticated) {
       return (
         <div className="min-h-screen bg-slate-950 flex flex-col justify-between">
-          <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
+          <Navbar activeTab={activeTab} setActiveTab={setActiveTab} onBookClick={handleBookTrigger} />
           <AdminLogin onLoginSuccess={() => setActiveAdminPage('overview')} />
           <Footer setActiveTab={setActiveTab} />
         </div>
@@ -47,6 +65,7 @@ function AppContent() {
       <AdminLayout activeAdminPage={activeAdminPage} setActiveAdminPage={setActiveAdminPage}>
         {activeAdminPage === 'overview' && <OverviewDashboard setActiveAdminPage={setActiveAdminPage} />}
         {activeAdminPage === 'live-queue' && <LiveQueueManager />}
+        {activeAdminPage === 'announcements' && <AnnouncementsManager />}
         {activeAdminPage === 'appointments' && <AppointmentsTable />}
         {activeAdminPage === 'availability' && <AvailabilityConfig />}
         {activeAdminPage === 'students' && <StudentDirectory />}
@@ -68,12 +87,27 @@ function AppContent() {
         </div>
       )}
 
-      <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
+      {/* Pre-Booking Gatekeeper Advisory Modal */}
+      <PreBookingModal
+        isOpen={isPreBookingModalOpen}
+        onClose={() => setIsPreBookingModalOpen(false)}
+        onProceedToBooking={() => {
+          setIsPreBookingModalOpen(false);
+          setActiveTab('book');
+        }}
+        onNavigateToUpdates={() => {
+          setIsPreBookingModalOpen(false);
+          setActiveTab('updates');
+        }}
+      />
+
+      <Navbar activeTab={activeTab} setActiveTab={setActiveTab} onBookClick={handleBookTrigger} />
 
       <main className="flex-1">
         {activeTab === 'home' && (
           <>
-            <HeroSection setActiveTab={setActiveTab} />
+            <AnnouncementBanner setActiveTab={setActiveTab} />
+            <HeroSection setActiveTab={setActiveTab} onBookClick={handleBookTrigger} />
             <QuickStats />
             <HowItWorks setActiveTab={setActiveTab} />
             <div className="py-8">
@@ -81,6 +115,8 @@ function AppContent() {
             </div>
           </>
         )}
+
+        {activeTab === 'updates' && <InternshipUpdatesView setActiveTab={setActiveTab} />}
 
         {activeTab === 'book' && <BookingWizard setActiveTab={setActiveTab} />}
 

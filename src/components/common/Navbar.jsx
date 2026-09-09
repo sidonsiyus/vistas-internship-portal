@@ -1,14 +1,29 @@
 import React, { useState } from 'react';
-import { GraduationCap, Menu, X, Shield, Clock, Ticket, UserCheck } from 'lucide-react';
+import { GraduationCap, Menu, X, Shield, Clock, Ticket, UserCheck, Building2, Bell } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import StatusBadge from './StatusBadge';
 
-export default function Navbar({ activeTab, setActiveTab }) {
-  const { availability, trackedToken } = useApp();
+export default function Navbar({ activeTab, setActiveTab, onBookClick }) {
+  const { availability, trackedToken, unreadCount } = useApp();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const handleNavClick = (id) => {
+    if (id === 'book' && onBookClick) {
+      onBookClick();
+    } else {
+      setActiveTab(id);
+    }
+  };
 
   const navItems = [
     { id: 'home', label: 'Home', icon: GraduationCap },
+    { 
+      id: 'updates', 
+      label: 'Internship Updates', 
+      icon: Building2, 
+      badge: unreadCount > 0 ? `${unreadCount} New` : null,
+      isAlertBadge: unreadCount > 0
+    },
     { id: 'book', label: 'Book Slot', icon: Clock },
     { id: 'track', label: 'Track Token', icon: Ticket, badge: trackedToken },
     { id: 'status', label: 'Desk Status', icon: UserCheck },
@@ -38,7 +53,7 @@ export default function Navbar({ activeTab, setActiveTab }) {
               return (
                 <button
                   key={item.id}
-                  onClick={() => setActiveTab(item.id)}
+                  onClick={() => handleNavClick(item.id)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                     isActive
                       ? 'bg-blue-600/15 text-blue-400 border border-blue-500/30'
@@ -48,7 +63,11 @@ export default function Navbar({ activeTab, setActiveTab }) {
                   <Icon className="w-3.5 h-3.5" />
                   <span>{item.label}</span>
                   {item.badge && (
-                    <span className="ml-1 text-[10px] font-mono px-1.5 py-0.2 rounded bg-blue-500/20 text-blue-300 font-bold border border-blue-400/30">
+                    <span className={`ml-1 text-[10px] font-mono px-1.5 py-0.5 rounded font-bold border ${
+                      item.isAlertBadge
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30'
+                        : 'bg-blue-500/20 text-blue-300 border-blue-400/30'
+                    }`}>
                       {item.badge}
                     </span>
                   )}
@@ -100,7 +119,7 @@ export default function Navbar({ activeTab, setActiveTab }) {
               <button
                 key={item.id}
                 onClick={() => {
-                  setActiveTab(item.id);
+                  handleNavClick(item.id);
                   setMobileMenuOpen(false);
                 }}
                 className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all ${
@@ -114,7 +133,11 @@ export default function Navbar({ activeTab, setActiveTab }) {
                   <span>{item.label}</span>
                 </div>
                 {item.badge && (
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 font-bold">
+                  <span className={`text-[10px] font-mono px-2 py-0.5 rounded font-bold border ${
+                    item.isAlertBadge
+                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30'
+                      : 'bg-blue-500/20 text-blue-300 border-blue-400/30'
+                  }`}>
                     {item.badge}
                   </span>
                 )}

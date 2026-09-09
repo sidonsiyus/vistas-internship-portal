@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { INITIAL_APPOINTMENTS, INITIAL_AVAILABILITY, MOCK_STUDENTS } from '../mock/sampleData';
+import { INITIAL_APPOINTMENTS, INITIAL_AVAILABILITY, MOCK_STUDENTS, INITIAL_ANNOUNCEMENTS } from '../mock/sampleData';
 import { generateNextTokenNumber } from '../utils/tokenGenerator';
 
 const AppContext = createContext();
@@ -38,6 +38,36 @@ export function AppProvider({ children }) {
     } catch (e) {}
     return MOCK_STUDENTS;
   });
+
+  // Announcements & Company Reply Updates State
+  const [announcements, setAnnouncements] = useState(() => {
+    try {
+      const saved = localStorage.getItem('vistas_announcements');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return INITIAL_ANNOUNCEMENTS;
+  });
+
+  // Timestamp of when student last viewed the updates section
+  const [lastViewedUpdates, setLastViewedUpdates] = useState(() => {
+    return localStorage.getItem('vistas_last_viewed_updates') || '1970-01-01T00:00:00.000Z';
+  });
+
+  const markUpdatesAsRead = () => {
+    const nowIso = new Date().toISOString();
+    setLastViewedUpdates(nowIso);
+    localStorage.setItem('vistas_last_viewed_updates', nowIso);
+  };
+
+  // Count active announcements created/updated since student's last visit
+  const unreadCount = announcements.filter(a => {
+    if (!a.isActive) return false;
+    const itemTime = a.updatedAt || a.createdAt || '';
+    return itemTime > lastViewedUpdates;
+  }).length;
 
   const [activeMeeting, setActiveMeeting] = useState(null);
   const [adminAuth, setAdminAuth] = useState(() => {
@@ -145,6 +175,39 @@ export function AppProvider({ children }) {
             privateNotes: s.private_notes
           })));
         }
+
+        try {
+          const { data: annData } = await supabase
+            .from('announcements')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+          if (annData && annData.length > 0) {
+            setAnnouncements(annData.map(a => ({
+              id: a.id,
+              title: a.title,
+              content: a.content,
+              type: a.type || 'GENERAL',
+              category: a.category || 'Important',
+              companyName: a.company_name || '',
+              companyStatus: a.company_status || '',
+              replyDate: a.reply_date || '',
+              department: a.department || '',
+              duration: a.duration || '',
+              eligibility: a.eligibility || '',
+              deadline: a.deadline || '',
+              actionRequired: a.action_required || '',
+              coordinatorNotes: a.coordinator_notes || '',
+              applyLink: a.apply_link || '',
+              isPinned: Boolean(a.is_pinned),
+              isActive: a.is_active !== false,
+              createdAt: a.created_at,
+              updatedAt: a.updated_at
+            })));
+          }
+        } catch (annErr) {
+          // Table may not exist yet if SQL migration isn't run, fallback to localStorage
+        }
       } catch (e) {
         console.warn('Supabase fetch error', e);
       }
@@ -172,6 +235,9 @@ export function AppProvider({ children }) {
         .on('postgres_changes', { event: '*', schema: 'public', table: 'availability' }, () => {
           fetchSupabaseState();
         })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, () => {
+          fetchSupabaseState();
+        })
         .subscribe();
     }
 
@@ -186,6 +252,9 @@ export function AppProvider({ children }) {
           }
           if (event.data.payload.availability) {
             setAvailability(event.data.payload.availability);
+          }
+          if (event.data.payload.announcements) {
+            setAnnouncements(event.data.payload.announcements);
           }
         }
       };
@@ -210,6 +279,10 @@ export function AppProvider({ children }) {
   useEffect(() => {
     localStorage.setItem('vistas_students', JSON.stringify(students));
   }, [students]);
+
+  useEffect(() => {
+    localStorage.setItem('vistas_announcements', JSON.stringify(announcements));
+  }, [announcements]);
 
   useEffect(() => {
     localStorage.setItem('vistas_admin_auth', JSON.stringify(adminAuth));
@@ -552,12 +625,147 @@ export function AppProvider({ children }) {
     showToast('Availability & Working Days settings saved!', 'success');
   };
 
+  // --- ANNOUNCEMENT & COMPANY UPDATE ACTIONS ---
+
+  const createAnnouncement = async (data) => {
+    const id = `ann-${Date.now()}`;
+    const nowIso = new Date().toISOString();
+    const newAnn = {
+      id,
+      title: data.title || '',
+      content: data.content || '',
+      type: data.type || 'GENERAL',
+      category: data.category || (data.type === 'COMPANY_REPLY' ? 'Company Reply' : 'Important'),
+      companyName: data.companyName || '',
+      companyStatus: data.companyStatus || 'REPLY_RECEIVED',
+      replyDate: data.replyDate || new Date().toISOString().split('T')[0],
+      department: data.department || '',
+      duration: data.duration || '',
+      eligibility: data.eligibility || '',
+      deadline: data.deadline || '',
+      actionRequired: data.actionRequired || '',
+      coordinatorNotes: data.coordinatorNotes || '',
+      applyLink: data.applyLink || '',
+      isPinned: Boolean(data.isPinned),
+      isActive: data.isActive !== false,
+      createdAt: nowIso,
+      updatedAt: nowIso
+    };
+
+    const updated = [newAnn, ...announcements];
+    setAnnouncements(updated);
+    broadcastChange('SYNC', { announcements: updated });
+
+    if (isSupabaseConfigured()) {
+      try {
+        const { data: dbData } = await supabase.from('announcements').insert([{
+          title: newAnn.title,
+          content: newAnn.content,
+          type: newAnn.type,
+          category: newAnn.category,
+          company_name: newAnn.companyName,
+          company_status: newAnn.companyStatus,
+          reply_date: newAnn.replyDate || null,
+          department: newAnn.department,
+          duration: newAnn.duration,
+          eligibility: newAnn.eligibility,
+          deadline: newAnn.deadline || null,
+          action_required: newAnn.actionRequired,
+          coordinator_notes: newAnn.coordinatorNotes,
+          apply_link: newAnn.applyLink,
+          is_pinned: newAnn.isPinned,
+          is_active: newAnn.isActive
+        }]).select('*').single();
+
+        if (dbData) {
+          setAnnouncements(prev => prev.map(a => a.id === id ? { ...a, id: dbData.id, createdAt: dbData.created_at } : a));
+        }
+      } catch (err) {
+        console.warn('Supabase create announcement error', err);
+      }
+    }
+
+    showToast(newAnn.type === 'COMPANY_REPLY' ? 'Company Reply Update published!' : 'Announcement published!', 'success');
+    return newAnn;
+  };
+
+  const updateAnnouncement = async (id, updatedFields) => {
+    const nowIso = new Date().toISOString();
+    const updated = announcements.map(a => a.id === id ? { ...a, ...updatedFields, updatedAt: nowIso } : a);
+    setAnnouncements(updated);
+    broadcastChange('SYNC', { announcements: updated });
+
+    if (isSupabaseConfigured()) {
+      try {
+        const payload = {};
+        if (updatedFields.title !== undefined) payload.title = updatedFields.title;
+        if (updatedFields.content !== undefined) payload.content = updatedFields.content;
+        if (updatedFields.type !== undefined) payload.type = updatedFields.type;
+        if (updatedFields.category !== undefined) payload.category = updatedFields.category;
+        if (updatedFields.companyName !== undefined) payload.company_name = updatedFields.companyName;
+        if (updatedFields.companyStatus !== undefined) payload.company_status = updatedFields.companyStatus;
+        if (updatedFields.replyDate !== undefined) payload.reply_date = updatedFields.replyDate || null;
+        if (updatedFields.department !== undefined) payload.department = updatedFields.department;
+        if (updatedFields.duration !== undefined) payload.duration = updatedFields.duration;
+        if (updatedFields.eligibility !== undefined) payload.eligibility = updatedFields.eligibility;
+        if (updatedFields.deadline !== undefined) payload.deadline = updatedFields.deadline || null;
+        if (updatedFields.actionRequired !== undefined) payload.action_required = updatedFields.actionRequired;
+        if (updatedFields.coordinatorNotes !== undefined) payload.coordinator_notes = updatedFields.coordinatorNotes;
+        if (updatedFields.applyLink !== undefined) payload.apply_link = updatedFields.applyLink;
+        if (updatedFields.isPinned !== undefined) payload.is_pinned = updatedFields.isPinned;
+        if (updatedFields.isActive !== undefined) payload.is_active = updatedFields.isActive;
+        payload.updated_at = nowIso;
+
+        await supabase.from('announcements').update(payload).eq('id', id);
+      } catch (err) {
+        console.warn('Supabase update announcement error', err);
+      }
+    }
+
+    showToast('Announcement updated successfully', 'success');
+  };
+
+  const deleteAnnouncement = async (id) => {
+    const updated = announcements.filter(a => a.id !== id);
+    setAnnouncements(updated);
+    broadcastChange('SYNC', { announcements: updated });
+
+    if (isSupabaseConfigured()) {
+      try {
+        await supabase.from('announcements').delete().eq('id', id);
+      } catch (err) {
+        console.warn('Supabase delete announcement error', err);
+      }
+    }
+
+    showToast('Announcement deleted', 'info');
+  };
+
+  const toggleAnnouncementActive = async (id) => {
+    const target = announcements.find(a => a.id === id);
+    if (!target) return;
+    const newStatus = !target.isActive;
+    await updateAnnouncement(id, { isActive: newStatus });
+    showToast(newStatus ? 'Notice activated & visible to students' : 'Notice deactivated & archived', 'info');
+  };
+
+  const toggleAnnouncementPin = async (id) => {
+    const target = announcements.find(a => a.id === id);
+    if (!target) return;
+    const newPin = !target.isPinned;
+    await updateAnnouncement(id, { isPinned: newPin });
+    showToast(newPin ? 'Notice pinned to top' : 'Notice unpinned', 'info');
+  };
+
   return (
     <AppContext.Provider
       value={{
         availability,
         appointments,
         students,
+        announcements,
+        unreadCount,
+        markUpdatesAsRead,
         activeMeeting,
         adminAuth,
         trackedToken,
@@ -574,6 +782,11 @@ export function AppProvider({ children }) {
         cancelAppointment,
         updateAvailabilityStatus,
         updateAvailabilityConfig,
+        createAnnouncement,
+        updateAnnouncement,
+        deleteAnnouncement,
+        toggleAnnouncementActive,
+        toggleAnnouncementPin,
         loginAdmin,
         logoutAdmin,
         showToast,

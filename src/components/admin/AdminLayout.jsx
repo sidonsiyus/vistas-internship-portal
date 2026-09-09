@@ -10,16 +10,18 @@ import {
   LogOut, 
   GraduationCap, 
   Bell, 
-  UserCheck
+  UserCheck,
+  Megaphone
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 
 export default function AdminLayout({ activeAdminPage, setActiveAdminPage, children }) {
-  const { logoutAdmin, availability, updateAvailabilityStatus, toastNotification } = useApp();
+  const { logoutAdmin, availability, updateAvailabilityStatus, toastNotification, announcements } = useApp();
 
   const navItems = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
     { id: 'live-queue', label: 'Live Queue', icon: ListOrdered, badge: 'Live' },
+    { id: 'announcements', label: 'Updates & Notices', icon: Megaphone, badge: announcements?.filter(a => a.isActive !== false).length ? `${announcements.filter(a => a.isActive !== false).length}` : null },
     { id: 'appointments', label: 'Appointments', icon: CalendarDays },
     { id: 'availability', label: 'Availability', icon: Clock },
     { id: 'students', label: 'Students Directory', icon: Users },

@@ -77,11 +77,35 @@ INSERT INTO public.admin_users (email, passcode, role)
 VALUES ('coordinator@velshitech.edu.in', 'vistas2026', 'coordinator')
 ON CONFLICT (email) DO NOTHING;
 
--- 6. ROW LEVEL SECURITY (RLS) POLICIES
+-- 6. CREATE ANNOUNCEMENTS & COMPANY UPDATES TABLE
+CREATE TABLE IF NOT EXISTS public.announcements (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
+    type TEXT NOT NULL DEFAULT 'GENERAL', -- GENERAL, INTERNSHIP_UPDATE, COMPANY_REPLY, URGENT
+    category TEXT DEFAULT 'Important',
+    company_name TEXT,
+    company_status TEXT, -- REPLY_RECEIVED, OPPORTUNITY_AVAILABLE, CAN_APPLY, INFO_REQUIRED, CLOSED, NO_ACTION
+    reply_date DATE DEFAULT CURRENT_DATE,
+    department TEXT,
+    duration TEXT,
+    eligibility TEXT,
+    deadline DATE,
+    action_required TEXT,
+    coordinator_notes TEXT,
+    apply_link TEXT,
+    is_pinned BOOLEAN DEFAULT FALSE,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 7. ROW LEVEL SECURITY (RLS) POLICIES
 ALTER TABLE public.availability ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.students ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.appointments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.admin_users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.announcements ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Allow public select on availability" ON public.availability FOR SELECT USING (true);
 CREATE POLICY "Allow public update on availability" ON public.availability FOR UPDATE USING (true);
@@ -97,8 +121,13 @@ CREATE POLICY "Allow public delete on appointments" ON public.appointments FOR D
 
 CREATE POLICY "Allow public select on admin_users" ON public.admin_users FOR SELECT USING (true);
 
--- 7. ENABLE SUPABASE REALTIME REPLICATION
+CREATE POLICY "Allow public select on announcements" ON public.announcements FOR SELECT USING (true);
+CREATE POLICY "Allow public insert on announcements" ON public.announcements FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public update on announcements" ON public.announcements FOR UPDATE USING (true);
+CREATE POLICY "Allow public delete on announcements" ON public.announcements FOR DELETE USING (true);
+
+-- 8. ENABLE SUPABASE REALTIME REPLICATION
 BEGIN;
   DROP PUBLICATION IF EXISTS supabase_realtime;
-  CREATE PUBLICATION supabase_realtime FOR TABLE public.appointments, public.availability, public.students;
+  CREATE PUBLICATION supabase_realtime FOR TABLE public.appointments, public.availability, public.students, public.announcements;
 COMMIT;
