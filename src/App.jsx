@@ -53,7 +53,7 @@ function AppContent() {
   if (activeTab === 'admin') {
     if (!adminAuth?.isAuthenticated) {
       return (
-        <div className="min-h-screen bg-slate-950 flex flex-col justify-between">
+        <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-between">
           <Navbar activeTab={activeTab} setActiveTab={setActiveTab} onBookClick={handleBookTrigger} />
           <AdminLogin onLoginSuccess={() => setActiveAdminPage('overview')} />
           <Footer setActiveTab={setActiveTab} />
@@ -77,13 +77,13 @@ function AppContent() {
 
   // Render Student Portal Views
   return (
-    <div className="min-h-screen flex flex-col bg-[#090d16] text-slate-100 font-sans">
+    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans">
       
-      {/* Toast Notification (Bottom-Right Positioned, Minimalist) */}
+      {/* Toast Notification (Bottom-Right Positioned, Modern SaaS) */}
       {toastNotification && (
-        <div className="fixed bottom-5 right-5 z-50 bg-[#0e1422] border border-blue-500/40 text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-2.5 max-w-sm">
-          <span className="h-2 w-2 rounded-full bg-blue-400 live-pulse shrink-0" />
-          <span className="text-xs font-semibold leading-snug">{toastNotification.message}</span>
+        <div className="fixed bottom-5 right-5 z-50 bg-white border border-slate-200 text-slate-900 px-4 py-3 rounded-xl shadow-lg ring-1 ring-slate-950/5 flex items-center gap-3 max-w-sm transition-all animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <span className="h-2.5 w-2.5 rounded-full bg-blue-600 live-pulse shrink-0" />
+          <span className="text-xs font-medium leading-snug text-slate-700">{toastNotification.message}</span>
         </div>
       )}
 

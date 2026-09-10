@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { INITIAL_APPOINTMENTS, INITIAL_AVAILABILITY, MOCK_STUDENTS, INITIAL_ANNOUNCEMENTS } from '../mock/sampleData';
 import { generateNextTokenNumber } from '../utils/tokenGenerator';
@@ -102,21 +102,62 @@ export function AppProvider({ children }) {
     setTimeout(() => setToastNotification(null), 4000);
   };
 
+  const globalRealtimeChannelRef = useRef(null);
+
   const broadcastChange = (action, payload) => {
+    // 1. Same-device / cross-tab broadcast via BroadcastChannel
     try {
       const bc = new BroadcastChannel(CHANNEL_NAME);
       bc.postMessage({ action, payload });
       bc.close();
     } catch (e) {}
+
+    // 2. Global cross-device Supabase Realtime WebSocket broadcast
+    if (isSupabaseConfigured() && globalRealtimeChannelRef.current) {
+      try {
+        if (payload?.announcements) {
+          globalRealtimeChannelRef.current.send({
+            type: 'broadcast',
+            event: 'announcement_sync',
+            payload: { announcements: payload.announcements }
+          });
+        }
+        if (payload?.availability) {
+          globalRealtimeChannelRef.current.send({
+            type: 'broadcast',
+            event: 'availability_sync',
+            payload: { availability: payload.availability }
+          });
+        }
+        if (payload?.appointments) {
+          globalRealtimeChannelRef.current.send({
+            type: 'broadcast',
+            event: 'appointment_sync',
+            payload: { appointments: payload.appointments }
+          });
+        }
+      } catch (err) {
+        console.warn('Realtime broadcast error:', err);
+      }
+    }
   };
 
-  // --- SUPABASE REALTIME & FETCH ---
+  // --- SUPABASE REALTIME & CLOUD SYNC ---
   // Cloud Sync Helpers
   const syncAnnouncementsToSupabase = async (updatedList) => {
     if (!isSupabaseConfigured()) return;
     try {
-      // 1. Always persist full announcements state to __SYS_ANNOUNCEMENTS__ in Supabase
-      await supabase.from('students').upsert({
+      // 1. Instantly broadcast to all active browsers and devices over Supabase Realtime (<50ms)
+      if (globalRealtimeChannelRef.current) {
+        globalRealtimeChannelRef.current.send({
+          type: 'broadcast',
+          event: 'announcement_sync',
+          payload: { announcements: updatedList }
+        });
+      }
+
+      // 2. Always persist full announcements state to __SYS_ANNOUNCEMENTS__ in Supabase
+      const { error } = await supabase.from('students').upsert({
         register_number: '__SYS_ANNOUNCEMENTS__',
         name: 'SYSTEM_ANNOUNCEMENTS',
         department: 'SYSTEM',
@@ -125,15 +166,28 @@ export function AppProvider({ children }) {
         phone: '',
         private_notes: JSON.stringify(updatedList)
       }, { onConflict: 'register_number' });
+
+      if (error) {
+        console.warn('Sync announcements error:', error);
+      }
     } catch (e) {
-      console.warn('Sync announcements error:', e);
+      console.warn('Sync announcements exception:', e);
     }
   };
 
   const syncAvailabilityToSupabase = async (updatedAvail) => {
     if (!isSupabaseConfigured()) return;
     try {
-      // 1. Update standard columns in availability table
+      // 1. Instantly broadcast to all active devices over Supabase Realtime
+      if (globalRealtimeChannelRef.current) {
+        globalRealtimeChannelRef.current.send({
+          type: 'broadcast',
+          event: 'availability_sync',
+          payload: { availability: updatedAvail }
+        });
+      }
+
+      // 2. Update standard columns in availability table
       await supabase.from('availability').update({
         status: updatedAvail.status,
         start_time: updatedAvail.startTime,
@@ -144,7 +198,7 @@ export function AppProvider({ children }) {
         max_bookings: updatedAvail.maxBookings
       }).eq('id', 1);
 
-      // 2. Persist complete availability state (including workingDays & dateOverrides) to __SYS_AVAILABILITY__
+      // 3. Persist complete availability state (including workingDays & dateOverrides) to __SYS_AVAILABILITY__
       await supabase.from('students').upsert({
         register_number: '__SYS_AVAILABILITY__',
         name: 'SYSTEM_AVAILABILITY',
@@ -166,11 +220,16 @@ export function AppProvider({ children }) {
       setUsingSupabase(true);
 
       try {
-        const { data: aptData } = await supabase.from('appointments').select('*').order('created_at', { ascending: true });
-        const { data: availData } = await supabase.from('availability').select('*').single();
-        const { data: stdData } = await supabase.from('students').select('*');
+        // Fetch appointments & availability in parallel
+        const [aptRes, availRes, sysRes, stdRes] = await Promise.allSettled([
+          supabase.from('appointments').select('*').order('created_at', { ascending: true }),
+          supabase.from('availability').select('*').single(),
+          supabase.from('students').select('register_number, private_notes').in('register_number', ['__SYS_ANNOUNCEMENTS__', '__SYS_AVAILABILITY__']),
+          supabase.from('students').select('*').not('register_number', 'like', '__SYS_%').limit(100)
+        ]);
 
-        if (aptData) {
+        if (aptRes.status === 'fulfilled' && aptRes.value.data) {
+          const aptData = aptRes.value.data;
           const formatted = aptData.map(a => ({
             id: a.id,
             tokenNumber: a.token_number,
@@ -198,7 +257,8 @@ export function AppProvider({ children }) {
           setActiveMeeting(active || null);
         }
 
-        if (availData) {
+        if (availRes.status === 'fulfilled' && availRes.value.data) {
+          const availData = availRes.value.data;
           setAvailability(prev => ({
             ...prev,
             status: availData.status,
@@ -211,20 +271,22 @@ export function AppProvider({ children }) {
           }));
         }
 
-        if (stdData && stdData.length > 0) {
-          // Check for cross-device synchronized system records
-          const annRecord = stdData.find(s => s.register_number === '__SYS_ANNOUNCEMENTS__');
+        // Targeted system records: synchronized announcements and extended availability
+        if (sysRes.status === 'fulfilled' && sysRes.value.data && sysRes.value.data.length > 0) {
+          const annRecord = sysRes.value.data.find(s => s.register_number === '__SYS_ANNOUNCEMENTS__');
           if (annRecord && annRecord.private_notes) {
             try {
               const parsedAnn = JSON.parse(annRecord.private_notes);
-              if (Array.isArray(parsedAnn)) {
+              if (Array.isArray(parsedAnn) && parsedAnn.length > 0) {
                 setAnnouncements(parsedAnn);
-                localStorage.setItem('vistas_announcements', JSON.stringify(parsedAnn));
+                try {
+                  localStorage.setItem('vistas_announcements', JSON.stringify(parsedAnn));
+                } catch (e) {}
               }
             } catch (e) {}
           }
 
-          const availRecord = stdData.find(s => s.register_number === '__SYS_AVAILABILITY__');
+          const availRecord = sysRes.value.data.find(s => s.register_number === '__SYS_AVAILABILITY__');
           if (availRecord && availRecord.private_notes) {
             try {
               const parsedAvail = JSON.parse(availRecord.private_notes);
@@ -232,16 +294,18 @@ export function AppProvider({ children }) {
                 setAvailability(prev => ({
                   ...prev,
                   ...parsedAvail,
-                  status: (availData && availData.status) || parsedAvail.status || prev.status
+                  status: (availRes.status === 'fulfilled' && availRes.value?.data?.status) || parsedAvail.status || prev.status
                 }));
-                localStorage.setItem('vistas_availability', JSON.stringify({ ...parsedAvail }));
+                try {
+                  localStorage.setItem('vistas_availability', JSON.stringify({ ...parsedAvail }));
+                } catch (e) {}
               }
             } catch (e) {}
           }
+        }
 
-          // Filter out internal system sync records from student list
-          const realStudents = stdData
-            .filter(s => !s.register_number.startsWith('__SYS_'))
+        if (stdRes.status === 'fulfilled' && stdRes.value.data && stdRes.value.data.length > 0) {
+          const realStudents = stdRes.value.data
             .map(s => ({
               id: s.id,
               registerNumber: s.register_number,
@@ -257,46 +321,6 @@ export function AppProvider({ children }) {
             setStudents(realStudents);
           }
         }
-
-        // Try standard announcements table if present
-        try {
-          const { data: annData } = await supabase
-            .from('announcements')
-            .select('*')
-            .order('created_at', { ascending: false });
-
-          if (annData && annData.length > 0) {
-            const formattedAnn = annData.map(a => ({
-              id: a.id,
-              title: a.title,
-              content: a.content,
-              type: a.type || 'GENERAL',
-              category: a.category || 'Important',
-              companyName: a.company_name || '',
-              companyLocation: a.company_location || '',
-              companyContactEmail: a.company_contact_email || '',
-              requestSentDate: a.request_sent_date || '',
-              emailReference: a.email_reference || '',
-              companyStatus: a.company_status || '',
-              replyDate: a.reply_date || '',
-              department: a.department || '',
-              duration: a.duration || '',
-              eligibility: a.eligibility || '',
-              deadline: a.deadline || '',
-              requiredDocuments: a.required_documents || '',
-              actionRequired: a.action_required || '',
-              coordinatorNotes: a.coordinator_notes || '',
-              applyLink: a.apply_link || '',
-              studentsIncluded: Array.isArray(a.students_included) ? a.students_included : [],
-              isPinned: Boolean(a.is_pinned),
-              isActive: a.is_active !== false,
-              createdAt: a.created_at,
-              updatedAt: a.updated_at
-            }));
-            setAnnouncements(formattedAnn);
-            localStorage.setItem('vistas_announcements', JSON.stringify(formattedAnn));
-          }
-        } catch (annErr) {}
       } catch (e) {
         console.warn('Supabase fetch error', e);
       }
@@ -312,7 +336,35 @@ export function AppProvider({ children }) {
     let channel;
     if (isSupabaseConfigured()) {
       channel = supabase
-        .channel('schema-db-changes')
+        .channel('vistas_global_sync', {
+          config: { broadcast: { self: false } }
+        })
+        // ⚡ INSTANT CROSS-DEVICE BROADCAST LISTENERS (<50ms)
+        .on('broadcast', { event: 'announcement_sync' }, ({ payload }) => {
+          if (payload?.announcements && Array.isArray(payload.announcements)) {
+            setAnnouncements(payload.announcements);
+            try {
+              localStorage.setItem('vistas_announcements', JSON.stringify(payload.announcements));
+            } catch (e) {}
+          }
+        })
+        .on('broadcast', { event: 'availability_sync' }, ({ payload }) => {
+          if (payload?.availability) {
+            setAvailability(payload.availability);
+            try {
+              localStorage.setItem('vistas_availability', JSON.stringify(payload.availability));
+            } catch (e) {}
+          }
+        })
+        .on('broadcast', { event: 'appointment_sync' }, ({ payload }) => {
+          if (payload?.appointments) {
+            setAppointments(payload.appointments);
+            try {
+              localStorage.setItem('vistas_appointments', JSON.stringify(payload.appointments));
+            } catch (e) {}
+          }
+        })
+        // 📡 POSTGRES DATABASE REPLICATION LISTENERS
         .on('postgres_changes', { event: '*', schema: 'public', table: 'appointments' }, payload => {
           fetchSupabaseState();
           if (payload.new && payload.new.status === 'CALLED') {
@@ -326,10 +378,9 @@ export function AppProvider({ children }) {
         .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, () => {
           fetchSupabaseState();
         })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, () => {
-          fetchSupabaseState();
-        })
         .subscribe();
+
+      globalRealtimeChannelRef.current = channel;
     }
 
     // 📡 Cross-tab listener via BroadcastChannel
@@ -353,7 +404,10 @@ export function AppProvider({ children }) {
 
     return () => {
       clearInterval(pollInterval);
-      if (channel) supabase.removeChannel(channel);
+      if (channel) {
+        supabase.removeChannel(channel);
+        globalRealtimeChannelRef.current = null;
+      }
       if (bc) bc.close();
     };
   }, []);

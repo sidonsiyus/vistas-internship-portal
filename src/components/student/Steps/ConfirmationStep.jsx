@@ -25,51 +25,51 @@ export default function ConfirmationStep({ appointment, onTrackToken, onCancel }
     <div className="space-y-6 text-center font-sans">
       
       {/* Confirmation Header */}
-      <div className="inline-flex items-center justify-center p-3 bg-emerald-500/10 rounded-full border border-emerald-500/20 text-emerald-400 mb-1">
+      <div className="inline-flex items-center justify-center p-3 bg-emerald-50 rounded-full border border-emerald-200 text-emerald-600 mb-1">
         <CheckCircle2 className="w-10 h-10" />
       </div>
 
       <div>
-        <h2 className="text-3xl font-extrabold text-white tracking-tight">
+        <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
           ✓ BOOKING CONFIRMED!
         </h2>
-        <p className="text-xs text-slate-300 mt-1">
+        <p className="text-xs text-slate-600 mt-1">
           Your consultation slot has been reserved. Please state your token number when called.
         </p>
       </div>
 
       {/* Prominent Token Card */}
-      <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6 md:p-8 rounded-2xl border border-blue-500/40 shadow-2xl space-y-6 max-w-md mx-auto">
+      <div className="bg-white p-6 md:p-8 rounded-2xl border border-slate-200 shadow-md space-y-6 max-w-md mx-auto">
         <div className="space-y-2">
-          <span className="text-xs font-extrabold uppercase tracking-widest text-blue-400">YOUR DIGITAL CONSULTATION TOKEN</span>
+          <span className="text-xs font-extrabold uppercase tracking-widest text-blue-600">YOUR DIGITAL CONSULTATION TOKEN</span>
           <div className="py-2">
             <TokenBadge tokenNumber={actualTokenNumber} size="giant" variant="blue" />
           </div>
-          <p className="text-xs text-emerald-400 font-mono font-bold">STATUS: CONFIRMED & QUEUED</p>
+          <p className="text-xs text-emerald-700 font-mono font-bold">STATUS: CONFIRMED & QUEUED</p>
         </div>
 
         {/* Details Grid */}
-        <div className="grid grid-cols-2 gap-4 text-left border-t border-b border-slate-800 py-4 text-xs">
+        <div className="grid grid-cols-2 gap-4 text-left border-t border-b border-slate-100 py-4 text-xs">
           <div>
             <span className="text-slate-500 block font-medium">STUDENT NAME</span>
-            <span className="font-bold text-white text-sm">{appointment.studentName}</span>
+            <span className="font-bold text-slate-900 text-sm">{appointment.studentName}</span>
           </div>
           <div>
             <span className="text-slate-500 block font-medium">REGISTER NO.</span>
-            <span className="font-bold text-white font-mono text-sm">{appointment.registerNumber}</span>
+            <span className="font-bold text-slate-900 font-mono text-sm">{appointment.registerNumber}</span>
           </div>
           <div>
             <span className="text-slate-500 block font-medium">DATE & TIME</span>
-            <span className="font-bold text-blue-400">{appointment.appointmentDate} • {appointment.appointmentTime}</span>
+            <span className="font-bold text-blue-700">{appointment.appointmentDate} • {appointment.appointmentTime}</span>
           </div>
           <div>
             <span className="text-slate-500 block font-medium">CATEGORY</span>
-            <span className="font-bold text-slate-200">{appointment.category}</span>
+            <span className="font-bold text-slate-800">{appointment.category}</span>
           </div>
-          <div className="col-span-2 border-t border-slate-800/80 pt-2">
+          <div className="col-span-2 border-t border-slate-100 pt-2">
             <span className="text-slate-500 block font-medium">LOCATION</span>
-            <span className="font-semibold text-emerald-400 text-xs flex items-center gap-1 mt-0.5">
-              <MapPin className="w-3.5 h-3.5 shrink-0" />
+            <span className="font-semibold text-slate-800 text-xs flex items-center gap-1 mt-0.5">
+              <MapPin className="w-3.5 h-3.5 shrink-0 text-rose-500" />
               <span>{OFFICE_LOCATION}</span>
             </span>
           </div>
@@ -80,7 +80,7 @@ export default function ConfirmationStep({ appointment, onTrackToken, onCancel }
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-md mx-auto pt-2">
         <button
           onClick={onTrackToken}
-          className="w-full sm:w-auto flex-1 flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm shadow-xl transition-all"
+          className="w-full sm:w-auto flex-1 flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-sm transition-all"
         >
           <Ticket className="w-4 h-4" />
           <span>TRACK MY TOKEN LIVE</span>
@@ -89,9 +89,9 @@ export default function ConfirmationStep({ appointment, onTrackToken, onCancel }
 
         <button
           onClick={() => downloadIcsFile(appointment)}
-          className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 font-semibold text-sm border border-slate-800 transition-all"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm border border-slate-200 shadow-sm transition-all"
         >
-          <Download className="w-4 h-4 text-blue-400" />
+          <Download className="w-4 h-4 text-blue-600" />
           <span>CALENDAR (.ICS)</span>
         </button>
       </div>
@@ -105,7 +105,7 @@ export default function ConfirmationStep({ appointment, onTrackToken, onCancel }
               onCancel();
             }
           }}
-          className="text-xs text-rose-400 hover:text-rose-300 underline font-medium"
+          className="text-xs text-rose-600 hover:text-rose-700 underline font-medium"
         >
           Need to cancel this booking?
         </button>

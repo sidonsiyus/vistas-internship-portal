@@ -13,37 +13,37 @@ export default function QuickStats() {
       value: metrics.totalToday,
       subtext: 'Across all departments',
       icon: Users,
-      color: 'text-blue-400',
-      bg: 'bg-blue-500/10 border-blue-500/20'
+      color: 'text-blue-600',
+      bg: 'bg-blue-50 border-blue-200'
     },
     {
       label: 'In Queue',
       value: metrics.waitingCount,
       subtext: 'Waiting sequence',
       icon: Hourglass,
-      color: 'text-amber-400',
-      bg: 'bg-amber-500/10 border-amber-500/20'
+      color: 'text-amber-600',
+      bg: 'bg-amber-50 border-amber-200'
     },
     {
       label: 'Completed',
       value: metrics.completedCount,
       subtext: 'Consultations done',
       icon: CheckCircle2,
-      color: 'text-emerald-400',
-      bg: 'bg-emerald-500/10 border-emerald-500/20'
+      color: 'text-emerald-600',
+      bg: 'bg-emerald-50 border-emerald-200'
     },
     {
       label: 'Average Pace',
       value: `${metrics.avgDurationMinutes}m`,
       subtext: 'Per consultation',
       icon: Clock,
-      color: 'text-sky-400',
-      bg: 'bg-sky-500/10 border-sky-500/20'
+      color: 'text-indigo-600',
+      bg: 'bg-indigo-50 border-indigo-200'
     }
   ];
 
   return (
-    <section className="py-7 bg-[#080c14] border-b border-slate-800/60 font-sans">
+    <section className="py-8 bg-white border-b border-slate-200 font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
           {stats.map((stat, idx) => {
@@ -51,10 +51,10 @@ export default function QuickStats() {
             return (
               <div
                 key={idx}
-                className="bg-[#0b101b] p-4 sm:p-5 rounded-xl border border-slate-800/70 flex flex-col justify-between hover:border-slate-700 transition-colors shadow-sm"
+                className="bg-slate-50/60 p-4 sm:p-5 rounded-xl border border-slate-200 flex flex-col justify-between hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm"
               >
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                     {stat.label}
                   </span>
                   <div className={`p-1.5 rounded-lg border ${stat.bg} ${stat.color}`}>
@@ -62,7 +62,7 @@ export default function QuickStats() {
                   </div>
                 </div>
                 <div className="space-y-0.5">
-                  <div className="text-2xl sm:text-3xl font-bold text-white tracking-tight font-mono">
+                  <div className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight font-mono">
                     {stat.value}
                   </div>
                   <p className="text-[11px] text-slate-500">

@@ -4,9 +4,9 @@ import { QrCode } from 'lucide-react';
 export default function QRCodeView({ tokenNumber, studentName, appointmentDate }) {
   // SVG Mock QR pattern generator for student pass
   return (
-    <div className="flex flex-col items-center justify-center p-4 bg-slate-900 border border-slate-800 rounded-xl">
-      <div className="relative bg-white p-3 rounded-lg shadow-md mb-2">
-        <svg className="w-32 h-32 text-slate-950" viewBox="0 0 100 100" fill="currentColor">
+    <div className="flex flex-col items-center justify-center p-4 bg-slate-50 border border-slate-200 rounded-xl">
+      <div className="relative bg-white p-3 rounded-lg shadow-sm border border-slate-200/80 mb-2">
+        <svg className="w-32 h-32 text-slate-900" viewBox="0 0 100 100" fill="currentColor">
           {/* Position detection patterns */}
           <rect x="5" y="5" width="25" height="25" fill="black" />
           <rect x="9" y="9" width="17" height="17" fill="white" />
@@ -45,8 +45,8 @@ export default function QRCodeView({ tokenNumber, studentName, appointmentDate }
           </div>
         </div>
       </div>
-      <p className="text-xs font-mono font-semibold text-blue-400">SCAN AT COORDINATOR DESK</p>
-      <p className="text-[10px] text-slate-400 mt-0.5">{tokenNumber} • VISTAS PASS</p>
+      <p className="text-xs font-mono font-semibold text-blue-600">SCAN AT COORDINATOR DESK</p>
+      <p className="text-[10px] text-slate-500 mt-0.5">{tokenNumber} • VISTAS PASS</p>
     </div>
   );
 }

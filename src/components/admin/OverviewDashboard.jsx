@@ -80,34 +80,34 @@ export default function OverviewDashboard({ setActiveAdminPage }) {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       
       {/* COMMAND CENTER QUICK ACTION BAR */}
-      <div className="flex flex-col lg:flex-row items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-4 rounded-2xl shadow-xl">
+      <div className="flex flex-col lg:flex-row items-center justify-between gap-4 bg-white border border-slate-200/90 p-4 rounded-2xl shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="h-3 w-3 rounded-full bg-emerald-400 live-pulse" />
+          <div className="h-3 w-3 rounded-full bg-emerald-500 live-pulse" />
           <div>
-            <h3 className="text-sm font-extrabold text-white">Coordinating Desk Command Bar</h3>
-            <p className="text-xs text-slate-400">One-click controls for daily consultation workflow</p>
+            <h3 className="text-sm font-bold text-slate-900">Coordinating Desk Command Bar</h3>
+            <p className="text-xs text-slate-500">One-click controls for daily consultation workflow</p>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => updateAvailabilityStatus('AVAILABLE')}
-            className="px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold transition-all"
+            className="px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-semibold transition-all"
           >
             ▶ START DAY
           </button>
           <button
             onClick={() => updateAvailabilityStatus('ON_BREAK')}
-            className="px-3 py-1.5 rounded-lg bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition-all"
+            className="px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 text-xs font-semibold transition-all"
           >
-            ☕ PAUSE (LUNCH BREAK)
+            ☕ PAUSE (BREAK)
           </button>
           <button
             onClick={() => updateAvailabilityStatus('UNAVAILABLE')}
-            className="px-3 py-1.5 rounded-lg bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/40 text-xs font-bold transition-all"
+            className="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold transition-all"
           >
             ⏹ END DAY
           </button>
@@ -118,14 +118,14 @@ export default function OverviewDashboard({ setActiveAdminPage }) {
                 resetAllTokens();
               }
             }}
-            className="px-3 py-1.5 rounded-lg bg-rose-600/20 hover:bg-rose-600 hover:text-white text-rose-300 border border-rose-500/40 text-xs font-bold transition-all"
+            className="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-700 border border-rose-200 text-xs font-semibold transition-all"
           >
             🔥 RESET QUEUE
           </button>
 
           <button
             onClick={() => setIsWalkInOpen(true)}
-            className="ml-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-lg flex items-center gap-1.5 transition-all"
+            className="ml-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm flex items-center gap-1.5 transition-all"
           >
             <UserPlus className="w-4 h-4" />
             <span>+ ADD WALK-IN</span>
@@ -134,72 +134,72 @@ export default function OverviewDashboard({ setActiveAdminPage }) {
       </div>
 
       {/* TOP 4 KPI CARDS */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-        <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl flex items-center justify-between">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
+        <div className="bg-white border border-slate-200/80 p-5 rounded-2xl shadow-sm flex items-center justify-between">
           <div>
-            <span className="text-xs text-slate-400 font-semibold uppercase">TODAY'S TOTAL</span>
-            <div className="text-3xl font-extrabold text-white font-mono mt-1">{metrics.totalToday}</div>
-            <span className="text-[10px] text-slate-500 font-medium">Booked Appointments</span>
+            <span className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">TODAY'S TOTAL</span>
+            <div className="text-3xl font-extrabold text-slate-900 font-mono mt-1">{metrics.totalToday}</div>
+            <span className="text-[11px] text-slate-500 font-medium">Booked Appointments</span>
           </div>
-          <div className="p-3 bg-blue-500/10 text-blue-400 rounded-xl border border-blue-500/20">
+          <div className="p-3 bg-blue-50 text-blue-600 rounded-xl border border-blue-100">
             <Users className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl flex items-center justify-between">
+        <div className="bg-white border border-slate-200/80 p-5 rounded-2xl shadow-sm flex items-center justify-between">
           <div>
-            <span className="text-xs text-slate-400 font-semibold uppercase">COMPLETED</span>
-            <div className="text-3xl font-extrabold text-emerald-400 font-mono mt-1">{metrics.completedCount}</div>
-            <span className="text-[10px] text-slate-500 font-medium">Consultations Done</span>
+            <span className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">COMPLETED</span>
+            <div className="text-3xl font-extrabold text-emerald-600 font-mono mt-1">{metrics.completedCount}</div>
+            <span className="text-[11px] text-slate-500 font-medium">Consultations Done</span>
           </div>
-          <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20">
+          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100">
             <CheckCircle2 className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl flex items-center justify-between">
+        <div className="bg-white border border-slate-200/80 p-5 rounded-2xl shadow-sm flex items-center justify-between">
           <div>
-            <span className="text-xs text-slate-400 font-semibold uppercase">WAITING QUEUE</span>
-            <div className="text-3xl font-extrabold text-amber-400 font-mono mt-1">{metrics.waitingCount}</div>
-            <span className="text-[10px] text-slate-500 font-medium">Students In Queue</span>
+            <span className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">WAITING QUEUE</span>
+            <div className="text-3xl font-extrabold text-amber-600 font-mono mt-1">{metrics.waitingCount}</div>
+            <span className="text-[11px] text-slate-500 font-medium">Students In Queue</span>
           </div>
-          <div className="p-3 bg-amber-500/10 text-amber-400 rounded-xl border border-amber-500/20">
+          <div className="p-3 bg-amber-50 text-amber-600 rounded-xl border border-amber-100">
             <Hourglass className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl flex items-center justify-between">
+        <div className="bg-white border border-slate-200/80 p-5 rounded-2xl shadow-sm flex items-center justify-between">
           <div>
-            <span className="text-xs text-slate-400 font-semibold uppercase">ESTIMATED WORK LEFT</span>
-            <div className="text-2xl font-extrabold text-sky-400 font-mono mt-1">~{metrics.totalWaitMinutes} Mins</div>
-            <span className="text-[10px] text-slate-500 font-medium">Expected completion 04:15 PM</span>
+            <span className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">ESTIMATED TIME</span>
+            <div className="text-2xl font-extrabold text-blue-600 font-mono mt-1">~{metrics.totalWaitMinutes} Mins</div>
+            <span className="text-[11px] text-slate-500 font-medium">Remaining today</span>
           </div>
-          <div className="p-3 bg-sky-500/10 text-sky-400 rounded-xl border border-sky-500/20">
+          <div className="p-3 bg-blue-50 text-blue-600 rounded-xl border border-blue-100">
             <Clock className="w-5 h-5" />
           </div>
         </div>
       </div>
 
       {/* PROMINENT LIVE MEETING CONTROL CARD */}
-      <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border-2 border-blue-500/40 p-6 md:p-8 rounded-2xl shadow-2xl space-y-6">
+      <div className="bg-white border-2 border-blue-200/80 p-6 md:p-7 rounded-2xl shadow-sm space-y-6">
         
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
           <div className="flex items-center gap-3">
-            <span className="h-3 w-3 rounded-full bg-blue-400 live-pulse" />
+            <span className="h-3 w-3 rounded-full bg-blue-500 live-pulse" />
             <div>
-              <h2 className="text-xl font-extrabold text-white tracking-tight">
+              <h2 className="text-lg font-bold text-slate-900 tracking-tight">
                 {currentlyMeetingApt ? 'CURRENTLY MEETING STUDENT' : 'READY FOR NEXT STUDENT'}
               </h2>
-              <p className="text-xs text-slate-400">Live Meeting Console & Digital Duration Counter</p>
+              <p className="text-xs text-slate-500">Live Meeting Console & Duration Counter</p>
             </div>
           </div>
 
           {currentlyMeetingApt && (
-            <div className="bg-slate-950 px-4 py-2 rounded-xl border border-blue-500/30 flex items-center gap-3">
-              <Clock className="w-5 h-5 text-blue-400 animate-spin" />
+            <div className="bg-slate-50 px-4 py-2 rounded-xl border border-slate-200 flex items-center gap-3">
+              <Clock className="w-5 h-5 text-blue-600 animate-spin" />
               <div>
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">MEETING DURATION</span>
-                <span className="text-2xl font-black font-mono text-blue-400 tracking-wider">
+                <span className="text-[10px] uppercase font-bold text-slate-500 block">MEETING DURATION</span>
+                <span className="text-2xl font-black font-mono text-blue-600 tracking-wider">
                   {formatTimer(timerSeconds)}
                 </span>
               </div>
@@ -216,17 +216,17 @@ export default function OverviewDashboard({ setActiveAdminPage }) {
               <div className="flex items-center gap-4">
                 <TokenBadge tokenNumber={currentlyMeetingApt.tokenNumber} size="large" variant="blue" />
                 <div>
-                  <h3 className="text-2xl font-bold text-white">{currentlyMeetingApt.studentName}</h3>
-                  <p className="text-xs text-slate-300">{currentlyMeetingApt.department} • {currentlyMeetingApt.year}</p>
-                  <p className="text-xs font-mono text-slate-400">Reg: {currentlyMeetingApt.registerNumber}</p>
+                  <h3 className="text-xl font-bold text-slate-900">{currentlyMeetingApt.studentName}</h3>
+                  <p className="text-xs text-slate-600">{currentlyMeetingApt.department} • {currentlyMeetingApt.year}</p>
+                  <p className="text-xs font-mono text-slate-500">Reg: {currentlyMeetingApt.registerNumber}</p>
                 </div>
               </div>
 
-              <div className="p-4 bg-slate-950/80 rounded-xl border border-slate-800 space-y-1">
-                <span className="text-xs font-bold text-blue-400 uppercase tracking-wider">
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200/80 space-y-1">
+                <span className="text-xs font-bold text-blue-700 uppercase tracking-wider">
                   Query Category: {currentlyMeetingApt.category}
                 </span>
-                <p className="text-xs text-slate-300 italic">
+                <p className="text-xs text-slate-600 italic">
                   "{currentlyMeetingApt.description || 'No additional details provided.'}"
                 </p>
               </div>
@@ -236,7 +236,7 @@ export default function OverviewDashboard({ setActiveAdminPage }) {
             <div className="space-y-3 flex flex-col justify-center">
               <button
                 onClick={() => setIsEndMeetingOpen(true)}
-                className="w-full py-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-base shadow-xl shadow-emerald-600/20 transition-all flex items-center justify-center gap-2"
+                className="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-sm transition-all flex items-center justify-center gap-2"
               >
                 <CheckCircle2 className="w-5 h-5" />
                 <span>END MEETING & COMPLETE</span>
@@ -244,7 +244,7 @@ export default function OverviewDashboard({ setActiveAdminPage }) {
 
               <button
                 onClick={() => markNoShow(currentlyMeetingApt.id)}
-                className="w-full py-2.5 rounded-xl bg-slate-950 hover:bg-rose-500/10 hover:text-rose-400 text-slate-400 text-xs font-semibold border border-slate-800 transition-colors"
+                className="w-full py-2.5 rounded-xl bg-slate-50 hover:bg-rose-50 hover:text-rose-600 text-slate-600 text-xs font-semibold border border-slate-200 transition-colors"
               >
                 Mark Student As No-Show
               </button>
@@ -256,18 +256,18 @@ export default function OverviewDashboard({ setActiveAdminPage }) {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
             
             <div className="lg:col-span-2 space-y-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-amber-400">NEXT STUDENT IN QUEUE</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-amber-700">NEXT STUDENT IN QUEUE</span>
               {nextInLineApt ? (
-                <div className="flex items-center gap-4 bg-slate-950/60 p-4 rounded-xl border border-slate-800">
+                <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
                   <TokenBadge tokenNumber={nextInLineApt.tokenNumber} size="large" variant={nextInLineApt.status === 'CALLED' ? 'orange' : 'amber'} />
                   <div>
-                    <h3 className="text-lg font-bold text-white">{nextInLineApt.studentName}</h3>
-                    <p className="text-xs text-slate-300">{nextInLineApt.department} • {nextInLineApt.appointmentTime}</p>
-                    <p className="text-xs font-semibold text-blue-400 mt-0.5">{nextInLineApt.category}</p>
+                    <h3 className="text-base font-bold text-slate-900">{nextInLineApt.studentName}</h3>
+                    <p className="text-xs text-slate-600">{nextInLineApt.department} • {nextInLineApt.appointmentTime}</p>
+                    <p className="text-xs font-semibold text-blue-600 mt-0.5">{nextInLineApt.category}</p>
                   </div>
                 </div>
               ) : (
-                <div className="p-6 text-center text-slate-500 bg-slate-950/60 rounded-xl border border-slate-800">
+                <div className="p-6 text-center text-slate-500 bg-slate-50 rounded-xl border border-slate-200/80">
                   No students currently waiting in queue.
                 </div>
               )}
@@ -279,17 +279,17 @@ export default function OverviewDashboard({ setActiveAdminPage }) {
                 <>
                   <button
                     onClick={() => callStudent(nextInLineApt.id)}
-                    className="w-full py-3.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-sm shadow-xl flex items-center justify-center gap-2 transition-all"
+                    className="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-sm flex items-center justify-center gap-2 transition-all"
                   >
-                    <Volume2 className="w-5 h-5 animate-pulse" />
+                    <Volume2 className="w-4 h-4" />
                     <span>CALL STUDENT (ALERT)</span>
                   </button>
 
                   <button
                     onClick={() => startMeeting(nextInLineApt.id)}
-                    className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm shadow-xl flex items-center justify-center gap-2 transition-all"
+                    className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm flex items-center justify-center gap-2 transition-all"
                   >
-                    <Play className="w-5 h-5" />
+                    <Play className="w-4 h-4" />
                     <span>START CONSULTATION MEETING</span>
                   </button>
                 </>
@@ -302,27 +302,27 @@ export default function OverviewDashboard({ setActiveAdminPage }) {
       </div>
 
       {/* QUICK QUEUE SNAPSHOT */}
-      <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-          <h3 className="text-base font-bold text-white">Live Waiting Queue ({waitingQueue.length})</h3>
+      <div className="bg-white border border-slate-200/80 p-6 rounded-2xl shadow-sm space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <h3 className="text-sm font-bold text-slate-900">Live Waiting Queue ({waitingQueue.length})</h3>
           <button
             onClick={() => setActiveAdminPage('live-queue')}
-            className="text-xs font-bold text-blue-400 hover:text-blue-300 flex items-center gap-1"
+            className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1"
           >
             <span>Open Full Queue Manager</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="divide-y divide-slate-800">
+        <div className="divide-y divide-slate-100">
           {waitingQueue.slice(0, 5).map((apt, idx) => (
             <div key={apt.id} className="py-3 flex items-center justify-between text-xs">
               <div className="flex items-center gap-3">
-                <span className="font-mono text-slate-500 font-bold w-5">#{idx + 1}</span>
+                <span className="font-mono text-slate-400 font-bold w-5">#{idx + 1}</span>
                 <TokenBadge tokenNumber={apt.tokenNumber} size="small" variant={apt.status === 'CALLED' ? 'orange' : 'blue'} />
                 <div>
-                  <span className="font-bold text-white block">{apt.studentName}</span>
-                  <span className="text-slate-400">{apt.department} • {apt.category}</span>
+                  <span className="font-bold text-slate-800 block">{apt.studentName}</span>
+                  <span className="text-slate-500">{apt.department} • {apt.category}</span>
                 </div>
               </div>
 
@@ -330,7 +330,7 @@ export default function OverviewDashboard({ setActiveAdminPage }) {
                 <StatusBadge status={apt.status} size="normal" />
                 <button
                   onClick={() => startMeeting(apt.id)}
-                  className="px-2.5 py-1 rounded bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white font-semibold text-[11px] transition-colors"
+                  className="px-2.5 py-1 rounded bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white font-semibold text-[11px] border border-blue-200/60 transition-colors"
                 >
                   Start
                 </button>
@@ -339,7 +339,7 @@ export default function OverviewDashboard({ setActiveAdminPage }) {
           ))}
 
           {waitingQueue.length === 0 && (
-            <div className="py-6 text-center text-slate-500 text-xs">
+            <div className="py-6 text-center text-slate-400 text-xs">
               Queue is completely empty. Take a moment to prepare for upcoming slots.
             </div>
           )}
@@ -351,34 +351,34 @@ export default function OverviewDashboard({ setActiveAdminPage }) {
 
       {/* END MEETING CONFIRMATION MODAL */}
       <Modal isOpen={isEndMeetingOpen} onClose={() => setIsEndMeetingOpen(false)} title="✓ Complete Consultation Meeting" maxWidth="max-w-md">
-        <div className="space-y-4 text-xs text-slate-200">
-          <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
-            <p className="text-xs font-bold text-white">Student: {currentlyMeetingApt?.studentName}</p>
-            <p className="text-xs font-mono text-blue-400">Token: {currentlyMeetingApt?.tokenNumber}</p>
-            <p className="text-xs text-slate-400">Meeting Duration: <strong>{formatTimer(timerSeconds)}</strong></p>
+        <div className="space-y-4 text-xs text-slate-700">
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-1.5">
+            <p className="text-xs font-bold text-slate-900">Student: {currentlyMeetingApt?.studentName}</p>
+            <p className="text-xs font-mono text-blue-600">Token: {currentlyMeetingApt?.tokenNumber}</p>
+            <p className="text-xs text-slate-600">Meeting Duration: <strong className="text-slate-900">{formatTimer(timerSeconds)}</strong></p>
           </div>
 
           <div className="space-y-1">
-            <label className="block font-semibold">Private Coordinator Notes (Optional)</label>
+            <label className="block font-semibold text-slate-700">Private Coordinator Notes (Optional)</label>
             <textarea
               rows="3"
               placeholder="Record any guidance given, approved documents, or follow-up tasks..."
               value={meetingNotes}
               onChange={(e) => setMeetingNotes(e.target.value)}
-              className="w-full p-3 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 resize-none"
+              className="w-full p-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 resize-none"
             />
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
             <button
               onClick={() => setIsEndMeetingOpen(false)}
-              className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 font-semibold"
+              className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 font-semibold text-slate-700"
             >
               Cancel
             </button>
             <button
               onClick={handleCompleteMeetingSubmit}
-              className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg"
+              className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-sm"
             >
               COMPLETE & NEXT STUDENT →
             </button>

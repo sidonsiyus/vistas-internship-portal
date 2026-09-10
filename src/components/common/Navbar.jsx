@@ -30,22 +30,25 @@ export default function Navbar({ activeTab, setActiveTab, onBookClick }) {
   ];
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-slate-800/60 bg-[#090d16]/85 backdrop-blur-md transition-all">
+    <header className="sticky top-0 z-40 w-full border-b border-slate-200/80 bg-white/90 backdrop-blur-md transition-all shadow-[0_1px_3px_rgba(0,0,0,0.03)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-14">
+        <div className="flex items-center justify-between h-15">
           
-          {/* Minimalist Top-Left Logo */}
+          {/* Top-Left Logo & Title */}
           <div 
             onClick={() => setActiveTab('home')}
             className="flex items-center gap-2.5 cursor-pointer hover:opacity-90 transition-opacity"
           >
-            <div className="p-1 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400">
+            <div className="p-1.5 rounded-lg bg-blue-600 text-white shadow-sm">
               <GraduationCap className="w-4 h-4 shrink-0" />
             </div>
-            <span className="font-bold text-sm text-white tracking-tight">Internship Portal</span>
+            <div className="flex flex-col">
+              <span className="font-bold text-sm text-slate-900 tracking-tight leading-none">VISTAS Internship Portal</span>
+              <span className="text-[10px] text-slate-500 font-medium tracking-normal mt-0.5">Coordinator Desk</span>
+            </div>
           </div>
 
-          {/* Desktop Navigation - Clean Minimalist Pills */}
+          {/* Desktop Navigation - Clean SaaS Pills */}
           <nav className="hidden md:flex items-center gap-1">
             {navItems.map(item => {
               const Icon = item.icon;
@@ -56,17 +59,17 @@ export default function Navbar({ activeTab, setActiveTab, onBookClick }) {
                   onClick={() => handleNavClick(item.id)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                     isActive
-                      ? 'bg-blue-600/15 text-blue-400 border border-blue-500/30'
-                      : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/40'
+                      ? 'bg-slate-900 text-white shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                   }`}
                 >
-                  <Icon className="w-3.5 h-3.5" />
+                  <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-slate-500'}`} />
                   <span>{item.label}</span>
                   {item.badge && (
                     <span className={`ml-1 text-[10px] font-mono px-1.5 py-0.5 rounded font-bold border ${
                       item.isAlertBadge
-                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30'
-                        : 'bg-blue-500/20 text-blue-300 border-blue-400/30'
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        : 'bg-blue-50 text-blue-700 border-blue-200'
                     }`}>
                       {item.badge}
                     </span>
@@ -78,8 +81,8 @@ export default function Navbar({ activeTab, setActiveTab, onBookClick }) {
 
           {/* Status Indicator & Admin Button */}
           <div className="hidden md:flex items-center gap-2.5">
-            <div className="flex items-center gap-1.5 bg-slate-900/80 px-2.5 py-1 rounded-full border border-slate-800/80">
-              <span className="text-[11px] text-slate-400">Desk:</span>
+            <div className="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1 rounded-full border border-slate-200">
+              <span className="text-[11px] text-slate-500 font-medium">Desk:</span>
               <StatusBadge status={availability.status} size="small" />
             </div>
 
@@ -88,10 +91,10 @@ export default function Navbar({ activeTab, setActiveTab, onBookClick }) {
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                 activeTab === 'admin'
                   ? 'bg-blue-600 text-white shadow-sm'
-                  : 'bg-slate-900/80 text-slate-300 hover:bg-slate-800 hover:text-white border border-slate-800/80'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200/80 hover:text-slate-900 border border-slate-200'
               }`}
             >
-              <Shield className="w-3.5 h-3.5 text-blue-400" />
+              <Shield className="w-3.5 h-3.5 text-slate-500" />
               <span>Admin Desk</span>
             </button>
           </div>
@@ -101,7 +104,7 @@ export default function Navbar({ activeTab, setActiveTab, onBookClick }) {
             <StatusBadge status={availability.status} size="small" />
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/60 focus:outline-none"
+              className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 focus:outline-none"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -111,7 +114,7 @@ export default function Navbar({ activeTab, setActiveTab, onBookClick }) {
 
       {/* Mobile Navigation */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-slate-800/60 bg-[#090d16] px-4 pt-2 pb-4 space-y-1 shadow-2xl">
+        <div className="md:hidden border-t border-slate-200 bg-white px-4 pt-2 pb-4 space-y-1 shadow-lg">
           {navItems.map(item => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -124,8 +127,8 @@ export default function Navbar({ activeTab, setActiveTab, onBookClick }) {
                 }}
                 className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all ${
                   isActive
-                    ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
-                    : 'text-slate-300 hover:bg-slate-900/60'
+                    ? 'bg-blue-50 text-blue-700 font-semibold'
+                    : 'text-slate-700 hover:bg-slate-50'
                 }`}
               >
                 <div className="flex items-center gap-2.5">
@@ -135,8 +138,8 @@ export default function Navbar({ activeTab, setActiveTab, onBookClick }) {
                 {item.badge && (
                   <span className={`text-[10px] font-mono px-2 py-0.5 rounded font-bold border ${
                     item.isAlertBadge
-                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30'
-                      : 'bg-blue-500/20 text-blue-300 border-blue-400/30'
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      : 'bg-blue-50 text-blue-700 border-blue-200'
                   }`}>
                     {item.badge}
                   </span>
@@ -145,13 +148,13 @@ export default function Navbar({ activeTab, setActiveTab, onBookClick }) {
             );
           })}
 
-          <div className="pt-2">
+          <div className="pt-2 border-t border-slate-100">
             <button
               onClick={() => {
                 setActiveTab('admin');
                 setMobileMenuOpen(false);
               }}
-              className="w-full flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs shadow-md"
+              className="w-full flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs shadow-sm transition-colors"
             >
               <Shield className="w-4 h-4" />
               <span>Admin Desk Login</span>

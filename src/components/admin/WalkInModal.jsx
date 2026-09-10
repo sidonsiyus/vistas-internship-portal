@@ -26,40 +26,40 @@ export default function WalkInModal({ isOpen, onClose }) {
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="➕ Add Walk-in Student to Queue" maxWidth="max-w-lg">
-      <form onSubmit={handleSubmit} className="space-y-4 text-xs text-slate-200">
+      <form onSubmit={handleSubmit} className="space-y-4 text-xs text-slate-700">
         
         {/* Student Name */}
         <div className="space-y-1">
-          <label className="block font-semibold">Student Full Name *</label>
+          <label className="block font-semibold text-slate-700">Student Full Name *</label>
           <input
             type="text"
             required
             placeholder="e.g. Vikramaditya V"
             value={formData.name}
             onChange={(e) => setFormData(p => ({ ...p, name: e.target.value }))}
-            className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-blue-500"
+            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10"
           />
         </div>
 
         {/* Register Number */}
         <div className="space-y-1">
-          <label className="block font-semibold">Register Number</label>
+          <label className="block font-semibold text-slate-700">Register Number</label>
           <input
             type="text"
             placeholder="e.g. 21105541"
             value={formData.registerNumber}
             onChange={(e) => setFormData(p => ({ ...p, registerNumber: e.target.value }))}
-            className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white font-mono focus:outline-none focus:border-blue-500"
+            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 font-mono focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10"
           />
         </div>
 
         {/* Department */}
         <div className="space-y-1">
-          <label className="block font-semibold">Department</label>
+          <label className="block font-semibold text-slate-700">Department</label>
           <select
             value={formData.department}
             onChange={(e) => setFormData(p => ({ ...p, department: e.target.value }))}
-            className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-blue-500"
+            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:border-blue-500"
           >
             {DEPARTMENTS.map(d => (
               <option key={d} value={d}>{d}</option>
@@ -69,11 +69,11 @@ export default function WalkInModal({ isOpen, onClose }) {
 
         {/* Category */}
         <div className="space-y-1">
-          <label className="block font-semibold">Query Category</label>
+          <label className="block font-semibold text-slate-700">Query Category</label>
           <select
             value={formData.category}
             onChange={(e) => setFormData(p => ({ ...p, category: e.target.value }))}
-            className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-blue-500"
+            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:outline-none focus:border-blue-500"
           >
             {QUERY_CATEGORIES.map(c => (
               <option key={c.id} value={c.label}>{c.label}</option>
@@ -83,15 +83,15 @@ export default function WalkInModal({ isOpen, onClose }) {
 
         {/* Position Choice */}
         <div className="space-y-1">
-          <label className="block font-semibold text-blue-400">Where should student enter queue? *</label>
+          <label className="block font-semibold text-blue-700">Where should student enter queue? *</label>
           <div className="grid grid-cols-3 gap-2 pt-1">
             <button
               type="button"
               onClick={() => setFormData(p => ({ ...p, positionChoice: 'END_OF_QUEUE' }))}
-              className={`p-2.5 rounded-xl border text-center font-bold ${
+              className={`p-2.5 rounded-xl border text-center font-bold text-xs transition-all ${
                 formData.positionChoice === 'END_OF_QUEUE'
-                  ? 'bg-blue-600/20 border-blue-500 text-white'
-                  : 'bg-slate-950 border-slate-800 text-slate-400'
+                  ? 'bg-blue-50 border-blue-500 text-blue-700 ring-1 ring-blue-500'
+                  : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
               }`}
             >
               End of Queue
@@ -100,10 +100,10 @@ export default function WalkInModal({ isOpen, onClose }) {
             <button
               type="button"
               onClick={() => setFormData(p => ({ ...p, positionChoice: 'NEXT_AVAILABLE' }))}
-              className={`p-2.5 rounded-xl border text-center font-bold ${
+              className={`p-2.5 rounded-xl border text-center font-bold text-xs transition-all ${
                 formData.positionChoice === 'NEXT_AVAILABLE'
-                  ? 'bg-amber-600/20 border-amber-500 text-white'
-                  : 'bg-slate-950 border-slate-800 text-slate-400'
+                  ? 'bg-amber-50 border-amber-500 text-amber-700 ring-1 ring-amber-500'
+                  : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
               }`}
             >
               Next Slot
@@ -112,41 +112,41 @@ export default function WalkInModal({ isOpen, onClose }) {
             <button
               type="button"
               onClick={() => setFormData(p => ({ ...p, positionChoice: 'PRIORITY' }))}
-              className={`p-2.5 rounded-xl border text-center font-bold ${
+              className={`p-2.5 rounded-xl border text-center font-bold text-xs transition-all ${
                 formData.positionChoice === 'PRIORITY'
-                  ? 'bg-rose-600/20 border-rose-500 text-white'
-                  : 'bg-slate-950 border-slate-800 text-slate-400'
+                  ? 'bg-rose-50 border-rose-500 text-rose-700 ring-1 ring-rose-500'
+                  : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
               }`}
             >
-              🚀 Urgent Priority
+              🚀 Priority
             </button>
           </div>
         </div>
 
         {/* Reason / Notes */}
         <div className="space-y-1">
-          <label className="block font-semibold">Reason for Walk-in</label>
+          <label className="block font-semibold text-slate-700">Reason for Walk-in</label>
           <textarea
             rows="2"
             placeholder="e.g. Urgent document signoff needed before 1 PM deadline..."
             value={formData.description}
             onChange={(e) => setFormData(p => ({ ...p, description: e.target.value }))}
-            className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm text-white focus:outline-none focus:border-blue-500 resize-none"
+            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 resize-none"
           />
         </div>
 
         {/* Submit */}
-        <div className="pt-4 flex justify-end gap-3">
+        <div className="pt-3 flex justify-end gap-3">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 font-semibold"
+            className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold"
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold shadow-lg"
+            className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-sm"
           >
             INJECT WALK-IN TOKEN
           </button>

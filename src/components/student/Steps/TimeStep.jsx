@@ -66,16 +66,16 @@ export default function TimeStep({ selectedDate, selectedTime, setSelectedTime, 
     <div className="space-y-6 font-sans">
       <div>
         <div className="flex items-center justify-between">
-          <h3 className="text-xl font-bold text-white flex items-center gap-2">
-            <Clock className="w-5 h-5 text-blue-400" />
+          <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+            <Clock className="w-5 h-5 text-blue-600" />
             <span>Select Consultation Time Slot</span>
           </h3>
-          <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
+          <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
             15 Mins / Student
           </span>
         </div>
-        <p className="text-xs text-slate-400 mt-1">
-          Showing real-time slot availability for <strong className="text-white">{selectedDate}</strong> {isToday ? '(Today)' : ''}.
+        <p className="text-xs text-slate-600 mt-1">
+          Showing real-time slot availability for <strong className="text-slate-900 font-semibold">{selectedDate}</strong> {isToday ? '(Today)' : ''}.
         </p>
       </div>
 
@@ -83,24 +83,24 @@ export default function TimeStep({ selectedDate, selectedTime, setSelectedTime, 
       {selectedTime && (
         <div className={`p-4 rounded-xl border flex items-center justify-between transition-all ${
           isEmergencyTime
-            ? 'bg-rose-500/15 border-rose-500/40 text-rose-200'
-            : 'bg-blue-600/15 border-blue-500/40 text-blue-200'
+            ? 'bg-rose-50 border-rose-200 text-rose-900'
+            : 'bg-blue-50 border-blue-200 text-blue-900'
         }`}>
           <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-lg ${isEmergencyTime ? 'bg-rose-600' : 'bg-blue-600'} text-white`}>
+            <div className={`p-2 rounded-lg ${isEmergencyTime ? 'bg-rose-600' : 'bg-blue-600'} text-white shadow-sm`}>
               {isEmergencyTime ? <AlertTriangle className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
             </div>
             <div>
               <p className="text-[10px] font-bold uppercase tracking-wider opacity-80">
                 {isEmergencyTime ? 'EMERGENCY TIME SLOT SELECTED' : 'REGULAR CONSULTATION SLOT'}
               </p>
-              <p className="text-sm font-bold text-white">
-                {selectedDate} at <span className="font-mono text-blue-300">{selectedTime}</span>
+              <p className="text-sm font-bold text-slate-900">
+                {selectedDate} at <span className="font-mono text-blue-700">{selectedTime}</span>
               </p>
-              <p className="text-[11px] text-slate-400">15-minute consultation with Coordinator</p>
+              <p className="text-[11px] text-slate-500">15-minute consultation with Coordinator</p>
             </div>
           </div>
-          <span className="text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
+          <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
             Slot Selected
           </span>
         </div>
@@ -108,12 +108,12 @@ export default function TimeStep({ selectedDate, selectedTime, setSelectedTime, 
 
       {/* SECTION 1: REGULAR CONSULTATIONS AFTER 3:00 PM */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
-          <div className="flex items-center gap-2 text-slate-200 font-semibold text-sm">
-            <Sunset className="w-4 h-4 text-orange-400" />
+        <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+          <div className="flex items-center gap-2 text-slate-900 font-bold text-sm">
+            <Sunset className="w-4 h-4 text-orange-500" />
             <span>Regular Consultations (03:00 PM – 05:30 PM)</span>
           </div>
-          <span className="text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+          <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
             ● Live Status
           </span>
         </div>
@@ -125,13 +125,13 @@ export default function TimeStep({ selectedDate, selectedTime, setSelectedTime, 
             const passed = isTimePassed(slot.value);
             const isDisabled = isBooked || passed;
 
-            let btnStyle = 'bg-[#0b101b] border-slate-800/80 text-slate-200 hover:border-slate-700';
+            let btnStyle = 'bg-white border-slate-200 text-slate-800 hover:border-slate-300 hover:shadow-sm';
             if (passed) {
-              btnStyle = 'bg-slate-950/60 border-slate-900 text-slate-600 cursor-not-allowed opacity-50';
+              btnStyle = 'bg-slate-50 border-slate-200 text-slate-400 cursor-not-allowed opacity-60';
             } else if (isBooked) {
-              btnStyle = 'bg-slate-950/60 border-slate-900 text-slate-600 cursor-not-allowed opacity-60';
+              btnStyle = 'bg-slate-50 border-slate-200 text-slate-400 cursor-not-allowed opacity-60';
             } else if (isSelected) {
-              btnStyle = 'bg-blue-600/20 border-blue-500 text-white ring-1 ring-blue-500 shadow-md';
+              btnStyle = 'bg-blue-50/80 border-2 border-blue-600 text-blue-900 ring-2 ring-blue-500/10 shadow-sm';
             }
 
             return (
@@ -143,13 +143,13 @@ export default function TimeStep({ selectedDate, selectedTime, setSelectedTime, 
               >
                 <span className="font-mono font-bold text-xs">{slot.time}</span>
                 {passed ? (
-                  <span className="text-[10px] font-semibold text-slate-500">Passed</span>
+                  <span className="text-[10px] font-medium text-slate-400">Passed</span>
                 ) : isBooked ? (
-                  <span className="text-[10px] font-bold uppercase text-rose-500">Booked</span>
+                  <span className="text-[10px] font-bold uppercase text-rose-600">Booked</span>
                 ) : isSelected ? (
-                  <span className="text-[10px] font-semibold text-blue-300">Selected ✓</span>
+                  <span className="text-[10px] font-semibold text-blue-700">Selected ✓</span>
                 ) : (
-                  <span className="text-[10px] font-medium text-emerald-400">Available</span>
+                  <span className="text-[10px] font-semibold text-emerald-700">Available</span>
                 )}
               </button>
             );
@@ -159,12 +159,12 @@ export default function TimeStep({ selectedDate, selectedTime, setSelectedTime, 
 
       {/* SECTION 2: EMERGENCY SLOTS BEFORE 3:00 PM */}
       <div className="space-y-3 pt-2">
-        <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
-          <div className="flex items-center gap-2 text-rose-300 font-semibold text-sm">
-            <AlertTriangle className="w-4 h-4 text-rose-400" />
+        <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+          <div className="flex items-center gap-2 text-rose-800 font-bold text-sm">
+            <AlertTriangle className="w-4 h-4 text-rose-500" />
             <span>Pre-3:00 PM Emergency Slots (Urgent Requests Only)</span>
           </div>
-          <span className="text-[10px] text-rose-400 font-semibold bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">
+          <span className="text-[10px] text-rose-700 font-semibold bg-rose-50 px-2.5 py-0.5 rounded-full border border-rose-200">
             Emergency Justification Required
           </span>
         </div>
@@ -176,13 +176,13 @@ export default function TimeStep({ selectedDate, selectedTime, setSelectedTime, 
             const passed = isTimePassed(slot.value);
             const isDisabled = isBooked || passed;
 
-            let btnStyle = 'bg-[#0b101b] border-slate-800/80 text-slate-300 hover:border-rose-500/40';
+            let btnStyle = 'bg-white border-slate-200 text-slate-700 hover:border-rose-300';
             if (passed) {
-              btnStyle = 'bg-slate-950/60 border-slate-900 text-slate-600 cursor-not-allowed opacity-50';
+              btnStyle = 'bg-slate-50 border-slate-200 text-slate-400 cursor-not-allowed opacity-60';
             } else if (isBooked) {
-              btnStyle = 'bg-slate-950/60 border-slate-900 text-slate-600 cursor-not-allowed opacity-60';
+              btnStyle = 'bg-slate-50 border-slate-200 text-slate-400 cursor-not-allowed opacity-60';
             } else if (isSelected) {
-              btnStyle = 'bg-rose-600/20 border-rose-500 text-white ring-1 ring-rose-500 shadow-md';
+              btnStyle = 'bg-rose-50 border-2 border-rose-500 text-rose-900 ring-2 ring-rose-500/10 shadow-sm';
             }
 
             return (
@@ -192,13 +192,13 @@ export default function TimeStep({ selectedDate, selectedTime, setSelectedTime, 
                 onClick={() => setSelectedTime(slot.value)}
                 className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all ${btnStyle}`}
               >
-                <span className="font-mono font-medium text-xs text-rose-300">{slot.value}</span>
+                <span className="font-mono font-medium text-xs text-rose-800">{slot.value}</span>
                 {passed ? (
-                  <span className="text-[10px] font-semibold text-slate-500">Passed</span>
+                  <span className="text-[10px] font-medium text-slate-400">Passed</span>
                 ) : isBooked ? (
-                  <span className="text-[10px] font-bold uppercase text-rose-500">Booked</span>
+                  <span className="text-[10px] font-bold uppercase text-rose-600">Booked</span>
                 ) : (
-                  <span className="text-[10px] text-slate-400">Emergency Only</span>
+                  <span className="text-[10px] text-slate-500">Emergency Only</span>
                 )}
               </button>
             );
@@ -207,8 +207,8 @@ export default function TimeStep({ selectedDate, selectedTime, setSelectedTime, 
       </div>
 
       {/* Policy Reminder */}
-      <div className="p-3 bg-[#0b101b] rounded-xl border border-slate-800/80 text-xs text-slate-400 flex items-center gap-2">
-        <Info className="w-4 h-4 text-blue-400 shrink-0" />
+      <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-600 flex items-center gap-2">
+        <Info className="w-4 h-4 text-blue-600 shrink-0" />
         <span>Booked slots are automatically locked in real time to prevent double-booking.</span>
       </div>
 
@@ -216,7 +216,7 @@ export default function TimeStep({ selectedDate, selectedTime, setSelectedTime, 
       <div className="flex items-center justify-between pt-3">
         <button
           onClick={onBack}
-          className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 font-medium text-xs border border-slate-800 transition-all"
+          className="px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs border border-slate-200 shadow-sm transition-all"
         >
           ← Back to Date
         </button>
@@ -224,7 +224,7 @@ export default function TimeStep({ selectedDate, selectedTime, setSelectedTime, 
         <button
           disabled={!selectedTime}
           onClick={onNext}
-          className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-xs shadow-md transition-all"
+          className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-xs shadow-sm transition-all"
         >
           Continue to Student Details →
         </button>
