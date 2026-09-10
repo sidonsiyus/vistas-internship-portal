@@ -45,12 +45,12 @@ export default function AppointmentsTable() {
     <div className="space-y-6">
       
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-6">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
             Appointments & Consultation Log
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             Search, filter, and audit all consultation bookings across departments.
           </p>
         </div>
@@ -65,15 +65,15 @@ export default function AppointmentsTable() {
             downloadAnchor.click();
             downloadAnchor.remove();
           }}
-          className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs border border-slate-200 flex items-center gap-2 shadow-sm transition-colors shrink-0"
+          className="px-4 py-2.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs border border-slate-200 dark:border-slate-700 flex items-center gap-2 shadow-sm transition-colors shrink-0"
         >
-          <Download className="w-4 h-4 text-blue-600" />
+          <Download className="w-4 h-4 text-blue-600 dark:text-blue-400" />
           <span>Export JSON Log</span>
         </button>
       </div>
 
       {/* SEARCH AND FILTER CONTROLS */}
-      <div className="bg-white border border-slate-200/80 p-4 rounded-2xl shadow-sm flex flex-col md:flex-row items-center gap-3">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-4 rounded-2xl shadow-sm flex flex-col md:flex-row items-center gap-3">
         
         {/* Search */}
         <div className="relative flex-1 w-full">
@@ -83,7 +83,7 @@ export default function AppointmentsTable() {
             placeholder="Search by student name, register number, or token..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white"
+            className="w-full pl-10 pr-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:bg-white dark:focus:bg-slate-800"
           />
         </div>
 
@@ -91,11 +91,11 @@ export default function AppointmentsTable() {
         <select
           value={selectedDept}
           onChange={(e) => setSelectedDept(e.target.value)}
-          className="w-full md:w-auto px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:border-blue-500 focus:bg-white"
+          className="w-full md:w-auto px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-700 dark:text-slate-300 focus:outline-none focus:border-blue-500 focus:bg-white dark:focus:bg-slate-800"
         >
-          <option value="">All Departments</option>
+          <option value="" className="dark:bg-slate-800">All Departments</option>
           {DEPARTMENTS.map(d => (
-            <option key={d} value={d}>{d}</option>
+            <option key={d} value={d} className="dark:bg-slate-800">{d}</option>
           ))}
         </select>
 
@@ -103,11 +103,11 @@ export default function AppointmentsTable() {
         <select
           value={selectedCategory}
           onChange={(e) => setSelectedCategory(e.target.value)}
-          className="w-full md:w-auto px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:border-blue-500 focus:bg-white"
+          className="w-full md:w-auto px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-700 dark:text-slate-300 focus:outline-none focus:border-blue-500 focus:bg-white dark:focus:bg-slate-800"
         >
-          <option value="">All Query Categories</option>
+          <option value="" className="dark:bg-slate-800">All Query Categories</option>
           {QUERY_CATEGORIES.map(c => (
-            <option key={c.id} value={c.label}>{c.label}</option>
+            <option key={c.id} value={c.label} className="dark:bg-slate-800">{c.label}</option>
           ))}
         </select>
 
@@ -115,24 +115,24 @@ export default function AppointmentsTable() {
         <select
           value={selectedStatus}
           onChange={(e) => setSelectedStatus(e.target.value)}
-          className="w-full md:w-auto px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:border-blue-500 focus:bg-white"
+          className="w-full md:w-auto px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-700 dark:text-slate-300 focus:outline-none focus:border-blue-500 focus:bg-white dark:focus:bg-slate-800"
         >
-          <option value="">All Statuses</option>
-          <option value="WAITING">WAITING</option>
-          <option value="CALLED">CALLED</option>
-          <option value="IN_PROGRESS">IN_PROGRESS</option>
-          <option value="COMPLETED">COMPLETED</option>
-          <option value="NO_SHOW">NO_SHOW</option>
-          <option value="CANCELLED">CANCELLED</option>
+          <option value="" className="dark:bg-slate-800">All Statuses</option>
+          <option value="WAITING" className="dark:bg-slate-800">WAITING</option>
+          <option value="CALLED" className="dark:bg-slate-800">CALLED</option>
+          <option value="IN_PROGRESS" className="dark:bg-slate-800">IN_PROGRESS</option>
+          <option value="COMPLETED" className="dark:bg-slate-800">COMPLETED</option>
+          <option value="NO_SHOW" className="dark:bg-slate-800">NO_SHOW</option>
+          <option value="CANCELLED" className="dark:bg-slate-800">CANCELLED</option>
         </select>
 
       </div>
 
       {/* APPOINTMENTS TABLE */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200 uppercase tracking-wider">
+            <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 font-semibold border-b border-slate-200 dark:border-slate-800 uppercase tracking-wider">
               <tr>
                 <th className="p-4">Token</th>
                 <th className="p-4">Student</th>
@@ -143,24 +143,24 @@ export default function AppointmentsTable() {
                 <th className="p-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-slate-700">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
               {filtered.map((apt) => (
-                <tr key={apt.id} className="hover:bg-slate-50/70 transition-colors">
+                <tr key={apt.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors">
                   <td className="p-4">
                     <TokenBadge tokenNumber={apt.tokenNumber} size="small" variant="blue" />
                   </td>
                   <td className="p-4">
-                    <div className="font-bold text-slate-900 text-sm">{apt.studentName}</div>
-                    <div className="text-[11px] text-slate-500 font-mono">Reg: {apt.registerNumber}</div>
+                    <div className="font-bold text-slate-900 dark:text-white text-sm">{apt.studentName}</div>
+                    <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">Reg: {apt.registerNumber}</div>
                   </td>
-                  <td className="p-4 text-slate-600">
+                  <td className="p-4 text-slate-600 dark:text-slate-400">
                     <div>{apt.department}</div>
-                    <div className="text-[10px] text-slate-400">{apt.year}</div>
+                    <div className="text-[10px] text-slate-400 dark:text-slate-500">{apt.year}</div>
                   </td>
-                  <td className="p-4 font-mono font-bold text-blue-600">
+                  <td className="p-4 font-mono font-bold text-blue-600 dark:text-blue-400">
                     {apt.appointmentTime}
                   </td>
-                  <td className="p-4 font-medium text-slate-600">
+                  <td className="p-4 font-medium text-slate-600 dark:text-slate-400">
                     {apt.category}
                   </td>
                   <td className="p-4">
@@ -169,7 +169,7 @@ export default function AppointmentsTable() {
                   <td className="p-4 text-right">
                     <button
                       onClick={() => setSelectedApt(apt)}
-                      className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors"
+                      className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs transition-colors"
                     >
                       Inspect Details
                     </button>
@@ -179,7 +179,7 @@ export default function AppointmentsTable() {
 
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan="7" className="p-8 text-center text-slate-400 text-xs">
+                  <td colSpan="7" className="p-8 text-center text-slate-400 dark:text-slate-500 text-xs">
                     No matching appointments found.
                   </td>
                 </tr>
@@ -197,41 +197,41 @@ export default function AppointmentsTable() {
         maxWidth="max-w-lg"
       >
         {selectedApt && (
-          <div className="space-y-4 text-xs text-slate-700">
-            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-1.5">
+          <div className="space-y-4 text-xs text-slate-700 dark:text-slate-300">
+            <div className="bg-slate-50 dark:bg-slate-800/80 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1.5">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-900 text-base">{selectedApt.studentName}</span>
+                <span className="font-bold text-slate-900 dark:text-white text-base">{selectedApt.studentName}</span>
                 <StatusBadge status={selectedApt.status} />
               </div>
-              <p className="text-xs text-slate-600">Reg: {selectedApt.registerNumber} • {selectedApt.department}</p>
-              <p className="text-xs text-blue-600 font-semibold">Category: {selectedApt.category}</p>
-              <p className="text-xs text-slate-500">Slot: {selectedApt.appointmentDate} at {selectedApt.appointmentTime}</p>
+              <p className="text-xs text-slate-600 dark:text-slate-400">Reg: {selectedApt.registerNumber} • {selectedApt.department}</p>
+              <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold">Category: {selectedApt.category}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Slot: {selectedApt.appointmentDate} at {selectedApt.appointmentTime}</p>
             </div>
 
             <div className="space-y-1">
-              <span className="font-bold text-slate-600 block uppercase tracking-wider">Query Description:</span>
-              <p className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-slate-700">
+              <span className="font-bold text-slate-600 dark:text-slate-400 block uppercase tracking-wider">Query Description:</span>
+              <p className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
                 {selectedApt.description || 'No specific description provided.'}
               </p>
             </div>
 
             {selectedApt.notes && (
               <div className="space-y-1">
-                <span className="font-bold text-emerald-700 block uppercase tracking-wider">Coordinator Notes:</span>
-                <p className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-800">
+                <span className="font-bold text-emerald-700 dark:text-emerald-400 block uppercase tracking-wider">Coordinator Notes:</span>
+                <p className="p-3 bg-emerald-50 dark:bg-emerald-950/30 rounded-xl border border-emerald-200 dark:border-emerald-800/60 text-emerald-800 dark:text-emerald-300">
                   {selectedApt.notes}
                 </p>
               </div>
             )}
 
-            <div className="flex items-center justify-between pt-4 border-t border-slate-200">
+            <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-800">
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => {
                     markNoShow(selectedApt.id);
                     setSelectedApt(null);
                   }}
-                  className="px-3 py-2 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold border border-rose-200 transition-colors"
+                  className="px-3 py-2 rounded-lg bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-400 font-semibold border border-rose-200 dark:border-rose-900/50 transition-colors"
                 >
                   Mark No-Show
                 </button>
@@ -240,7 +240,7 @@ export default function AppointmentsTable() {
                     cancelAppointment(selectedApt.id);
                     setSelectedApt(null);
                   }}
-                  className="px-3 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold transition-colors"
+                  className="px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold transition-colors"
                 >
                   Cancel
                 </button>
@@ -248,7 +248,7 @@ export default function AppointmentsTable() {
 
               <button
                 onClick={() => setSelectedApt(null)}
-                className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-sm transition-colors"
+                className="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold transition-colors"
               >
                 Close File
               </button>

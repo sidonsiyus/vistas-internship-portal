@@ -53,12 +53,12 @@ export default function BookingWizard({ setActiveTab }) {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 md:py-12">
+    <div className="max-w-4xl mx-auto px-4 py-8 md:py-12 font-sans transition-colors duration-200">
       {/* Wizard Card Container */}
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 md:p-10 space-y-8">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-6 md:p-10 space-y-8">
         
         {/* Progress Step Bar */}
-        <div className="border-b border-slate-100 pb-6">
+        <div className="border-b border-slate-100 dark:border-slate-800 pb-6">
           <div className="flex items-center justify-between">
             {steps.map((s, idx) => {
               const Icon = s.icon;
@@ -71,7 +71,7 @@ export default function BookingWizard({ setActiveTab }) {
                   {idx !== steps.length - 1 && (
                     <div 
                       className={`absolute top-5 left-1/2 w-full h-0.5 z-0 transition-colors ${
-                        currentStep > s.number ? 'bg-blue-600' : 'bg-slate-200'
+                        currentStep > s.number ? 'bg-blue-600 dark:bg-blue-500' : 'bg-slate-200 dark:bg-slate-700'
                       }`} 
                     />
                   )}
@@ -81,15 +81,15 @@ export default function BookingWizard({ setActiveTab }) {
                       isCompleted
                         ? 'bg-blue-600 text-white shadow-sm'
                         : isCurrent
-                        ? 'bg-blue-50 text-blue-600 border-2 border-blue-600 shadow-sm'
-                        : 'bg-slate-100 text-slate-400 border border-slate-200'
+                        ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border-2 border-blue-600 shadow-sm'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700'
                     }`}
                   >
                     {isCompleted ? <CheckCircle2 className="w-5 h-5" /> : s.number}
                   </div>
 
                   <span className={`text-xs font-semibold mt-2 hidden sm:block ${
-                    isCurrent ? 'text-blue-600' : isCompleted ? 'text-slate-800' : 'text-slate-400'
+                    isCurrent ? 'text-blue-600 dark:text-blue-400' : isCompleted ? 'text-slate-800 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500'
                   }`}>
                     {s.title}
                   </span>

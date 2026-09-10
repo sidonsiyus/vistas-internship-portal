@@ -80,34 +80,34 @@ export default function OverviewDashboard({ setActiveAdminPage }) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 font-sans transition-colors duration-200">
       
       {/* COMMAND CENTER QUICK ACTION BAR */}
-      <div className="flex flex-col lg:flex-row items-center justify-between gap-4 bg-white border border-slate-200/90 p-4 rounded-2xl shadow-sm">
+      <div className="flex flex-col lg:flex-row items-center justify-between gap-4 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 p-4 rounded-2xl shadow-sm">
         <div className="flex items-center gap-3">
           <div className="h-3 w-3 rounded-full bg-emerald-500 live-pulse" />
           <div>
-            <h3 className="text-sm font-bold text-slate-900">Coordinating Desk Command Bar</h3>
-            <p className="text-xs text-slate-500">One-click controls for daily consultation workflow</p>
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white">Coordinating Desk Command Bar</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">One-click controls for daily consultation workflow</p>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => updateAvailabilityStatus('AVAILABLE')}
-            className="px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-semibold transition-all"
+            className="px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-semibold transition-all"
           >
             ▶ START DAY
           </button>
           <button
             onClick={() => updateAvailabilityStatus('ON_BREAK')}
-            className="px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 text-xs font-semibold transition-all"
+            className="px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 text-xs font-semibold transition-all"
           >
             ☕ PAUSE (BREAK)
           </button>
           <button
             onClick={() => updateAvailabilityStatus('UNAVAILABLE')}
-            className="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold transition-all"
+            className="px-3 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-xs font-semibold transition-all"
           >
             ⏹ END DAY
           </button>
@@ -118,7 +118,7 @@ export default function OverviewDashboard({ setActiveAdminPage }) {
                 resetAllTokens();
               }
             }}
-            className="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-700 border border-rose-200 text-xs font-semibold transition-all"
+            className="px-3 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-600 hover:text-white text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-xs font-semibold transition-all"
           >
             🔥 RESET QUEUE
           </button>
@@ -135,71 +135,71 @@ export default function OverviewDashboard({ setActiveAdminPage }) {
 
       {/* TOP 4 KPI CARDS */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
-        <div className="bg-white border border-slate-200/80 p-5 rounded-2xl shadow-sm flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-5 rounded-2xl shadow-sm flex items-center justify-between">
           <div>
-            <span className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">TODAY'S TOTAL</span>
-            <div className="text-3xl font-extrabold text-slate-900 font-mono mt-1">{metrics.totalToday}</div>
-            <span className="text-[11px] text-slate-500 font-medium">Booked Appointments</span>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">TODAY'S TOTAL</span>
+            <div className="text-3xl font-extrabold text-slate-900 dark:text-white font-mono mt-1">{metrics.totalToday}</div>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Booked Appointments</span>
           </div>
-          <div className="p-3 bg-blue-50 text-blue-600 rounded-xl border border-blue-100">
+          <div className="p-3 bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 rounded-xl border border-blue-100 dark:border-blue-900">
             <Users className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200/80 p-5 rounded-2xl shadow-sm flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-5 rounded-2xl shadow-sm flex items-center justify-between">
           <div>
-            <span className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">COMPLETED</span>
-            <div className="text-3xl font-extrabold text-emerald-600 font-mono mt-1">{metrics.completedCount}</div>
-            <span className="text-[11px] text-slate-500 font-medium">Consultations Done</span>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">COMPLETED</span>
+            <div className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 font-mono mt-1">{metrics.completedCount}</div>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Consultations Done</span>
           </div>
-          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100">
+          <div className="p-3 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 rounded-xl border border-emerald-100 dark:border-emerald-900">
             <CheckCircle2 className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200/80 p-5 rounded-2xl shadow-sm flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-5 rounded-2xl shadow-sm flex items-center justify-between">
           <div>
-            <span className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">WAITING QUEUE</span>
-            <div className="text-3xl font-extrabold text-amber-600 font-mono mt-1">{metrics.waitingCount}</div>
-            <span className="text-[11px] text-slate-500 font-medium">Students In Queue</span>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">WAITING QUEUE</span>
+            <div className="text-3xl font-extrabold text-amber-600 dark:text-amber-400 font-mono mt-1">{metrics.waitingCount}</div>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Students In Queue</span>
           </div>
-          <div className="p-3 bg-amber-50 text-amber-600 rounded-xl border border-amber-100">
+          <div className="p-3 bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 rounded-xl border border-amber-100 dark:border-amber-900">
             <Hourglass className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200/80 p-5 rounded-2xl shadow-sm flex items-center justify-between">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-5 rounded-2xl shadow-sm flex items-center justify-between">
           <div>
-            <span className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">ESTIMATED TIME</span>
-            <div className="text-2xl font-extrabold text-blue-600 font-mono mt-1">~{metrics.totalWaitMinutes} Mins</div>
-            <span className="text-[11px] text-slate-500 font-medium">Remaining today</span>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">ESTIMATED TIME</span>
+            <div className="text-2xl font-extrabold text-blue-600 dark:text-blue-400 font-mono mt-1">~{metrics.totalWaitMinutes} Mins</div>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Remaining today</span>
           </div>
-          <div className="p-3 bg-blue-50 text-blue-600 rounded-xl border border-blue-100">
+          <div className="p-3 bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 rounded-xl border border-blue-100 dark:border-blue-900">
             <Clock className="w-5 h-5" />
           </div>
         </div>
       </div>
 
       {/* PROMINENT LIVE MEETING CONTROL CARD */}
-      <div className="bg-white border-2 border-blue-200/80 p-6 md:p-7 rounded-2xl shadow-sm space-y-6">
+      <div className="bg-white dark:bg-slate-900 border-2 border-blue-200/80 dark:border-blue-900/80 p-6 md:p-7 rounded-2xl shadow-sm space-y-6">
         
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
           <div className="flex items-center gap-3">
             <span className="h-3 w-3 rounded-full bg-blue-500 live-pulse" />
             <div>
-              <h2 className="text-lg font-bold text-slate-900 tracking-tight">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">
                 {currentlyMeetingApt ? 'CURRENTLY MEETING STUDENT' : 'READY FOR NEXT STUDENT'}
               </h2>
-              <p className="text-xs text-slate-500">Live Meeting Console & Duration Counter</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Live Meeting Console & Duration Counter</p>
             </div>
           </div>
 
           {currentlyMeetingApt && (
-            <div className="bg-slate-50 px-4 py-2 rounded-xl border border-slate-200 flex items-center gap-3">
-              <Clock className="w-5 h-5 text-blue-600 animate-spin" />
+            <div className="bg-slate-50 dark:bg-slate-800 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center gap-3">
+              <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400 animate-spin" />
               <div>
-                <span className="text-[10px] uppercase font-bold text-slate-500 block">MEETING DURATION</span>
-                <span className="text-2xl font-black font-mono text-blue-600 tracking-wider">
+                <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block">MEETING DURATION</span>
+                <span className="text-2xl font-black font-mono text-blue-600 dark:text-blue-400 tracking-wider">
                   {formatTimer(timerSeconds)}
                 </span>
               </div>
@@ -216,17 +216,17 @@ export default function OverviewDashboard({ setActiveAdminPage }) {
               <div className="flex items-center gap-4">
                 <TokenBadge tokenNumber={currentlyMeetingApt.tokenNumber} size="large" variant="blue" />
                 <div>
-                  <h3 className="text-xl font-bold text-slate-900">{currentlyMeetingApt.studentName}</h3>
-                  <p className="text-xs text-slate-600">{currentlyMeetingApt.department} • {currentlyMeetingApt.year}</p>
-                  <p className="text-xs font-mono text-slate-500">Reg: {currentlyMeetingApt.registerNumber}</p>
+                  <h3 className="text-xl font-bold text-slate-900 dark:text-white">{currentlyMeetingApt.studentName}</h3>
+                  <p className="text-xs text-slate-600 dark:text-slate-300">{currentlyMeetingApt.department} • {currentlyMeetingApt.year}</p>
+                  <p className="text-xs font-mono text-slate-500 dark:text-slate-400">Reg: {currentlyMeetingApt.registerNumber}</p>
                 </div>
               </div>
 
-              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200/80 space-y-1">
-                <span className="text-xs font-bold text-blue-700 uppercase tracking-wider">
+              <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200/80 dark:border-slate-700 space-y-1">
+                <span className="text-xs font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wider">
                   Query Category: {currentlyMeetingApt.category}
                 </span>
-                <p className="text-xs text-slate-600 italic">
+                <p className="text-xs text-slate-600 dark:text-slate-300 italic">
                   "{currentlyMeetingApt.description || 'No additional details provided.'}"
                 </p>
               </div>
@@ -244,7 +244,7 @@ export default function OverviewDashboard({ setActiveAdminPage }) {
 
               <button
                 onClick={() => markNoShow(currentlyMeetingApt.id)}
-                className="w-full py-2.5 rounded-xl bg-slate-50 hover:bg-rose-50 hover:text-rose-600 text-slate-600 text-xs font-semibold border border-slate-200 transition-colors"
+                className="w-full py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/60 hover:text-rose-600 dark:hover:text-rose-400 text-slate-600 dark:text-slate-300 text-xs font-semibold border border-slate-200 dark:border-slate-700 transition-colors"
               >
                 Mark Student As No-Show
               </button>
@@ -256,18 +256,18 @@ export default function OverviewDashboard({ setActiveAdminPage }) {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
             
             <div className="lg:col-span-2 space-y-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-amber-700">NEXT STUDENT IN QUEUE</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">NEXT STUDENT IN QUEUE</span>
               {nextInLineApt ? (
-                <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
                   <TokenBadge tokenNumber={nextInLineApt.tokenNumber} size="large" variant={nextInLineApt.status === 'CALLED' ? 'orange' : 'amber'} />
                   <div>
-                    <h3 className="text-base font-bold text-slate-900">{nextInLineApt.studentName}</h3>
-                    <p className="text-xs text-slate-600">{nextInLineApt.department} • {nextInLineApt.appointmentTime}</p>
-                    <p className="text-xs font-semibold text-blue-600 mt-0.5">{nextInLineApt.category}</p>
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white">{nextInLineApt.studentName}</h3>
+                    <p className="text-xs text-slate-600 dark:text-slate-300">{nextInLineApt.department} • {nextInLineApt.appointmentTime}</p>
+                    <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 mt-0.5">{nextInLineApt.category}</p>
                   </div>
                 </div>
               ) : (
-                <div className="p-6 text-center text-slate-500 bg-slate-50 rounded-xl border border-slate-200/80">
+                <div className="p-6 text-center text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200/80 dark:border-slate-700">
                   No students currently waiting in queue.
                 </div>
               )}
@@ -302,27 +302,27 @@ export default function OverviewDashboard({ setActiveAdminPage }) {
       </div>
 
       {/* QUICK QUEUE SNAPSHOT */}
-      <div className="bg-white border border-slate-200/80 p-6 rounded-2xl shadow-sm space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-          <h3 className="text-sm font-bold text-slate-900">Live Waiting Queue ({waitingQueue.length})</h3>
+      <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-6 rounded-2xl shadow-sm space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-white">Live Waiting Queue ({waitingQueue.length})</h3>
           <button
             onClick={() => setActiveAdminPage('live-queue')}
-            className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1"
+            className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-1"
           >
             <span>Open Full Queue Manager</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="divide-y divide-slate-100">
+        <div className="divide-y divide-slate-100 dark:divide-slate-800">
           {waitingQueue.slice(0, 5).map((apt, idx) => (
             <div key={apt.id} className="py-3 flex items-center justify-between text-xs">
               <div className="flex items-center gap-3">
-                <span className="font-mono text-slate-400 font-bold w-5">#{idx + 1}</span>
+                <span className="font-mono text-slate-400 dark:text-slate-500 font-bold w-5">#{idx + 1}</span>
                 <TokenBadge tokenNumber={apt.tokenNumber} size="small" variant={apt.status === 'CALLED' ? 'orange' : 'blue'} />
                 <div>
-                  <span className="font-bold text-slate-800 block">{apt.studentName}</span>
-                  <span className="text-slate-500">{apt.department} • {apt.category}</span>
+                  <span className="font-bold text-slate-800 dark:text-slate-200 block">{apt.studentName}</span>
+                  <span className="text-slate-500 dark:text-slate-400">{apt.department} • {apt.category}</span>
                 </div>
               </div>
 
@@ -330,7 +330,7 @@ export default function OverviewDashboard({ setActiveAdminPage }) {
                 <StatusBadge status={apt.status} size="normal" />
                 <button
                   onClick={() => startMeeting(apt.id)}
-                  className="px-2.5 py-1 rounded bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white font-semibold text-[11px] border border-blue-200/60 transition-colors"
+                  className="px-2.5 py-1 rounded bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 hover:bg-blue-600 hover:text-white font-semibold text-[11px] border border-blue-200/60 dark:border-blue-800 transition-colors"
                 >
                   Start
                 </button>
@@ -339,7 +339,7 @@ export default function OverviewDashboard({ setActiveAdminPage }) {
           ))}
 
           {waitingQueue.length === 0 && (
-            <div className="py-6 text-center text-slate-400 text-xs">
+            <div className="py-6 text-center text-slate-400 dark:text-slate-500 text-xs">
               Queue is completely empty. Take a moment to prepare for upcoming slots.
             </div>
           )}
@@ -351,28 +351,28 @@ export default function OverviewDashboard({ setActiveAdminPage }) {
 
       {/* END MEETING CONFIRMATION MODAL */}
       <Modal isOpen={isEndMeetingOpen} onClose={() => setIsEndMeetingOpen(false)} title="✓ Complete Consultation Meeting" maxWidth="max-w-md">
-        <div className="space-y-4 text-xs text-slate-700">
-          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-1.5">
-            <p className="text-xs font-bold text-slate-900">Student: {currentlyMeetingApt?.studentName}</p>
-            <p className="text-xs font-mono text-blue-600">Token: {currentlyMeetingApt?.tokenNumber}</p>
-            <p className="text-xs text-slate-600">Meeting Duration: <strong className="text-slate-900">{formatTimer(timerSeconds)}</strong></p>
+        <div className="space-y-4 text-xs text-slate-700 dark:text-slate-300">
+          <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1.5">
+            <p className="text-xs font-bold text-slate-900 dark:text-white">Student: {currentlyMeetingApt?.studentName}</p>
+            <p className="text-xs font-mono text-blue-600 dark:text-blue-400">Token: {currentlyMeetingApt?.tokenNumber}</p>
+            <p className="text-xs text-slate-600 dark:text-slate-300">Meeting Duration: <strong className="text-slate-900 dark:text-white">{formatTimer(timerSeconds)}</strong></p>
           </div>
 
           <div className="space-y-1">
-            <label className="block font-semibold text-slate-700">Private Coordinator Notes (Optional)</label>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300">Private Coordinator Notes (Optional)</label>
             <textarea
               rows="3"
               placeholder="Record any guidance given, approved documents, or follow-up tasks..."
               value={meetingNotes}
               onChange={(e) => setMeetingNotes(e.target.value)}
-              className="w-full p-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 resize-none"
+              className="w-full p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 resize-none"
             />
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
             <button
               onClick={() => setIsEndMeetingOpen(false)}
-              className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 font-semibold text-slate-700"
+              className="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 font-semibold text-slate-700 dark:text-slate-300"
             >
               Cancel
             </button>

@@ -4,44 +4,44 @@ import { OFFICE_LOCATION } from '../../mock/sampleData';
 
 export default function Footer({ setActiveTab }) {
   return (
-    <footer className="border-t border-slate-200 bg-white text-slate-500 py-10 mt-auto font-sans">
+    <footer className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 py-10 mt-auto font-sans transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
           
           {/* Col 1: About */}
           <div className="space-y-2.5">
-            <div className="flex items-center gap-2 text-slate-900">
-              <div className="p-1.5 rounded-lg bg-blue-50 text-blue-600 border border-blue-100">
+            <div className="flex items-center gap-2 text-slate-900 dark:text-white">
+              <div className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900">
                 <GraduationCap className="w-4 h-4" />
               </div>
-              <span className="font-bold text-sm tracking-tight text-slate-900">VISTAS Internship Portal</span>
+              <span className="font-bold text-sm tracking-tight text-slate-900 dark:text-white">VISTAS Internship Portal</span>
             </div>
-            <p className="text-xs text-slate-600 leading-relaxed max-w-sm">
+            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed max-w-sm">
               Smart Token Queue & Consultation Scheduling System for Vels Hi-Tech Campus students.
             </p>
           </div>
 
           {/* Col 2: Navigation */}
           <div className="space-y-2.5">
-            <h4 className="text-[11px] font-bold text-slate-900 uppercase tracking-wider">Quick Navigation</h4>
+            <h4 className="text-[11px] font-bold text-slate-900 dark:text-white uppercase tracking-wider">Quick Navigation</h4>
             <ul className="space-y-2 text-xs">
               <li>
-                <button onClick={() => setActiveTab('home')} className="text-slate-600 hover:text-blue-600 transition-colors">
+                <button onClick={() => setActiveTab('home')} className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                   Portal Home
                 </button>
               </li>
               <li>
-                <button onClick={() => setActiveTab('book')} className="text-slate-600 hover:text-blue-600 transition-colors">
+                <button onClick={() => setActiveTab('book')} className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                   Book Consultation Slot
                 </button>
               </li>
               <li>
-                <button onClick={() => setActiveTab('track')} className="text-slate-600 hover:text-blue-600 transition-colors">
+                <button onClick={() => setActiveTab('track')} className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                   Track Token Live Queue
                 </button>
               </li>
               <li>
-                <button onClick={() => setActiveTab('status')} className="text-slate-600 hover:text-blue-600 transition-colors">
+                <button onClick={() => setActiveTab('status')} className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                   Coordinator Desk Status
                 </button>
               </li>
@@ -50,14 +50,14 @@ export default function Footer({ setActiveTab }) {
 
           {/* Col 3: Location & Hours */}
           <div className="space-y-2.5">
-            <h4 className="text-[11px] font-bold text-slate-900 uppercase tracking-wider">Campus Location & Hours</h4>
-            <ul className="space-y-2 text-xs text-slate-600">
+            <h4 className="text-[11px] font-bold text-slate-900 dark:text-white uppercase tracking-wider">Campus Location & Hours</h4>
+            <ul className="space-y-2 text-xs text-slate-600 dark:text-slate-400">
               <li className="flex items-start gap-2">
                 <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
-                <span className="font-medium text-slate-700">{OFFICE_LOCATION}</span>
+                <span className="font-medium text-slate-700 dark:text-slate-300">{OFFICE_LOCATION}</span>
               </li>
               <li className="flex items-center gap-2">
-                <Clock className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                <Clock className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
                 <span>Regular Slots: After 03:00 PM (Emergency pre-3 PM)</span>
               </li>
             </ul>
@@ -66,23 +66,23 @@ export default function Footer({ setActiveTab }) {
         </div>
 
         {/* Minimalist Bottom Copyright Bar */}
-        <div className="border-t border-slate-100 pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-3">
+        <div className="border-t border-slate-100 dark:border-slate-800 pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 dark:text-slate-400 gap-3">
           <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2">
-            <p className="text-slate-600 font-medium">
-              Copyright © 2026 <span className="text-slate-900 font-semibold">Sid</span>. All rights reserved.
+            <p className="text-slate-600 dark:text-slate-400 font-medium">
+              Copyright © 2026 <span className="text-slate-900 dark:text-white font-semibold">Sid</span>. All rights reserved.
             </p>
-            <span className="hidden sm:inline text-slate-300">•</span>
-            <p className="text-slate-500">
-              Designed & Developed by <span className="text-slate-700 font-medium">Sid</span>
+            <span className="hidden sm:inline text-slate-300 dark:text-slate-600">•</span>
+            <p className="text-slate-500 dark:text-slate-400">
+              Designed & Developed by <span className="text-slate-700 dark:text-slate-300 font-medium">Sid</span>
             </p>
           </div>
 
           <button
             onClick={() => setActiveTab('admin')}
-            className="text-slate-600 hover:text-blue-600 font-medium text-xs transition-colors flex items-center gap-1.5"
+            className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 font-medium text-xs transition-colors flex items-center gap-1.5"
           >
             <span>Coordinator Desk Access</span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 font-mono">Admin</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 font-mono">Admin</span>
           </button>
         </div>
       </div>

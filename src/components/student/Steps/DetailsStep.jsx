@@ -86,20 +86,20 @@ export default function DetailsStep({ formData, setFormData, onSubmit, onBack })
   };
 
   return (
-    <form onSubmit={validateAndSubmit} className="space-y-6 font-sans">
+    <form onSubmit={validateAndSubmit} className="space-y-6 font-sans transition-colors duration-200">
       <div>
-        <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-          <User className="w-5 h-5 text-blue-600" />
+        <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+          <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
           <span>Step 3: Student Consultation Details</span>
         </h3>
-        <p className="text-xs text-slate-600 mt-1">
+        <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
           Type your University Register Number to auto-fill your verified student record.
         </p>
       </div>
 
       {/* Query Categories Selection */}
       <div className="space-y-2">
-        <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
           Internship Query Category <span className="text-rose-500">*</span>
         </label>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -112,8 +112,8 @@ export default function DetailsStep({ formData, setFormData, onSubmit, onBack })
                 onClick={() => handleChange('category', cat.label)}
                 className={`p-2.5 rounded-xl border text-left flex items-center gap-2 transition-all ${
                   isSelected
-                    ? 'bg-blue-50 border-2 border-blue-600 text-blue-900 font-semibold ring-2 ring-blue-500/10 shadow-sm'
-                    : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50 shadow-sm'
+                    ? 'bg-blue-50 dark:bg-blue-950/60 border-2 border-blue-600 text-blue-900 dark:text-blue-200 font-semibold ring-2 ring-blue-500/10 shadow-sm'
+                    : 'bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm'
                 }`}
               >
                 <span className={`w-2 h-2 rounded-full bg-${cat.color}-500 shrink-0`} />
@@ -123,7 +123,7 @@ export default function DetailsStep({ formData, setFormData, onSubmit, onBack })
           })}
         </div>
         {errors.category && (
-          <p className="text-xs text-rose-600 flex items-center gap-1 font-medium">
+          <p className="text-xs text-rose-600 dark:text-rose-400 flex items-center gap-1 font-medium">
             <AlertTriangle className="w-3.5 h-3.5" /> {errors.category}
           </p>
         )}
@@ -135,26 +135,26 @@ export default function DetailsStep({ formData, setFormData, onSubmit, onBack })
         {/* Register Number (First for Auto-Fill) */}
         <div className="space-y-1 sm:col-span-2">
           <div className="flex items-center justify-between">
-            <label className="block text-xs font-semibold text-slate-700">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
               University Register Number <span className="text-rose-500">*</span>
             </label>
-            <span className="text-[10px] text-blue-700 flex items-center gap-1 font-semibold">
-              <Sparkles className="w-3 h-3 text-blue-600" />
+            <span className="text-[10px] text-blue-700 dark:text-blue-400 flex items-center gap-1 font-semibold">
+              <Sparkles className="w-3 h-3 text-blue-600 dark:text-blue-400" />
               <span>Auto-detects from official 26-27 student list</span>
             </span>
           </div>
           <div className="relative">
-            <GraduationCap className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+            <GraduationCap className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-3" />
             <input
               type="text"
               placeholder="e.g. 25326101 or 24156101"
               value={formData.registerNumber}
               onChange={(e) => handleRegisterNumberChange(e.target.value)}
-              className="w-full pl-9 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 font-mono tracking-wide shadow-sm"
+              className="w-full pl-9 pr-3 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 font-mono tracking-wide shadow-sm"
             />
           </div>
           {errors.registerNumber && (
-            <p className="text-xs text-rose-600 font-medium flex items-center gap-1 mt-1">
+            <p className="text-xs text-rose-600 dark:text-rose-400 font-medium flex items-center gap-1 mt-1">
               <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> {errors.registerNumber}
             </p>
           )}
@@ -162,14 +162,14 @@ export default function DetailsStep({ formData, setFormData, onSubmit, onBack })
 
         {/* Verified Student Banner if Matched */}
         {matchedStudent && (
-          <div className="sm:col-span-2 p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between text-xs text-emerald-800 animate-fadeIn shadow-sm">
+          <div className="sm:col-span-2 p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-300 animate-fadeIn shadow-sm">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
               <span>
                 <strong>Verified Enrolled Student:</strong> {matchedStudent.name} ({matchedStudent.department} • {matchedStudent.year})
               </span>
             </div>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200 font-mono">
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 font-mono">
               OFFICIAL RECORD
             </span>
           </div>
@@ -177,33 +177,33 @@ export default function DetailsStep({ formData, setFormData, onSubmit, onBack })
 
         {/* Full Name */}
         <div className="space-y-1">
-          <label className="block text-xs font-semibold text-slate-700">
+          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
             Full Name <span className="text-rose-500">*</span>
           </label>
           <div className="relative">
-            <User className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+            <User className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-3" />
             <input
               type="text"
               placeholder="e.g. Rahul Kumar"
               value={formData.name}
               onChange={(e) => handleChange('name', e.target.value)}
-              className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 shadow-sm"
+              className="w-full pl-9 pr-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 shadow-sm"
             />
           </div>
-          {errors.name && <p className="text-xs text-rose-600 font-medium">{errors.name}</p>}
+          {errors.name && <p className="text-xs text-rose-600 dark:text-rose-400 font-medium">{errors.name}</p>}
         </div>
 
         {/* Department */}
         <div className="space-y-1">
-          <label className="block text-xs font-semibold text-slate-700">
+          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
             Department / Course <span className="text-rose-500">*</span>
           </label>
           <div className="relative">
-            <Building className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+            <Building className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-3" />
             <select
               value={formData.department}
               onChange={(e) => handleChange('department', e.target.value)}
-              className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 shadow-sm"
+              className="w-full pl-9 pr-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 shadow-sm"
             >
               <option value="">-- Select Department --</option>
               {DEPARTMENTS.map(dept => (
@@ -211,18 +211,18 @@ export default function DetailsStep({ formData, setFormData, onSubmit, onBack })
               ))}
             </select>
           </div>
-          {errors.department && <p className="text-xs text-rose-600 font-medium">{errors.department}</p>}
+          {errors.department && <p className="text-xs text-rose-600 dark:text-rose-400 font-medium">{errors.department}</p>}
         </div>
 
         {/* Year of Study */}
         <div className="space-y-1">
-          <label className="block text-xs font-semibold text-slate-700">
+          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
             Year of Study <span className="text-rose-500">*</span>
           </label>
           <select
             value={formData.year}
             onChange={(e) => handleChange('year', e.target.value)}
-            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 shadow-sm"
+            className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 shadow-sm"
           >
             <option value="">-- Select Year --</option>
             <option value="1st Year">1st Year</option>
@@ -230,59 +230,59 @@ export default function DetailsStep({ formData, setFormData, onSubmit, onBack })
             <option value="3rd Year">3rd Year</option>
             <option value="4th Year (Final Year)">4th Year (Final Year)</option>
           </select>
-          {errors.year && <p className="text-xs text-rose-600 font-medium">{errors.year}</p>}
+          {errors.year && <p className="text-xs text-rose-600 dark:text-rose-400 font-medium">{errors.year}</p>}
         </div>
 
         {/* Phone */}
         <div className="space-y-1">
-          <label className="block text-xs font-semibold text-slate-700">
+          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
             Mobile Number (For Live Updates) <span className="text-rose-500">*</span>
           </label>
           <div className="relative">
-            <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+            <Phone className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-3" />
             <input
               type="tel"
               placeholder="+91 98765 43210"
               value={formData.phone}
               onChange={(e) => handleChange('phone', e.target.value)}
-              className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 shadow-sm"
+              className="w-full pl-9 pr-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 shadow-sm"
             />
           </div>
-          {errors.phone && <p className="text-xs text-rose-600 font-medium">{errors.phone}</p>}
+          {errors.phone && <p className="text-xs text-rose-600 dark:text-rose-400 font-medium">{errors.phone}</p>}
         </div>
 
         {/* Email */}
         <div className="space-y-1 sm:col-span-2">
-          <label className="block text-xs font-semibold text-slate-700">
+          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
             University Email Address <span className="text-rose-500">*</span>
           </label>
           <div className="relative">
-            <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+            <Mail className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-3" />
             <input
               type="email"
               placeholder="student@velshitech.edu.in"
               value={formData.email}
               onChange={(e) => handleChange('email', e.target.value)}
-              className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 shadow-sm"
+              className="w-full pl-9 pr-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 shadow-sm"
             />
           </div>
-          {errors.email && <p className="text-xs text-rose-600 font-medium">{errors.email}</p>}
+          {errors.email && <p className="text-xs text-rose-600 dark:text-rose-400 font-medium">{errors.email}</p>}
         </div>
       </div>
 
       {/* Query Description (Optional) */}
       <div className="space-y-1">
-        <label className="block text-xs font-semibold text-slate-700">
-          Query Details / Specific Questions <span className="text-slate-400 font-normal">(Optional)</span>
+        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+          Query Details / Specific Questions <span className="text-slate-400 dark:text-slate-500 font-normal">(Optional)</span>
         </label>
         <div className="relative">
-          <FileText className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+          <FileText className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-3" />
           <textarea
             rows="2"
             placeholder="Briefly describe what you need assistance with (e.g. NOC approval, LOR request, company recommendation)..."
             value={formData.description}
             onChange={(e) => handleChange('description', e.target.value)}
-            className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 resize-none shadow-sm"
+            className="w-full pl-9 pr-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 resize-none shadow-sm"
           />
         </div>
       </div>
@@ -292,7 +292,7 @@ export default function DetailsStep({ formData, setFormData, onSubmit, onBack })
         <button
           type="button"
           onClick={onBack}
-          className="px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs border border-slate-200 shadow-sm transition-all"
+          className="px-4 py-2 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs border border-slate-200 dark:border-slate-700 shadow-sm transition-all"
         >
           ← Back to Time
         </button>

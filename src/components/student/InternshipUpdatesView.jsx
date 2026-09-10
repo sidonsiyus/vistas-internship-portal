@@ -45,57 +45,57 @@ export default function InternshipUpdatesView({ setActiveTab }) {
       case 'INTERNSHIP_APPROVED':
         return {
           label: 'Internship Approved',
-          classes: 'bg-emerald-50 text-emerald-700 border-emerald-200'
+          classes: 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
         };
       case 'INTERNSHIP_CONFIRMED':
         return {
           label: 'Internship Confirmed',
-          classes: 'bg-green-50 text-green-700 border-green-200'
+          classes: 'bg-green-50 dark:bg-green-950/60 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800'
         };
       case 'OPPORTUNITY_AVAILABLE':
         return {
           label: 'Opportunity Available',
-          classes: 'bg-emerald-50 text-emerald-700 border-emerald-200'
+          classes: 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
         };
       case 'CAN_APPLY':
         return {
           label: 'Students Can Apply',
-          classes: 'bg-blue-50 text-blue-700 border-blue-200'
+          classes: 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800'
         };
       case 'REPLY_RECEIVED':
         return {
           label: 'Reply Received',
-          classes: 'bg-teal-50 text-teal-700 border-teal-200'
+          classes: 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border-teal-200 dark:border-teal-800'
         };
       case 'PENDING_STUDENT_ACTION':
         return {
           label: 'Pending Student Action',
-          classes: 'bg-amber-50 text-amber-800 border-amber-200'
+          classes: 'bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800'
         };
       case 'INFO_REQUIRED':
         return {
           label: 'More Info Required',
-          classes: 'bg-amber-50 text-amber-800 border-amber-200'
+          classes: 'bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800'
         };
       case 'CLOSED':
         return {
           label: 'Opportunity Closed',
-          classes: 'bg-slate-100 text-slate-600 border-slate-200'
+          classes: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
         };
       case 'REJECTED':
         return {
           label: 'Not Feasible / Rejected',
-          classes: 'bg-rose-50 text-rose-700 border-rose-200'
+          classes: 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800'
         };
       case 'NO_ACTION':
         return {
           label: 'No Action Required',
-          classes: 'bg-slate-100 text-slate-700 border-slate-200'
+          classes: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
         };
       default:
         return {
           label: status || 'Updated',
-          classes: 'bg-slate-100 text-slate-700 border-slate-200'
+          classes: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
         };
     }
   };
@@ -152,39 +152,39 @@ export default function InternshipUpdatesView({ setActiveTab }) {
   const urgentCount = (announcements || []).filter(a => a.isActive !== false && a.type === 'URGENT').length;
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 md:py-12 space-y-8 font-sans">
+    <div className="max-w-6xl mx-auto px-4 py-8 md:py-12 space-y-8 font-sans transition-colors duration-200">
       
       {/* Header Banner with Clear Objective */}
-      <div className="bg-white border border-slate-200 p-6 md:p-8 rounded-2xl relative overflow-hidden shadow-sm">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 md:p-8 rounded-2xl relative overflow-hidden shadow-sm">
         <div className="relative z-10 max-w-3xl space-y-3">
           
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-700 text-xs font-semibold">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/60 border border-blue-100 dark:border-blue-900 text-blue-700 dark:text-blue-300 text-xs font-semibold">
             <Building2 className="w-3.5 h-3.5" />
             <span>Official Company Response Board</span>
           </div>
 
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
             Internship & Company Reply Updates
           </h1>
 
-          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-            The Internship Coordinator posts live updates when companies respond to institutional inquiry emails. <strong className="text-blue-700 font-semibold">Please check this board before booking an appointment</strong> to find company answers, eligibility guidelines, and application links.
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+            The Internship Coordinator posts live updates when companies respond to institutional inquiry emails. <strong className="text-blue-700 dark:text-blue-400 font-semibold">Please check this board before booking an appointment</strong> to find company answers, eligibility guidelines, and application links.
           </p>
 
           <div className="pt-2 flex flex-wrap items-center gap-3 text-xs">
-            <div className="bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg text-slate-700 flex items-center gap-2">
+            <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-lg text-slate-700 dark:text-slate-300 flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-emerald-500" />
               <span><strong>{companyRepliesCount}</strong> Company Responses</span>
             </div>
             {urgentCount > 0 && (
-              <div className="bg-rose-50 border border-rose-200 px-3 py-1.5 rounded-lg text-rose-700 flex items-center gap-2">
+              <div className="bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 px-3 py-1.5 rounded-lg text-rose-700 dark:text-rose-300 flex items-center gap-2">
                 <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
                 <span><strong>{urgentCount}</strong> Urgent Deadlines</span>
               </div>
             )}
             <button
               onClick={() => setActiveTab('book')}
-              className="ml-auto text-xs text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1 hover:underline pt-1 sm:pt-0"
+              className="ml-auto text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-semibold flex items-center gap-1 hover:underline pt-1 sm:pt-0"
             >
               <span>Need to book appointment instead?</span>
               <ArrowRight className="w-3 h-3" />
@@ -195,17 +195,17 @@ export default function InternshipUpdatesView({ setActiveTab }) {
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white border border-slate-200 p-4 rounded-xl space-y-3 md:space-y-0 md:flex md:items-center md:justify-between gap-4 shadow-sm">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl space-y-3 md:space-y-0 md:flex md:items-center md:justify-between gap-4 shadow-sm">
         
         {/* Left: Search input */}
         <div className="relative flex-1">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Search by company name, role, or keywords..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/10 transition-all"
+            className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-blue-500/10 transition-all"
           />
         </div>
 
@@ -222,8 +222,8 @@ export default function InternshipUpdatesView({ setActiveTab }) {
               onClick={() => setSelectedType(type.id)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
                 selectedType === type.id
-                  ? 'bg-slate-900 text-white shadow-sm'
-                  : 'bg-slate-50 text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200'
+                  ? 'bg-slate-900 dark:bg-blue-600 text-white shadow-sm'
+                  : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'
               }`}
             >
               {type.label}
@@ -236,7 +236,7 @@ export default function InternshipUpdatesView({ setActiveTab }) {
           <select
             value={selectedDept}
             onChange={(e) => setSelectedDept(e.target.value)}
-            className="w-full md:w-auto px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-700 font-medium focus:outline-none focus:border-blue-500 focus:bg-white"
+            className="w-full md:w-auto px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-700 dark:text-slate-200 font-medium focus:outline-none focus:border-blue-500 focus:bg-white dark:focus:bg-slate-900"
           >
             <option value="ALL">All Departments</option>
             {DEPARTMENTS.map(dept => (
@@ -250,10 +250,10 @@ export default function InternshipUpdatesView({ setActiveTab }) {
       {/* Announcements & Company Replies Feed */}
       <div className="space-y-4">
         {filteredAnnouncements.length === 0 ? (
-          <div className="text-center py-16 bg-white border border-slate-200 rounded-2xl space-y-3 shadow-sm">
-            <Building2 className="w-10 h-10 text-slate-400 mx-auto" />
-            <h3 className="text-base font-bold text-slate-800">No updates found</h3>
-            <p className="text-xs text-slate-500 max-w-sm mx-auto">
+          <div className="text-center py-16 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-3 shadow-sm">
+            <Building2 className="w-10 h-10 text-slate-400 dark:text-slate-500 mx-auto" />
+            <h3 className="text-base font-bold text-slate-800 dark:text-white">No updates found</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
               No notices match your selected filters. Clear the search or check back later.
             </p>
             {(searchQuery || selectedType !== 'ALL' || selectedDept !== 'ALL') && (
@@ -263,7 +263,7 @@ export default function InternshipUpdatesView({ setActiveTab }) {
                   setSelectedType('ALL');
                   setSelectedDept('ALL');
                 }}
-                className="px-3.5 py-1.5 rounded-lg bg-slate-100 text-xs font-semibold text-slate-700 hover:text-slate-900 border border-slate-200"
+                className="px-3.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-700"
               >
                 Reset Filters
               </button>
@@ -278,23 +278,23 @@ export default function InternshipUpdatesView({ setActiveTab }) {
             return (
               <article
                 key={ann.id}
-                className={`bg-white rounded-2xl border transition-all hover:border-slate-300 shadow-sm overflow-hidden ${
+                className={`bg-white dark:bg-slate-900 rounded-2xl border transition-all hover:border-slate-300 dark:hover:border-slate-700 shadow-sm overflow-hidden ${
                   isUrgent 
-                    ? 'border-rose-300 bg-gradient-to-br from-rose-50/30 via-white to-white' 
+                    ? 'border-rose-300 dark:border-rose-800/80 bg-gradient-to-br from-rose-50/30 dark:from-rose-950/20 via-white dark:via-slate-900 to-white dark:to-slate-900' 
                     : ann.isPinned
-                    ? 'border-amber-300 bg-gradient-to-br from-amber-50/30 via-white to-white'
-                    : 'border-slate-200'
+                    ? 'border-amber-300 dark:border-amber-800/80 bg-gradient-to-br from-amber-50/30 dark:from-amber-950/20 via-white dark:via-slate-900 to-white dark:to-slate-900'
+                    : 'border-slate-200 dark:border-slate-800'
                 }`}
               >
                 <div className="p-5 sm:p-6 space-y-4">
                   
                   {/* Card Top Meta */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-slate-100 pb-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-slate-100 dark:border-slate-800 pb-3">
                     <div className="flex flex-wrap items-center gap-2">
                       
                       {/* Pinned pill */}
                       {ann.isPinned && (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 px-2.5 py-0.5 rounded-full">
                           <Pin className="w-2.5 h-2.5" />
                           PINNED
                         </span>
@@ -303,10 +303,10 @@ export default function InternshipUpdatesView({ setActiveTab }) {
                       {/* Type Pill */}
                       <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full border ${
                         isUrgent 
-                          ? 'bg-rose-50 text-rose-700 border-rose-200'
+                          ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800'
                           : isCompanyReply
-                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                          : 'bg-blue-50 text-blue-700 border-blue-200'
+                          ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                          : 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800'
                       }`}>
                         {ann.type === 'COMPANY_REPLY' ? 'Company Response' : ann.type === 'URGENT' ? 'Urgent Deadline' : ann.category || 'Announcement'}
                       </span>
@@ -320,16 +320,16 @@ export default function InternshipUpdatesView({ setActiveTab }) {
 
                       {/* Location Badge */}
                       {ann.companyLocation && (
-                        <span className="text-[11px] text-slate-700 bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                          <MapPin className="w-3 h-3 text-blue-600" />
+                        <span className="text-[11px] text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                          <MapPin className="w-3 h-3 text-blue-600 dark:text-blue-400" />
                           <span>{ann.companyLocation}</span>
                         </span>
                       )}
 
                       {/* Students Included Count Pill */}
                       {ann.studentsIncluded && ann.studentsIncluded.length > 0 && (
-                        <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                          <Users className="w-3 h-3 text-blue-600" />
+                        <span className="text-[10px] font-bold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                          <Users className="w-3 h-3 text-blue-600 dark:text-blue-400" />
                           <span>{ann.studentsIncluded.length} Students Listed</span>
                         </span>
                       )}
@@ -337,19 +337,19 @@ export default function InternshipUpdatesView({ setActiveTab }) {
                     </div>
 
                     {/* Dates & Reference */}
-                    <div className="flex flex-wrap items-center gap-2.5 text-[11px] text-slate-500">
+                    <div className="flex flex-wrap items-center gap-2.5 text-[11px] text-slate-500 dark:text-slate-400">
                       {ann.requestSentDate && (
                         <span className="flex items-center gap-1">
-                          <Send className="w-3 h-3 text-slate-400" />
-                          <span>Sent: <strong>{ann.requestSentDate}</strong></span>
+                          <Send className="w-3 h-3 text-slate-400 dark:text-slate-500" />
+                          <span>Sent: <strong className="text-slate-700 dark:text-slate-300">{ann.requestSentDate}</strong></span>
                         </span>
                       )}
                       <span className="flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5 text-slate-400" />
+                        <Clock className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                         <span>{isCompanyReply ? `Reply: ${ann.replyDate || 'Recent'}` : `Posted: ${ann.replyDate || 'Recent'}`}</span>
                       </span>
                       {ann.emailReference && (
-                        <span className="font-mono text-[10px] text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                        <span className="font-mono text-[10px] text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">
                           Ref: {ann.emailReference}
                         </span>
                       )}
@@ -359,39 +359,39 @@ export default function InternshipUpdatesView({ setActiveTab }) {
                   {/* Company & Title Header */}
                   <div className="flex items-start gap-3.5">
                     {isCompanyReply && (
-                      <div className="h-10 w-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm shrink-0">
+                      <div className="h-10 w-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 border border-blue-100 dark:border-blue-900 flex items-center justify-center text-blue-700 dark:text-blue-300 font-bold text-sm shrink-0">
                         {ann.companyName ? ann.companyName.charAt(0) : 'C'}
                       </div>
                     )}
                     
                     <div className="space-y-1 flex-1">
                       {isCompanyReply && ann.companyName && (
-                        <div className="text-xs font-bold text-blue-700 uppercase tracking-wider flex items-center gap-1.5">
+                        <div className="text-xs font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
                           <Building2 className="w-3.5 h-3.5" />
                           <span>{ann.companyName}</span>
                         </div>
                       )}
-                      <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-snug">
+                      <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight leading-snug">
                         {ann.title}
                       </h2>
                     </div>
                   </div>
 
                   {/* Main Announcement Message */}
-                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed whitespace-pre-line">
+                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line">
                     {ann.content}
                   </p>
 
                   {/* PROMINENT DISCLAIMER / NOTICE FOR TARGETED COMPANY REPLIES */}
                   {isCompanyReply && (
-                    <div className="bg-amber-50/80 border border-amber-200 rounded-xl p-3.5 flex items-start gap-3">
-                      <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                    <div className="bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/80 rounded-xl p-3.5 flex items-start gap-3">
+                      <ShieldAlert className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                       <div className="space-y-0.5">
-                        <span className="text-[11px] font-bold text-amber-900 uppercase tracking-wide block">
+                        <span className="text-[11px] font-bold text-amber-900 dark:text-amber-300 uppercase tracking-wide block">
                           Important Notice: Targeted Opportunity
                         </span>
-                        <p className="text-xs text-amber-800 leading-relaxed">
-                          This company reply and internship opportunity apply <strong className="text-amber-950 font-bold">only to the students listed below</strong>, as they were included in the original internship request sent to the company. Other students need not follow these instructions or book consultation appointments for this specific response.
+                        <p className="text-xs text-amber-800 dark:text-amber-200 leading-relaxed">
+                          This company reply and internship opportunity apply <strong className="text-amber-950 dark:text-amber-100 font-bold">only to the students listed below</strong>, as they were included in the original internship request sent to the company. Other students need not follow these instructions or book consultation appointments for this specific response.
                         </p>
                       </div>
                     </div>
@@ -399,14 +399,14 @@ export default function InternshipUpdatesView({ setActiveTab }) {
 
                   {/* STUDENTS INCLUDED IN THIS REQUEST SECTION */}
                   {ann.studentsIncluded && ann.studentsIncluded.length > 0 && (
-                    <div className="bg-slate-50/70 border border-slate-200 rounded-xl p-4 space-y-3">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-2.5">
+                    <div className="bg-slate-50/70 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-4 space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-700 pb-2.5">
                         <div className="flex items-center gap-2">
-                          <Users className="w-4 h-4 text-blue-600" />
-                          <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                          <Users className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                          <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                             Students Included in This Request
                           </h4>
-                          <span className="px-2 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-[10px] font-mono font-bold">
+                          <span className="px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 text-[10px] font-mono font-bold">
                             {ann.studentsIncluded.length} Students
                           </span>
                         </div>
@@ -414,13 +414,13 @@ export default function InternshipUpdatesView({ setActiveTab }) {
                         {/* Search / filter within this card if students > 3 */}
                         {ann.studentsIncluded.length > 3 && (
                           <div className="relative w-full sm:w-56">
-                            <Search className="w-3 h-3 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                            <Search className="w-3 h-3 text-slate-400 dark:text-slate-500 absolute left-2.5 top-1/2 -translate-y-1/2" />
                             <input
                               type="text"
                               placeholder="Filter student or reg no..."
                               value={cardStudentFilters[ann.id] || ''}
                               onChange={(e) => setCardStudentFilters({ ...cardStudentFilters, [ann.id]: e.target.value })}
-                              className="w-full pl-7 pr-2.5 py-1 bg-white border border-slate-200 rounded-lg text-[11px] text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 shadow-sm"
+                              className="w-full pl-7 pr-2.5 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-[11px] text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500 shadow-sm"
                             />
                           </div>
                         )}
@@ -430,7 +430,7 @@ export default function InternshipUpdatesView({ setActiveTab }) {
                       <div className="overflow-x-auto">
                         <table className="w-full text-left text-xs">
                           <thead>
-                            <tr className="text-[10px] uppercase text-slate-500 border-b border-slate-200">
+                            <tr className="text-[10px] uppercase text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700">
                               <th className="pb-2 font-semibold">#</th>
                               <th className="pb-2 font-semibold">Student Name</th>
                               <th className="pb-2 font-semibold">Register Number</th>
@@ -438,7 +438,7 @@ export default function InternshipUpdatesView({ setActiveTab }) {
                               <th className="pb-2 font-semibold">Year & Sec</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
+                          <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300 font-medium">
                             {ann.studentsIncluded
                               .filter(s => {
                                 const filter = (cardStudentFilters[ann.id] || '').toLowerCase().trim();
@@ -450,12 +450,12 @@ export default function InternshipUpdatesView({ setActiveTab }) {
                                 );
                               })
                               .map((s, idx) => (
-                                <tr key={idx} className="hover:bg-slate-100/60 transition-colors">
-                                  <td className="py-2 font-mono text-[10px] text-slate-400">{idx + 1}</td>
-                                  <td className="py-2 font-semibold text-slate-900">{s.name}</td>
-                                  <td className="py-2 font-mono text-blue-600 font-bold">{s.registerNumber}</td>
-                                  <td className="py-2 text-slate-600">{s.department || '-'}</td>
-                                  <td className="py-2 text-slate-600">{s.year || ''} {s.section || ''}</td>
+                                <tr key={idx} className="hover:bg-slate-100/60 dark:hover:bg-slate-800/60 transition-colors">
+                                  <td className="py-2 font-mono text-[10px] text-slate-400 dark:text-slate-500">{idx + 1}</td>
+                                  <td className="py-2 font-semibold text-slate-900 dark:text-white">{s.name}</td>
+                                  <td className="py-2 font-mono text-blue-600 dark:text-blue-400 font-bold">{s.registerNumber}</td>
+                                  <td className="py-2 text-slate-600 dark:text-slate-300">{s.department || '-'}</td>
+                                  <td className="py-2 text-slate-600 dark:text-slate-300">{s.year || ''} {s.section || ''}</td>
                                 </tr>
                               ))}
                           </tbody>
@@ -466,29 +466,29 @@ export default function InternshipUpdatesView({ setActiveTab }) {
 
                   {/* Key Metadata Grid (for company replies or internship opportunities) */}
                   {(ann.department || ann.duration || ann.eligibility || ann.deadline) && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 bg-slate-50 border border-slate-200 p-3.5 rounded-xl text-xs">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 p-3.5 rounded-xl text-xs">
                       {ann.department && (
                         <div>
-                          <span className="text-[10px] uppercase font-semibold text-slate-500 block mb-0.5">Target Department</span>
-                          <span className="font-semibold text-slate-800">{ann.department}</span>
+                          <span className="text-[10px] uppercase font-semibold text-slate-500 dark:text-slate-400 block mb-0.5">Target Department</span>
+                          <span className="font-semibold text-slate-800 dark:text-slate-200">{ann.department}</span>
                         </div>
                       )}
                       {ann.duration && (
                         <div>
-                          <span className="text-[10px] uppercase font-semibold text-slate-500 block mb-0.5">Duration</span>
-                          <span className="font-semibold text-slate-800">{ann.duration}</span>
+                          <span className="text-[10px] uppercase font-semibold text-slate-500 dark:text-slate-400 block mb-0.5">Duration</span>
+                          <span className="font-semibold text-slate-800 dark:text-slate-200">{ann.duration}</span>
                         </div>
                       )}
                       {ann.eligibility && (
                         <div>
-                          <span className="text-[10px] uppercase font-semibold text-slate-500 block mb-0.5">Eligibility</span>
-                          <span className="font-semibold text-slate-800">{ann.eligibility}</span>
+                          <span className="text-[10px] uppercase font-semibold text-slate-500 dark:text-slate-400 block mb-0.5">Eligibility</span>
+                          <span className="font-semibold text-slate-800 dark:text-slate-200">{ann.eligibility}</span>
                         </div>
                       )}
                       {ann.deadline && (
                         <div>
-                          <span className="text-[10px] uppercase font-semibold text-slate-500 block mb-0.5">Reporting / Deadline</span>
-                          <span className="font-bold text-rose-700 flex items-center gap-1">
+                          <span className="text-[10px] uppercase font-semibold text-slate-500 dark:text-slate-400 block mb-0.5">Reporting / Deadline</span>
+                          <span className="font-bold text-rose-700 dark:text-rose-400 flex items-center gap-1">
                             <Calendar className="w-3 h-3 text-rose-500" />
                             {ann.deadline}
                           </span>
@@ -499,11 +499,11 @@ export default function InternshipUpdatesView({ setActiveTab }) {
 
                   {/* Highlighted Required Documents Box */}
                   {ann.requiredDocuments && (
-                    <div className="bg-blue-50/80 border border-blue-200 p-3.5 rounded-xl flex items-start gap-2.5">
-                      <FileCheck className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                    <div className="bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/80 p-3.5 rounded-xl flex items-start gap-2.5">
+                      <FileCheck className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
                       <div className="space-y-0.5">
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-blue-900 block">Required Documents to Submit / Carry:</span>
-                        <p className="text-xs text-slate-700 leading-relaxed">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-blue-900 dark:text-blue-200 block">Required Documents to Submit / Carry:</span>
+                        <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
                           {ann.requiredDocuments}
                         </p>
                       </div>
@@ -512,11 +512,11 @@ export default function InternshipUpdatesView({ setActiveTab }) {
 
                   {/* Highlighted Action Required Box */}
                   {ann.actionRequired && (
-                    <div className="bg-emerald-50/80 border border-emerald-200 p-3.5 rounded-xl flex items-start gap-2.5">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <div className="bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/80 p-3.5 rounded-xl flex items-start gap-2.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                       <div className="space-y-0.5">
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-900 block">Action Required for Students:</span>
-                        <p className="text-xs text-slate-700 leading-relaxed">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-900 dark:text-emerald-200 block">Action Required for Students:</span>
+                        <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
                           {ann.actionRequired}
                         </p>
                       </div>
@@ -525,11 +525,11 @@ export default function InternshipUpdatesView({ setActiveTab }) {
 
                   {/* Coordinator Notes Callout */}
                   {ann.coordinatorNotes && (
-                    <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl flex items-start gap-2.5 text-xs text-slate-700">
-                      <GraduationCap className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                    <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 p-3 rounded-xl flex items-start gap-2.5 text-xs text-slate-700 dark:text-slate-300">
+                      <GraduationCap className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
                       <div className="space-y-0.5">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Coordinator Desk Note:</span>
-                        <p className="text-xs text-slate-700 italic">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">Coordinator Desk Note:</span>
+                        <p className="text-xs text-slate-700 dark:text-slate-300 italic">
                           "{ann.coordinatorNotes}"
                         </p>
                       </div>

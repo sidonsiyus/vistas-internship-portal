@@ -33,11 +33,41 @@ export function AppProvider({ children }) {
       const saved = localStorage.getItem('vistas_students');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length >= 50) {
+          const valid = parsed.filter(s => s && s.registerNumber && !String(s.registerNumber).startsWith('__SYS_'));
+          if (valid.length >= 50) return valid;
+        }
       }
     } catch (e) {}
     return MOCK_STUDENTS;
   });
+
+  // System-wide Theme State: 'light' | 'dark'
+  const [theme, setTheme] = useState(() => {
+    try {
+      const saved = localStorage.getItem('vistas_theme');
+      if (saved === 'light' || saved === 'dark') return saved;
+      if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        return 'dark';
+      }
+    } catch (e) {}
+    return 'light';
+  });
+
+  const toggleTheme = () => {
+    setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('vistas_theme', theme);
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    } catch (e) {}
+  }, [theme]);
 
   // Announcements & Company Reply Updates State
   const [announcements, setAnnouncements] = useState(() => {
@@ -225,7 +255,7 @@ export function AppProvider({ children }) {
           supabase.from('appointments').select('*').order('created_at', { ascending: true }),
           supabase.from('availability').select('*').single(),
           supabase.from('students').select('register_number, private_notes').in('register_number', ['__SYS_ANNOUNCEMENTS__', '__SYS_AVAILABILITY__']),
-          supabase.from('students').select('*').not('register_number', 'like', '__SYS_%').limit(100)
+          supabase.from('students').select('*').not('register_number', 'like', '__SYS_%').order('name', { ascending: true })
         ]);
 
         if (aptRes.status === 'fulfilled' && aptRes.value.data) {
@@ -306,19 +336,23 @@ export function AppProvider({ children }) {
 
         if (stdRes.status === 'fulfilled' && stdRes.value.data && stdRes.value.data.length > 0) {
           const realStudents = stdRes.value.data
+            .filter(s => s.register_number && !String(s.register_number).startsWith('__SYS_'))
             .map(s => ({
-              id: s.id,
+              id: s.id || `std-${s.register_number}`,
               registerNumber: s.register_number,
               name: s.name,
               department: s.department,
               year: s.year,
               email: s.email,
-              phone: s.phone,
-              historyCount: s.history_count,
-              privateNotes: s.private_notes
+              phone: s.phone || '',
+              historyCount: s.history_count || 0,
+              privateNotes: s.private_notes || ''
             }));
-          if (realStudents.length > 0) {
+          if (realStudents.length >= 50) {
             setStudents(realStudents);
+            try {
+              localStorage.setItem('vistas_students', JSON.stringify(realStudents));
+            } catch (e) {}
           }
         }
       } catch (e) {
@@ -972,6 +1006,8 @@ export function AppProvider({ children }) {
         appointments,
         students,
         announcements,
+        theme,
+        toggleTheme,
         unreadCount,
         markUpdatesAsRead,
         activeMeeting,

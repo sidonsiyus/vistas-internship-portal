@@ -22,53 +22,53 @@ export default function ConfirmationStep({ appointment, onTrackToken, onCancel }
   const actualTokenNumber = appointment.tokenNumber;
 
   return (
-    <div className="space-y-6 text-center font-sans">
+    <div className="space-y-6 text-center font-sans transition-colors duration-200">
       
       {/* Confirmation Header */}
-      <div className="inline-flex items-center justify-center p-3 bg-emerald-50 rounded-full border border-emerald-200 text-emerald-600 mb-1">
+      <div className="inline-flex items-center justify-center p-3 bg-emerald-50 dark:bg-emerald-950/60 rounded-full border border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 mb-1">
         <CheckCircle2 className="w-10 h-10" />
       </div>
 
       <div>
-        <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+        <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
           ✓ BOOKING CONFIRMED!
         </h2>
-        <p className="text-xs text-slate-600 mt-1">
+        <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
           Your consultation slot has been reserved. Please state your token number when called.
         </p>
       </div>
 
       {/* Prominent Token Card */}
-      <div className="bg-white p-6 md:p-8 rounded-2xl border border-slate-200 shadow-md space-y-6 max-w-md mx-auto">
+      <div className="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-md space-y-6 max-w-md mx-auto">
         <div className="space-y-2">
-          <span className="text-xs font-extrabold uppercase tracking-widest text-blue-600">YOUR DIGITAL CONSULTATION TOKEN</span>
+          <span className="text-xs font-extrabold uppercase tracking-widest text-blue-600 dark:text-blue-400">YOUR DIGITAL CONSULTATION TOKEN</span>
           <div className="py-2">
             <TokenBadge tokenNumber={actualTokenNumber} size="giant" variant="blue" />
           </div>
-          <p className="text-xs text-emerald-700 font-mono font-bold">STATUS: CONFIRMED & QUEUED</p>
+          <p className="text-xs text-emerald-700 dark:text-emerald-400 font-mono font-bold">STATUS: CONFIRMED & QUEUED</p>
         </div>
 
         {/* Details Grid */}
-        <div className="grid grid-cols-2 gap-4 text-left border-t border-b border-slate-100 py-4 text-xs">
+        <div className="grid grid-cols-2 gap-4 text-left border-t border-b border-slate-100 dark:border-slate-800 py-4 text-xs">
           <div>
-            <span className="text-slate-500 block font-medium">STUDENT NAME</span>
-            <span className="font-bold text-slate-900 text-sm">{appointment.studentName}</span>
+            <span className="text-slate-500 dark:text-slate-400 block font-medium">STUDENT NAME</span>
+            <span className="font-bold text-slate-900 dark:text-white text-sm">{appointment.studentName}</span>
           </div>
           <div>
-            <span className="text-slate-500 block font-medium">REGISTER NO.</span>
-            <span className="font-bold text-slate-900 font-mono text-sm">{appointment.registerNumber}</span>
+            <span className="text-slate-500 dark:text-slate-400 block font-medium">REGISTER NO.</span>
+            <span className="font-bold text-slate-900 dark:text-white font-mono text-sm">{appointment.registerNumber}</span>
           </div>
           <div>
-            <span className="text-slate-500 block font-medium">DATE & TIME</span>
-            <span className="font-bold text-blue-700">{appointment.appointmentDate} • {appointment.appointmentTime}</span>
+            <span className="text-slate-500 dark:text-slate-400 block font-medium">DATE & TIME</span>
+            <span className="font-bold text-blue-700 dark:text-blue-400">{appointment.appointmentDate} • {appointment.appointmentTime}</span>
           </div>
           <div>
-            <span className="text-slate-500 block font-medium">CATEGORY</span>
-            <span className="font-bold text-slate-800">{appointment.category}</span>
+            <span className="text-slate-500 dark:text-slate-400 block font-medium">CATEGORY</span>
+            <span className="font-bold text-slate-800 dark:text-slate-200">{appointment.category}</span>
           </div>
-          <div className="col-span-2 border-t border-slate-100 pt-2">
-            <span className="text-slate-500 block font-medium">LOCATION</span>
-            <span className="font-semibold text-slate-800 text-xs flex items-center gap-1 mt-0.5">
+          <div className="col-span-2 border-t border-slate-100 dark:border-slate-800 pt-2">
+            <span className="text-slate-500 dark:text-slate-400 block font-medium">LOCATION</span>
+            <span className="font-semibold text-slate-800 dark:text-slate-200 text-xs flex items-center gap-1 mt-0.5">
               <MapPin className="w-3.5 h-3.5 shrink-0 text-rose-500" />
               <span>{OFFICE_LOCATION}</span>
             </span>
@@ -89,9 +89,9 @@ export default function ConfirmationStep({ appointment, onTrackToken, onCancel }
 
         <button
           onClick={() => downloadIcsFile(appointment)}
-          className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm border border-slate-200 shadow-sm transition-all"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-sm border border-slate-200 dark:border-slate-700 shadow-sm transition-all"
         >
-          <Download className="w-4 h-4 text-blue-600" />
+          <Download className="w-4 h-4 text-blue-600 dark:text-blue-400" />
           <span>CALENDAR (.ICS)</span>
         </button>
       </div>

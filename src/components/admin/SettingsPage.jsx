@@ -61,29 +61,29 @@ export default function SettingsPage() {
     <div className="max-w-4xl mx-auto space-y-6 font-sans">
       
       {/* Header */}
-      <div className="border-b border-slate-200 pb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+      <div className="border-b border-slate-200 dark:border-slate-800 pb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
           System Preferences & Admin Credentials
         </h1>
-        <p className="text-xs text-slate-500 mt-0.5">
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
           Configure audio call alerts, Supabase admin passcodes, and desk parameters.
         </p>
       </div>
 
       {/* ADMIN PASSCODE & CREDENTIALS SECTION */}
-      <div className="bg-white border border-blue-200/80 p-6 rounded-2xl shadow-sm space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+      <div className="bg-white dark:bg-slate-900 border border-blue-200/80 dark:border-blue-900/50 p-6 rounded-2xl shadow-sm space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
           <div className="space-y-1">
-            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <KeyRound className="w-4 h-4 text-blue-600" />
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <KeyRound className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               <span>Change Supabase Admin Passcode</span>
             </h3>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               Update the passcode used to log into the Internship Coordinator Admin Panel.
             </p>
           </div>
           {usingSupabase && (
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
               ● Connected to Supabase
             </span>
           )}
@@ -91,24 +91,24 @@ export default function SettingsPage() {
 
         <form onSubmit={handleUpdatePasscode} className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
           <div className="space-y-1">
-            <label className="block text-xs font-semibold text-slate-700">New Admin Passcode</label>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">New Admin Passcode</label>
             <input
               type="password"
               placeholder="Enter new passcode..."
               value={newPasscode}
               onChange={(e) => setNewPasscode(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white"
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:bg-white dark:focus:bg-slate-800"
             />
           </div>
 
           <div className="space-y-1">
-            <label className="block text-xs font-semibold text-slate-700">Confirm New Passcode</label>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">Confirm New Passcode</label>
             <input
               type="password"
               placeholder="Re-enter new passcode..."
               value={confirmPasscode}
               onChange={(e) => setConfirmPasscode(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white"
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:bg-white dark:focus:bg-slate-800"
             />
           </div>
 
@@ -126,14 +126,14 @@ export default function SettingsPage() {
       </div>
 
       {/* System Preferences */}
-      <div className="bg-white border border-slate-200/80 p-6 rounded-2xl shadow-sm space-y-6">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-6 rounded-2xl shadow-sm space-y-6">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
           <div className="space-y-1">
-            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <Bell className="w-4 h-4 text-blue-600" />
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <Bell className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               <span>Audio Call Sound Alerts</span>
             </h3>
-            <p className="text-xs text-slate-500">Play pleasant audio chime when calling a student token.</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Play pleasant audio chime when calling a student token.</p>
           </div>
           <input
             type="checkbox"
@@ -143,13 +143,13 @@ export default function SettingsPage() {
           />
         </div>
 
-        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
           <div className="space-y-1">
-            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               <span>Automatic Next Student Transition</span>
             </h3>
-            <p className="text-xs text-slate-500">Automatically call next waiting student when completing a meeting.</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Automatically call next waiting student when completing a meeting.</p>
           </div>
           <input
             type="checkbox"
@@ -162,7 +162,7 @@ export default function SettingsPage() {
         <div className="pt-2 flex justify-end">
           <button
             onClick={handleSavePreferences}
-            className="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition-colors shadow-sm"
+            className="px-5 py-2.5 rounded-xl bg-slate-900 dark:bg-blue-600 hover:bg-slate-800 dark:hover:bg-blue-700 text-white font-semibold text-xs transition-colors shadow-sm"
           >
             Save System Preferences
           </button>
@@ -170,17 +170,17 @@ export default function SettingsPage() {
       </div>
 
       {/* Reset Data Card */}
-      <div className="bg-white border border-rose-200 p-6 rounded-2xl shadow-sm flex items-center justify-between">
+      <div className="bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-900/50 p-6 rounded-2xl shadow-sm flex items-center justify-between">
         <div className="space-y-1">
-          <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-            <Database className="w-4 h-4 text-rose-600" />
+          <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <Database className="w-4 h-4 text-rose-600 dark:text-rose-400" />
             <span>Reset Local Cache</span>
           </h3>
-          <p className="text-xs text-slate-500">Clears browser local state and re-fetches clean database from Supabase.</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Clears browser local state and re-fetches clean database from Supabase.</p>
         </div>
         <button
           onClick={handleResetDemoData}
-          className="px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-700 text-xs font-semibold border border-rose-200 transition-colors"
+          className="px-4 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-600 hover:text-white text-rose-700 dark:text-rose-400 text-xs font-semibold border border-rose-200 dark:border-rose-900/50 transition-colors"
         >
           Reset Cache
         </button>
