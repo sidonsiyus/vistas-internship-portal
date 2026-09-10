@@ -17,15 +17,15 @@ export default function TokenBadge({ tokenNumber, size = 'normal', variant = 'bl
   const getVariantStyle = () => {
     switch (variant) {
       case 'emerald':
-        return 'bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-sm';
+        return 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 shadow-sm';
       case 'amber':
-        return 'bg-amber-50 text-amber-700 border border-amber-200 shadow-sm';
+        return 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 shadow-sm';
       case 'orange':
-        return 'bg-orange-50 text-orange-700 border border-orange-200 shadow-sm animate-pulse';
+        return 'bg-orange-50 dark:bg-orange-950/60 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-800 shadow-sm animate-pulse';
       case 'slate':
-        return 'bg-slate-100 text-slate-700 border border-slate-200';
+        return 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700';
       default:
-        return 'bg-blue-50 text-blue-700 border border-blue-200 shadow-sm';
+        return 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 shadow-sm';
     }
   };
 
