@@ -110,7 +110,7 @@ export default function TimeStep({ selectedDate, selectedTime, setSelectedTime, 
       <div className="space-y-3">
         <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
           <div className="flex items-center gap-2 text-slate-900 dark:text-white font-bold text-sm">
-            <Sunset className="w-4 h-4 text-orange-500" />
+            <Sunset className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             <span>Regular Consultations (03:00 PM – 05:30 PM)</span>
           </div>
           <span className="text-[10px] text-emerald-700 dark:text-emerald-300 font-semibold bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">

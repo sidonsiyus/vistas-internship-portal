@@ -50,7 +50,7 @@ export default function InternshipUpdatesView({ setActiveTab }) {
       case 'INTERNSHIP_CONFIRMED':
         return {
           label: 'Internship Confirmed',
-          classes: 'bg-green-50 dark:bg-green-950/60 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800'
+          classes: 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
         };
       case 'OPPORTUNITY_AVAILABLE':
         return {
@@ -65,17 +65,17 @@ export default function InternshipUpdatesView({ setActiveTab }) {
       case 'REPLY_RECEIVED':
         return {
           label: 'Reply Received',
-          classes: 'bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border-teal-200 dark:border-teal-800'
+          classes: 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800'
         };
       case 'PENDING_STUDENT_ACTION':
         return {
           label: 'Pending Student Action',
-          classes: 'bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800'
+          classes: 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800'
         };
       case 'INFO_REQUIRED':
         return {
           label: 'More Info Required',
-          classes: 'bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800'
+          classes: 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800'
         };
       case 'CLOSED':
         return {
@@ -280,9 +280,9 @@ export default function InternshipUpdatesView({ setActiveTab }) {
                 key={ann.id}
                 className={`bg-white dark:bg-slate-900 rounded-2xl border transition-all hover:border-slate-300 dark:hover:border-slate-700 shadow-sm overflow-hidden ${
                   isUrgent 
-                    ? 'border-rose-300 dark:border-rose-800/80 bg-gradient-to-br from-rose-50/30 dark:from-rose-950/20 via-white dark:via-slate-900 to-white dark:to-slate-900' 
+                    ? 'border-rose-200 dark:border-rose-800/80 bg-white dark:bg-slate-900' 
                     : ann.isPinned
-                    ? 'border-amber-300 dark:border-amber-800/80 bg-gradient-to-br from-amber-50/30 dark:from-amber-950/20 via-white dark:via-slate-900 to-white dark:to-slate-900'
+                    ? 'border-amber-200 dark:border-amber-800/80 bg-white dark:bg-slate-900'
                     : 'border-slate-200 dark:border-slate-800'
                 }`}
               >

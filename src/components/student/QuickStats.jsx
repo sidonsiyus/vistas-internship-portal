@@ -37,8 +37,8 @@ export default function QuickStats() {
       value: `${metrics.avgDurationMinutes}m`,
       subtext: 'Per consultation',
       icon: Clock,
-      color: 'text-indigo-600 dark:text-indigo-400',
-      bg: 'bg-indigo-50 dark:bg-indigo-950/60 border-indigo-200 dark:border-indigo-800'
+      color: 'text-blue-600 dark:text-blue-400',
+      bg: 'bg-blue-50 dark:bg-blue-950/60 border-blue-200 dark:border-blue-800'
     }
   ];
 

@@ -31,11 +31,11 @@ export default function AnalyticsReports() {
 
   // Sample data for charts
   const categoryData = [
-    { name: 'Opportunity', value: 35, color: '#2563EB' },
-    { name: 'Approval (NOC)', value: 28, color: '#10B981' },
-    { name: 'Recommendation', value: 18, color: '#8B5CF6' },
-    { name: 'Documents', value: 12, color: '#F59E0B' },
-    { name: 'Certificate', value: 7, color: '#06B6D4' },
+    { name: 'Opportunity', value: 35, color: '#1E3A5F' },
+    { name: 'Approval (NOC)', value: 28, color: '#15803D' },
+    { name: 'Recommendation', value: 18, color: '#475569' },
+    { name: 'Documents', value: 12, color: '#B45309' },
+    { name: 'Certificate', value: 7, color: '#94A3B8' },
   ];
 
   const hourlyData = [
@@ -117,7 +117,7 @@ export default function AnalyticsReports() {
                 <XAxis dataKey="hour" stroke="#94A3B8" fontSize={11} />
                 <YAxis stroke="#94A3B8" fontSize={11} />
                 <Tooltip contentStyle={{ backgroundColor: '#1E293B', borderColor: '#334155', borderRadius: '12px', fontSize: '12px', color: '#F8FAFC', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.3)' }} />
-                <Bar dataKey="count" fill="#2563EB" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="count" fill="#1E3A5F" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -162,7 +162,7 @@ export default function AnalyticsReports() {
         {/* Chart 3: Duration Trend */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-6 rounded-2xl shadow-sm space-y-4 lg:col-span-2">
           <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Clock className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+            <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             <span>Average Meeting Duration Trend (Minutes per day)</span>
           </h3>
           <div className="h-56">
@@ -171,7 +171,7 @@ export default function AnalyticsReports() {
                 <XAxis dataKey="day" stroke="#94A3B8" fontSize={11} />
                 <YAxis stroke="#94A3B8" fontSize={11} />
                 <Tooltip contentStyle={{ backgroundColor: '#1E293B', borderColor: '#334155', borderRadius: '12px', fontSize: '12px', color: '#F8FAFC', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.3)' }} />
-                <Line type="monotone" dataKey="duration" stroke="#0284C7" strokeWidth={3} dot={{ r: 5 }} />
+                <Line type="monotone" dataKey="duration" stroke="#1E3A5F" strokeWidth={3} dot={{ r: 5 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>

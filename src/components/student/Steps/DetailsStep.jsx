@@ -116,7 +116,7 @@ export default function DetailsStep({ formData, setFormData, onSubmit, onBack })
                     : 'bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-sm'
                 }`}
               >
-                <span className={`w-2 h-2 rounded-full bg-${cat.color}-500 shrink-0`} />
+                <span className={`w-2 h-2 rounded-full shrink-0 ${isSelected ? 'bg-blue-600 dark:bg-blue-400' : 'bg-slate-300 dark:bg-slate-600'}`} />
                 <span className="text-xs truncate">{cat.label}</span>
               </button>
             );

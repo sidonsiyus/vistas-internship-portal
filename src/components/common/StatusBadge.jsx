@@ -13,7 +13,7 @@ export default function StatusBadge({ status, size = 'normal' }) {
       case 'WAITING':
         return { label: 'WAITING', bg: 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800', dot: 'bg-amber-500' };
       case 'CALLED':
-        return { label: 'CALLED', bg: 'bg-orange-50 dark:bg-orange-950/60 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800 animate-pulse', dot: 'bg-orange-500' };
+        return { label: 'CALLED', bg: 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800 animate-pulse', dot: 'bg-amber-500' };
       case 'IN_PROGRESS':
         return { label: 'CURRENTLY MEETING', bg: 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800', dot: 'bg-blue-600 dark:bg-blue-400' };
       case 'COMPLETED':

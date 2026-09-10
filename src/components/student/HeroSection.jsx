@@ -13,7 +13,7 @@ export default function HeroSection({ setActiveTab, onBookClick }) {
   };
 
   return (
-    <section className="relative overflow-hidden pt-12 pb-16 md:pt-20 md:pb-24 border-b border-slate-200 dark:border-slate-800 bg-gradient-to-b from-white via-slate-50/80 to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 font-sans transition-colors duration-200">
+    <section className="relative overflow-hidden pt-12 pb-16 md:pt-20 md:pb-24 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 font-sans transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="max-w-3xl mx-auto text-center space-y-6">
           
