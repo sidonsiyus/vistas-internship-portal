@@ -94,7 +94,7 @@ export default function AnnouncementBanner({ setActiveTab }) {
         return {
           icon: Megaphone,
           label: ann.category || 'Announcement',
-          bg: 'bg-amber-50 dark:bg-amber-950/60 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300',
+          bg: 'bg-blue-50 dark:bg-blue-950/60 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300',
           border: 'border-slate-200 dark:border-slate-800 shadow-sm'
         };
     }

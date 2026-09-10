@@ -31,11 +31,11 @@ export default function AnalyticsReports() {
 
   // Sample data for charts
   const categoryData = [
-    { name: 'Opportunity', value: 35, color: '#1E3A5F' },
-    { name: 'Approval (NOC)', value: 28, color: '#15803D' },
-    { name: 'Recommendation', value: 18, color: '#475569' },
-    { name: 'Documents', value: 12, color: '#B45309' },
-    { name: 'Certificate', value: 7, color: '#94A3B8' },
+    { name: 'Opportunity', value: 35, color: '#14532D' },
+    { name: 'Approval (NOC)', value: 28, color: '#166534' },
+    { name: 'Recommendation', value: 18, color: '#353F38' },
+    { name: 'Documents', value: 12, color: '#A16207' },
+    { name: 'Certificate', value: 7, color: '#98A39C' },
   ];
 
   const hourlyData = [
@@ -117,7 +117,7 @@ export default function AnalyticsReports() {
                 <XAxis dataKey="hour" stroke="#94A3B8" fontSize={11} />
                 <YAxis stroke="#94A3B8" fontSize={11} />
                 <Tooltip contentStyle={{ backgroundColor: '#1E293B', borderColor: '#334155', borderRadius: '12px', fontSize: '12px', color: '#F8FAFC', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.3)' }} />
-                <Bar dataKey="count" fill="#1E3A5F" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="count" fill="#14532D" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -171,7 +171,7 @@ export default function AnalyticsReports() {
                 <XAxis dataKey="day" stroke="#94A3B8" fontSize={11} />
                 <YAxis stroke="#94A3B8" fontSize={11} />
                 <Tooltip contentStyle={{ backgroundColor: '#1E293B', borderColor: '#334155', borderRadius: '12px', fontSize: '12px', color: '#F8FAFC', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.3)' }} />
-                <Line type="monotone" dataKey="duration" stroke="#1E3A5F" strokeWidth={3} dot={{ r: 5 }} />
+                <Line type="monotone" dataKey="duration" stroke="#14532D" strokeWidth={3} dot={{ r: 5 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
