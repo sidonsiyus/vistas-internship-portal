@@ -52,6 +52,8 @@ export default function AnnouncementsManager() {
     createAnnouncement, 
     updateAnnouncement, 
     deleteAnnouncement, 
+    clearAllAnnouncements,
+    loadSampleAnnouncements,
     toggleAnnouncementActive, 
     toggleAnnouncementPin 
   } = useApp();
@@ -62,6 +64,7 @@ export default function AnnouncementsManager() {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [isConfirmClearOpen, setIsConfirmClearOpen] = useState(false);
   
   // Form State
   const defaultFormState = {
@@ -259,13 +262,25 @@ export default function AnnouncementsManager() {
           </p>
         </div>
 
-        <button
-          onClick={handleOpenCreate}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-sm transition-all shrink-0"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Post New Update</span>
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          {announcements.length > 0 && (
+            <button
+              onClick={() => setIsConfirmClearOpen(true)}
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/70 hover:bg-rose-100 dark:bg-rose-950/30 dark:hover:bg-rose-950/60 text-rose-700 dark:text-rose-400 font-semibold text-xs shadow-sm transition-all"
+              title="Clear all notices and start clean"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Clear All</span>
+            </button>
+          )}
+          <button
+            onClick={handleOpenCreate}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-sm transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Post New Update</span>
+          </button>
+        </div>
       </div>
 
       {/* Metrics Cards */}
@@ -331,7 +346,35 @@ export default function AnnouncementsManager() {
 
       {/* Announcements List */}
       <div className="space-y-3">
-        {filteredList.length === 0 ? (
+        {announcements.length === 0 ? (
+          <div className="text-center py-14 px-4 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl space-y-3 shadow-sm">
+            <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto text-slate-400 dark:text-slate-500">
+              <Megaphone className="w-6 h-6" />
+            </div>
+            <div className="space-y-1 max-w-md mx-auto">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">No Announcements Posted</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                There are no active notices or company reply updates. When you publish an update here, it will automatically sync to all students and display boards.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-2.5 pt-2">
+              <button
+                onClick={handleOpenCreate}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-sm transition-all"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Post Announcement</span>
+              </button>
+              <button
+                onClick={loadSampleAnnouncements}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium text-xs transition-all border border-slate-200 dark:border-slate-700"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                <span>Load Sample Notice Templates</span>
+              </button>
+            </div>
+          </div>
+        ) : filteredList.length === 0 ? (
           <div className="text-center py-12 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-xl space-y-2">
             <Megaphone className="w-8 h-8 text-slate-400 mx-auto" />
             <p className="text-xs text-slate-500 dark:text-slate-400">No updates match your selected filter.</p>
@@ -1103,6 +1146,42 @@ export default function AnnouncementsManager() {
 
           </div>
 
+        </div>
+      )}
+
+      {/* Confirmation Modal for Clearing All Announcements */}
+      {isConfirmClearOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-xl">
+            <div className="w-10 h-10 rounded-full bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+              <AlertTriangle className="w-5 h-5" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">Clear All Notices?</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                This will remove all {announcements.length} notice(s) and company reply update(s). They will be cleared from Supabase and across all student screens immediately.
+              </p>
+            </div>
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setIsConfirmClearOpen(false)}
+                className="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  await clearAllAnnouncements();
+                  setIsConfirmClearOpen(false);
+                }}
+                className="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-sm transition-all"
+              >
+                Confirm Clear
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

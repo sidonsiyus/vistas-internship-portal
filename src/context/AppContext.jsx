@@ -73,12 +73,13 @@ export function AppProvider({ children }) {
   const [announcements, setAnnouncements] = useState(() => {
     try {
       const saved = localStorage.getItem('vistas_announcements');
-      if (saved) {
+      if (saved !== null) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) return parsed;
       }
     } catch (e) {}
-    return INITIAL_ANNOUNCEMENTS;
+    // Default to empty list so sample data does not perpetually resurrect
+    return [];
   });
 
   // Timestamp of when student last viewed the updates section
@@ -307,7 +308,7 @@ export function AppProvider({ children }) {
           if (annRecord && annRecord.private_notes) {
             try {
               const parsedAnn = JSON.parse(annRecord.private_notes);
-              if (Array.isArray(parsedAnn) && parsedAnn.length > 0) {
+              if (Array.isArray(parsedAnn)) {
                 setAnnouncements(parsedAnn);
                 try {
                   localStorage.setItem('vistas_announcements', JSON.stringify(parsedAnn));
@@ -999,6 +1000,26 @@ export function AppProvider({ children }) {
     showToast(newPin ? 'Notice pinned to top' : 'Notice unpinned', 'info');
   };
 
+  const clearAllAnnouncements = async () => {
+    setAnnouncements([]);
+    try {
+      localStorage.setItem('vistas_announcements', JSON.stringify([]));
+    } catch (e) {}
+    broadcastChange('SYNC', { announcements: [] });
+    await syncAnnouncementsToSupabase([]);
+    showToast('All announcements cleared', 'info');
+  };
+
+  const loadSampleAnnouncements = async () => {
+    setAnnouncements(INITIAL_ANNOUNCEMENTS);
+    try {
+      localStorage.setItem('vistas_announcements', JSON.stringify(INITIAL_ANNOUNCEMENTS));
+    } catch (e) {}
+    broadcastChange('SYNC', { announcements: INITIAL_ANNOUNCEMENTS });
+    await syncAnnouncementsToSupabase(INITIAL_ANNOUNCEMENTS);
+    showToast('Sample announcement templates loaded', 'success');
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -1029,6 +1050,8 @@ export function AppProvider({ children }) {
         createAnnouncement,
         updateAnnouncement,
         deleteAnnouncement,
+        clearAllAnnouncements,
+        loadSampleAnnouncements,
         toggleAnnouncementActive,
         toggleAnnouncementPin,
         loginAdmin,

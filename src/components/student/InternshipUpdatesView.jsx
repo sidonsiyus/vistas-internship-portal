@@ -101,8 +101,8 @@ export default function InternshipUpdatesView({ setActiveTab }) {
   };
 
   // Filter active announcements
-  const filteredAnnouncements = (announcements || [])
-    .filter(a => a.isActive !== false)
+  const activeAnnouncements = (announcements || []).filter(a => a.isActive !== false);
+  const filteredAnnouncements = activeAnnouncements
     .filter(a => {
       if (selectedType === 'COMPANY_REPLY' && a.type !== 'COMPANY_REPLY') return false;
       if (selectedType === 'URGENT' && a.type !== 'URGENT') return false;
@@ -249,10 +249,18 @@ export default function InternshipUpdatesView({ setActiveTab }) {
 
       {/* Announcements & Company Replies Feed */}
       <div className="space-y-4">
-        {filteredAnnouncements.length === 0 ? (
+        {activeAnnouncements.length === 0 ? (
           <div className="text-center py-16 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-3 shadow-sm">
             <Building2 className="w-10 h-10 text-slate-400 dark:text-slate-500 mx-auto" />
-            <h3 className="text-base font-bold text-slate-800 dark:text-white">No updates found</h3>
+            <h3 className="text-base font-bold text-slate-800 dark:text-white">No active notices</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+              There are no announcements or internship company updates posted at this time. Please check back later.
+            </p>
+          </div>
+        ) : filteredAnnouncements.length === 0 ? (
+          <div className="text-center py-16 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-3 shadow-sm">
+            <Building2 className="w-10 h-10 text-slate-400 dark:text-slate-500 mx-auto" />
+            <h3 className="text-base font-bold text-slate-800 dark:text-white">No updates match your search</h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
               No notices match your selected filters. Clear the search or check back later.
             </p>
