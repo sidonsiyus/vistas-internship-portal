@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { Users, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Users, Search, ChevronLeft, ChevronRight, FileText, FolderOpen, Calendar, Clock } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import Modal from '../common/Modal';
 import { DEPARTMENTS } from '../../mock/sampleData';
+import StudentDocumentsSection from './StudentDocumentsSection';
 
 const PAGE_SIZE = 24;
 
 export default function StudentDirectory() {
-  const { students, appointments, showToast } = useApp();
+  const { students, appointments, documents = [], showToast } = useApp();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDept, setSelectedDept] = useState('');
@@ -15,6 +16,7 @@ export default function StudentDirectory() {
 
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [privateNoteText, setPrivateNoteText] = useState('');
+  const [profileModalTab, setProfileModalTab] = useState('documents'); // 'documents' | 'overview'
 
   const filtered = (students || []).filter(s => {
     if (!s) return false;
@@ -156,6 +158,7 @@ export default function StudentDirectory() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
         {paginatedStudents.map((std) => {
           const studentApts = appointments.filter(a => a.registerNumber === std.registerNumber);
+          const studentDocs = documents.filter(d => d.studentRegisterNumber === std.registerNumber);
 
           return (
             <div 
@@ -181,8 +184,13 @@ export default function StudentDirectory() {
               <div className="space-y-1 text-xs text-slate-600 dark:text-slate-300">
                 <p className="text-slate-500 dark:text-slate-400 text-[11px] truncate">{std.department}</p>
                 <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-800">
-                  <span className="font-mono text-[10px] truncate max-w-[140px]">{std.email}</span>
-                  <span className="text-blue-600 dark:text-blue-400 font-medium shrink-0">{studentApts.length} meetings</span>
+                  <span className="font-mono text-[10px] truncate max-w-[120px]">{std.email}</span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-blue-600 dark:text-blue-400 font-medium">{studentApts.length} meetings</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-0.5">
+                      <FileText className="w-3 h-3" /> {studentDocs.length}
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -221,71 +229,105 @@ export default function StudentDirectory() {
         </div>
       )}
 
-      {/* STUDENT PROFILE & PRIVATE NOTES MODAL */}
+      {/* STUDENT PROFILE & INTERNSHIP DOSSIER MODAL */}
       <Modal
         isOpen={!!selectedStudent}
         onClose={() => setSelectedStudent(null)}
-        title={`Student Profile: ${selectedStudent?.name}`}
-        maxWidth="max-w-lg"
+        title={`Student Profile & Dossier: ${selectedStudent?.name}`}
+        maxWidth="max-w-3xl"
       >
         {selectedStudent && (
           <div className="space-y-4 text-xs text-slate-700 dark:text-slate-200">
-            {/* Student Info Card */}
-            <div className="bg-slate-50 dark:bg-slate-800/80 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-bold text-slate-900 dark:text-white">{selectedStudent.name}</span>
-                <span className="text-xs font-mono text-blue-600 dark:text-blue-400">Reg: {selectedStudent.registerNumber}</span>
+            {/* Student Info Card & Tabs */}
+            <div className="bg-slate-50 dark:bg-slate-800/80 p-4 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-slate-900 dark:text-white">{selectedStudent.name}</span>
+                  <span className="text-xs font-mono text-blue-600 dark:text-blue-400">({selectedStudent.registerNumber})</span>
+                </div>
+                <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">{selectedStudent.department} • {selectedStudent.year}</p>
+                <span className="text-slate-500 dark:text-slate-400 text-xs">📧 {selectedStudent.email}</span>
               </div>
-              <p className="text-xs text-slate-600 dark:text-slate-300">{selectedStudent.department} • {selectedStudent.year}</p>
-              <div className="flex items-center gap-4 text-slate-500 dark:text-slate-400 text-xs pt-1">
-                <span>📧 {selectedStudent.email}</span>
-                {selectedStudent.section && <span>Class/Sec: {selectedStudent.section}</span>}
+
+              {/* Tab Selector Pills */}
+              <div className="flex items-center gap-1.5 p-1 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setProfileModalTab('documents')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                    profileModalTab === 'documents'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>Documents ({documents.filter(d => d.studentRegisterNumber === selectedStudent.registerNumber).length})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setProfileModalTab('overview')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                    profileModalTab === 'overview'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <Users className="w-3.5 h-3.5" />
+                  <span>Consultations & Notes</span>
+                </button>
               </div>
             </div>
 
-            {/* Past Consultation History */}
-            <div className="space-y-2">
-              <span className="font-semibold text-slate-700 dark:text-slate-300 block uppercase tracking-wider text-[11px]">Consultation History Log</span>
-              <div className="space-y-2 max-h-36 overflow-y-auto">
-                {appointments
-                  .filter(a => a.registerNumber === selectedStudent.registerNumber)
-                  .map(apt => (
-                    <div key={apt.id} className="p-3 bg-white dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 text-xs flex items-center justify-between shadow-xs">
-                      <div>
-                        <span className="font-semibold text-slate-900 dark:text-white block">{apt.category}</span>
-                        <span className="text-slate-500 dark:text-slate-400 text-[11px]">{apt.appointmentDate} • {apt.appointmentTime}</span>
-                      </div>
-                      <span className="text-blue-600 dark:text-blue-400 font-mono text-xs font-bold">{apt.tokenNumber}</span>
-                    </div>
-                  ))}
-                {appointments.filter(a => a.registerNumber === selectedStudent.registerNumber).length === 0 && (
-                  <p className="text-slate-400 italic py-2 text-center">No past consultations recorded yet.</p>
-                )}
+            {profileModalTab === 'documents' ? (
+              <StudentDocumentsSection student={selectedStudent} />
+            ) : (
+              <div className="space-y-4">
+                {/* Past Consultation History */}
+                <div className="space-y-2">
+                  <span className="font-semibold text-slate-700 dark:text-slate-300 block uppercase tracking-wider text-[11px]">
+                    Consultation History Log ({appointments.filter(a => a.registerNumber === selectedStudent.registerNumber).length})
+                  </span>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {appointments
+                      .filter(a => a.registerNumber === selectedStudent.registerNumber)
+                      .map(apt => (
+                        <div key={apt.id} className="p-3 bg-white dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 text-xs flex items-center justify-between shadow-xs">
+                          <div>
+                            <span className="font-semibold text-slate-900 dark:text-white block">{apt.category}</span>
+                            <span className="text-slate-500 dark:text-slate-400 text-[11px]">{apt.appointmentDate} • {apt.appointmentTime}</span>
+                          </div>
+                          <span className="text-blue-600 dark:text-blue-400 font-mono text-xs font-bold">{apt.tokenNumber}</span>
+                        </div>
+                      ))}
+                    {appointments.filter(a => a.registerNumber === selectedStudent.registerNumber).length === 0 && (
+                      <p className="text-slate-400 italic py-2 text-center">No past consultations recorded yet.</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Private Coordinator Notes */}
+                <div className="space-y-1.5 pt-2 border-t border-slate-100 dark:border-slate-800">
+                  <label className="block text-slate-700 dark:text-slate-300 font-semibold text-xs">
+                    Private Coordinator Notes (Confidential)
+                  </label>
+                  <textarea
+                    rows="3"
+                    placeholder="Add confidential notes on student internship eligibility, recommendations, NOC status..."
+                    value={privateNoteText}
+                    onChange={(e) => setPrivateNoteText(e.target.value)}
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 resize-none"
+                  />
+                  <div className="flex justify-end pt-1">
+                    <button
+                      onClick={handleSaveNotes}
+                      className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-xs transition-colors"
+                    >
+                      Save Notes
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
-
-            {/* Private Coordinator Notes */}
-            <div className="space-y-1.5 pt-2">
-              <label className="block text-slate-700 dark:text-slate-300 font-semibold text-xs">
-                Private Coordinator Notes (Confidential)
-              </label>
-              <textarea
-                rows="3"
-                placeholder="Add confidential notes on student internship eligibility, recommendations, NOC status..."
-                value={privateNoteText}
-                onChange={(e) => setPrivateNoteText(e.target.value)}
-                className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 resize-none"
-              />
-            </div>
-
-            <div className="flex justify-end pt-2">
-              <button
-                onClick={handleSaveNotes}
-                className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-sm transition-colors"
-              >
-                Save Notes
-              </button>
-            </div>
+            )}
           </div>
         )}
       </Modal>

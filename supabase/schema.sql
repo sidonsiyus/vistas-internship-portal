@@ -137,3 +137,61 @@ BEGIN;
   DROP PUBLICATION IF EXISTS supabase_realtime;
   CREATE PUBLICATION supabase_realtime FOR TABLE public.appointments, public.availability, public.students, public.announcements;
 COMMIT;
+
+-- 9. CREATE STUDENT DOCUMENTS TABLE & VAULT
+CREATE TABLE IF NOT EXISTS public.student_documents (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    student_register_number TEXT NOT NULL,
+    student_name TEXT NOT NULL,
+    document_type TEXT NOT NULL,
+    custom_document_type TEXT,
+    document_title TEXT NOT NULL,
+    file_name TEXT NOT NULL,
+    storage_path TEXT NOT NULL,
+    file_size INT NOT NULL,
+    mime_type TEXT NOT NULL,
+    company_name TEXT,
+    description TEXT,
+    status TEXT NOT NULL DEFAULT 'Under Review',
+    admin_notes TEXT,
+    version INT NOT NULL DEFAULT 1,
+    uploaded_by TEXT DEFAULT 'Admin Coordinator',
+    uploaded_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_student_docs_reg ON public.student_documents(student_register_number);
+CREATE INDEX IF NOT EXISTS idx_student_docs_status ON public.student_documents(status);
+CREATE INDEX IF NOT EXISTS idx_student_docs_type ON public.student_documents(document_type);
+
+ALTER TABLE public.student_documents ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow public select on student_documents" ON public.student_documents FOR SELECT USING (true);
+CREATE POLICY "Allow public insert on student_documents" ON public.student_documents FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public update on student_documents" ON public.student_documents FOR UPDATE USING (true);
+CREATE POLICY "Allow public delete on student_documents" ON public.student_documents FOR DELETE USING (true);
+
+-- 10. CREATE PRIVATE STORAGE BUCKET: student-documents
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+    'student-documents',
+    'student-documents',
+    false,
+    10485760,
+    ARRAY[
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'image/jpeg',
+        'image/png',
+        'image/jpg',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    ]
+)
+ON CONFLICT (id) DO UPDATE SET public = false, file_size_limit = 10485760;
+
+CREATE POLICY "Allow coordinator select on student-documents bucket" ON storage.objects FOR SELECT USING (bucket_id = 'student-documents');
+CREATE POLICY "Allow coordinator insert on student-documents bucket" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'student-documents');
+CREATE POLICY "Allow coordinator update on student-documents bucket" ON storage.objects FOR UPDATE USING (bucket_id = 'student-documents');
+CREATE POLICY "Allow coordinator delete on student-documents bucket" ON storage.objects FOR DELETE USING (bucket_id = 'student-documents');
+

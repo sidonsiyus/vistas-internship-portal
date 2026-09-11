@@ -13,12 +13,15 @@ import {
   UserCheck,
   Megaphone,
   Sun,
-  Moon
+  Moon,
+  FolderGit2
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 
 export default function AdminLayout({ activeAdminPage, setActiveAdminPage, children }) {
-  const { logoutAdmin, availability, updateAvailabilityStatus, toastNotification, announcements, theme, toggleTheme } = useApp();
+  const { logoutAdmin, availability, updateAvailabilityStatus, toastNotification, announcements, documents = [], theme, toggleTheme } = useApp();
+
+  const pendingDocsCount = documents.filter(d => d.status === 'Under Review' || d.status === 'Uploaded' || d.status === 'Replacement Required').length;
 
   const navItems = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
@@ -27,6 +30,7 @@ export default function AdminLayout({ activeAdminPage, setActiveAdminPage, child
     { id: 'appointments', label: 'Appointments', icon: CalendarDays },
     { id: 'availability', label: 'Availability', icon: Clock },
     { id: 'students', label: 'Students Directory', icon: Users },
+    { id: 'documents', label: 'Document Vault', icon: FolderGit2, badge: pendingDocsCount > 0 ? `${pendingDocsCount} Review` : null },
     { id: 'reports', label: 'Reports & Analytics', icon: BarChart3 },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];

@@ -12,7 +12,8 @@ import {
   FileEdit,
   ArrowRight,
   TrendingUp,
-  Sparkles
+  Sparkles,
+  FolderGit2
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import TokenBadge from '../common/TokenBadge';
@@ -26,6 +27,8 @@ export default function OverviewDashboard({ setActiveAdminPage }) {
     appointments, 
     availability, 
     activeMeeting, 
+    students = [],
+    documents = [],
     callStudent, 
     startMeeting, 
     endMeeting, 
@@ -35,6 +38,11 @@ export default function OverviewDashboard({ setActiveAdminPage }) {
   } = useApp();
 
   const metrics = calculateQueueMetrics(appointments);
+
+  // Documentation vault metrics
+  const pendingDocsReview = documents.filter(d => d.status === 'Under Review' || d.status === 'Uploaded' || d.status === 'Replacement Required').length;
+  const verifiedDocsCount = documents.filter(d => d.status === 'Verified').length;
+  const overallDocCompletion = documents.length > 0 ? Math.round((verifiedDocsCount / documents.length) * 100) : 0;
   const [isWalkInOpen, setIsWalkInOpen] = useState(false);
   const [isEndMeetingOpen, setIsEndMeetingOpen] = useState(false);
   const [meetingNotes, setMeetingNotes] = useState('');
@@ -176,6 +184,49 @@ export default function OverviewDashboard({ setActiveAdminPage }) {
           </div>
           <div className="p-3 bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 rounded-xl border border-blue-100 dark:border-blue-900">
             <Clock className="w-5 h-5" />
+          </div>
+        </div>
+      </div>
+
+      {/* DOCUMENTATION VAULT SUMMARY CARD */}
+      <div 
+        onClick={() => setActiveAdminPage('documents')}
+        className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-700 p-5 rounded-2xl shadow-sm cursor-pointer transition-all hover:shadow-md group"
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-900 text-blue-600 dark:text-blue-400 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+              <FolderGit2 className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">Internship Documentation Vault</h3>
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                  {documents.length} Files Uploaded
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Official student resumes, NOCs, and offer letters tracked across {students.length} enrolled students.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4 sm:gap-6 self-start sm:self-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 dark:border-slate-800 w-full sm:w-auto justify-between sm:justify-end">
+            <div className="text-right">
+              <span className="text-[10px] text-slate-400 font-semibold uppercase block">Pending Review</span>
+              <span className="text-sm font-bold font-mono text-amber-600 dark:text-amber-400">{pendingDocsReview}</span>
+            </div>
+            <div className="text-right">
+              <span className="text-[10px] text-slate-400 font-semibold uppercase block">Verified Files</span>
+              <span className="text-sm font-bold font-mono text-emerald-600 dark:text-emerald-400">{verifiedDocsCount}</span>
+            </div>
+            <div className="text-right">
+              <span className="text-[10px] text-slate-400 font-semibold uppercase block">Audit Completion</span>
+              <span className="text-sm font-bold font-mono text-blue-600 dark:text-blue-400">{overallDocCompletion}%</span>
+            </div>
+            <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 group-hover:text-blue-600 group-hover:bg-blue-50 dark:group-hover:bg-blue-950 transition-colors">
+              <ArrowRight className="w-4 h-4" />
+            </div>
           </div>
         </div>
       </div>

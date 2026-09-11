@@ -82,6 +82,18 @@ export function AppProvider({ children }) {
     return [];
   });
 
+  // Student Document Management & Vault State
+  const [documents, setDocuments] = useState(() => {
+    try {
+      const saved = localStorage.getItem('vistas_documents');
+      if (saved !== null) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {}
+    return [];
+  });
+
   // Timestamp of when student last viewed the updates section
   const [lastViewedUpdates, setLastViewedUpdates] = useState(() => {
     return localStorage.getItem('vistas_last_viewed_updates') || '1970-01-01T00:00:00.000Z';
@@ -244,6 +256,33 @@ export function AppProvider({ children }) {
     }
   };
 
+  const syncDocumentsToSupabase = async (updatedDocs) => {
+    if (!isSupabaseConfigured()) return;
+    try {
+      // 1. Instantly broadcast to all active coordinator devices over Supabase Realtime
+      if (globalRealtimeChannelRef.current) {
+        globalRealtimeChannelRef.current.send({
+          type: 'broadcast',
+          event: 'document_sync',
+          payload: { documents: updatedDocs }
+        });
+      }
+
+      // 2. Persist to __SYS_DOCUMENTS__ in students table for resilient zero-config cross-device sync
+      await supabase.from('students').upsert({
+        register_number: '__SYS_DOCUMENTS__',
+        name: 'SYSTEM_DOCUMENTS',
+        department: 'SYSTEM',
+        year: 'ALL',
+        email: 'sys_docs@vistas.internal',
+        phone: '',
+        private_notes: JSON.stringify(updatedDocs)
+      }, { onConflict: 'register_number' });
+    } catch (e) {
+      console.warn('Sync documents exception:', e);
+    }
+  };
+
   // --- SUPABASE REALTIME & FETCH ---
   useEffect(() => {
     const fetchSupabaseState = async () => {
@@ -255,7 +294,7 @@ export function AppProvider({ children }) {
         const [aptRes, availRes, sysRes, stdRes] = await Promise.allSettled([
           supabase.from('appointments').select('*').order('created_at', { ascending: true }),
           supabase.from('availability').select('*').single(),
-          supabase.from('students').select('register_number, private_notes').in('register_number', ['__SYS_ANNOUNCEMENTS__', '__SYS_AVAILABILITY__']),
+          supabase.from('students').select('register_number, private_notes').in('register_number', ['__SYS_ANNOUNCEMENTS__', '__SYS_AVAILABILITY__', '__SYS_DOCUMENTS__']),
           supabase.from('students').select('*').not('register_number', 'like', '__SYS_%').order('name', { ascending: true })
         ]);
 
@@ -302,7 +341,7 @@ export function AppProvider({ children }) {
           }));
         }
 
-        // Targeted system records: synchronized announcements and extended availability
+        // Targeted system records: synchronized announcements, extended availability, and student documents
         if (sysRes.status === 'fulfilled' && sysRes.value.data && sysRes.value.data.length > 0) {
           const annRecord = sysRes.value.data.find(s => s.register_number === '__SYS_ANNOUNCEMENTS__');
           if (annRecord && annRecord.private_notes) {
@@ -329,6 +368,19 @@ export function AppProvider({ children }) {
                 }));
                 try {
                   localStorage.setItem('vistas_availability', JSON.stringify({ ...parsedAvail }));
+                } catch (e) {}
+              }
+            } catch (e) {}
+          }
+
+          const docRecord = sysRes.value.data.find(s => s.register_number === '__SYS_DOCUMENTS__');
+          if (docRecord && docRecord.private_notes) {
+            try {
+              const parsedDocs = JSON.parse(docRecord.private_notes);
+              if (Array.isArray(parsedDocs)) {
+                setDocuments(parsedDocs);
+                try {
+                  localStorage.setItem('vistas_documents', JSON.stringify(parsedDocs));
                 } catch (e) {}
               }
             } catch (e) {}
@@ -396,6 +448,14 @@ export function AppProvider({ children }) {
             setAppointments(payload.appointments);
             try {
               localStorage.setItem('vistas_appointments', JSON.stringify(payload.appointments));
+            } catch (e) {}
+          }
+        })
+        .on('broadcast', { event: 'document_sync' }, ({ payload }) => {
+          if (payload?.documents && Array.isArray(payload.documents)) {
+            setDocuments(payload.documents);
+            try {
+              localStorage.setItem('vistas_documents', JSON.stringify(payload.documents));
             } catch (e) {}
           }
         })
@@ -1020,6 +1080,231 @@ export function AppProvider({ children }) {
     showToast('Sample announcement templates loaded', 'success');
   };
 
+  // --- STUDENT DOCUMENT VAULT ACTIONS ---
+
+  const uploadStudentDocument = async ({ student, file, metadata }) => {
+    const docId = `doc-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const nowIso = new Date().toISOString();
+
+    // 1. Convert to base64 DataURL for resilient local previewing
+    let localPreviewUrl = '';
+    try {
+      localPreviewUrl = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = () => resolve('');
+        reader.readAsDataURL(file);
+      });
+    } catch (e) {}
+
+    // 2. Storage upload attempt in Supabase Storage
+    let storagePath = '';
+    const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const computedStoragePath = `${student.registerNumber}/${metadata.documentType || 'Other'}/${Date.now()}_${sanitizedFileName}`;
+
+    if (isSupabaseConfigured()) {
+      try {
+        const { data: uploadData, error: uploadErr } = await supabase.storage
+          .from('student-documents')
+          .upload(computedStoragePath, file, {
+            cacheControl: '3600',
+            upsert: true
+          });
+
+        if (uploadErr) {
+          console.warn('Supabase storage upload error:', uploadErr.message);
+        } else if (uploadData?.path) {
+          storagePath = uploadData.path;
+        } else {
+          storagePath = computedStoragePath;
+        }
+      } catch (err) {
+        console.warn('Supabase storage exception:', err);
+      }
+    }
+
+    const newDoc = {
+      id: docId,
+      studentRegisterNumber: student.registerNumber,
+      studentName: student.name,
+      studentDepartment: student.department || '',
+      documentType: metadata.documentType,
+      customDocumentType: metadata.customDocumentType || '',
+      documentTitle: metadata.documentTitle || file.name,
+      fileName: file.name,
+      storagePath: storagePath || computedStoragePath,
+      localPreviewUrl: localPreviewUrl || '',
+      fileSize: file.size,
+      mimeType: file.type || 'application/octet-stream',
+      companyName: metadata.companyName || '',
+      description: metadata.description || '',
+      status: metadata.status || 'Under Review',
+      adminNotes: metadata.adminNotes || '',
+      version: 1,
+      uploadedBy: adminAuth?.email || 'Admin Coordinator',
+      uploadedAt: nowIso,
+      updatedAt: nowIso
+    };
+
+    // 3. Attempt insertion into student_documents table if table exists
+    if (isSupabaseConfigured()) {
+      try {
+        await supabase.from('student_documents').insert([{
+          student_register_number: newDoc.studentRegisterNumber,
+          student_name: newDoc.studentName,
+          document_type: newDoc.documentType,
+          custom_document_type: newDoc.customDocumentType,
+          document_title: newDoc.documentTitle,
+          file_name: newDoc.fileName,
+          storage_path: newDoc.storagePath,
+          file_size: newDoc.fileSize,
+          mime_type: newDoc.mimeType,
+          company_name: newDoc.companyName,
+          description: newDoc.description,
+          status: newDoc.status,
+          admin_notes: newDoc.adminNotes,
+          version: newDoc.version,
+          uploaded_by: newDoc.uploadedBy
+        }]);
+      } catch (e) {}
+    }
+
+    const updated = [newDoc, ...documents];
+    setDocuments(updated);
+    try {
+      localStorage.setItem('vistas_documents', JSON.stringify(updated));
+    } catch (e) {}
+    broadcastChange('SYNC', { documents: updated });
+    await syncDocumentsToSupabase(updated);
+
+    showToast(`Uploaded "${newDoc.documentTitle}" for ${student.name}`, 'success');
+    return newDoc;
+  };
+
+  const replaceStudentDocument = async (docId, file, notes = '') => {
+    const target = documents.find(d => d.id === docId);
+    if (!target) return;
+    const nowIso = new Date().toISOString();
+
+    let localPreviewUrl = target.localPreviewUrl;
+    try {
+      localPreviewUrl = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = () => resolve(target.localPreviewUrl);
+        reader.readAsDataURL(file);
+      });
+    } catch (e) {}
+
+    const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const newStoragePath = `${target.studentRegisterNumber}/${target.documentType || 'Other'}/${Date.now()}_v${(target.version || 1) + 1}_${sanitizedFileName}`;
+
+    if (isSupabaseConfigured()) {
+      try {
+        await supabase.storage.from('student-documents').upload(newStoragePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+      } catch (err) {}
+    }
+
+    const updated = documents.map(d => {
+      if (d.id !== docId) return d;
+      return {
+        ...d,
+        fileName: file.name,
+        storagePath: newStoragePath,
+        localPreviewUrl,
+        fileSize: file.size,
+        mimeType: file.type || d.mimeType,
+        version: (d.version || 1) + 1,
+        adminNotes: notes || d.adminNotes,
+        updatedAt: nowIso
+      };
+    });
+
+    setDocuments(updated);
+    try {
+      localStorage.setItem('vistas_documents', JSON.stringify(updated));
+    } catch (e) {}
+    broadcastChange('SYNC', { documents: updated });
+    await syncDocumentsToSupabase(updated);
+
+    showToast(`Replaced "${target.documentTitle}" with version ${(target.version || 1) + 1}`, 'success');
+  };
+
+  const updateDocumentStatus = async (docId, newStatus, adminNotes) => {
+    const nowIso = new Date().toISOString();
+    const target = documents.find(d => d.id === docId);
+    const updated = documents.map(d => {
+      if (d.id !== docId) return d;
+      return {
+        ...d,
+        status: newStatus,
+        adminNotes: adminNotes !== undefined ? adminNotes : d.adminNotes,
+        updatedAt: nowIso
+      };
+    });
+
+    setDocuments(updated);
+    try {
+      localStorage.setItem('vistas_documents', JSON.stringify(updated));
+    } catch (e) {}
+    broadcastChange('SYNC', { documents: updated });
+    await syncDocumentsToSupabase(updated);
+
+    if (isSupabaseConfigured() && target?.storagePath) {
+      try {
+        await supabase.from('student_documents').update({
+          status: newStatus,
+          admin_notes: adminNotes !== undefined ? adminNotes : target.adminNotes,
+          updated_at: nowIso
+        }).eq('storage_path', target.storagePath);
+      } catch (e) {}
+    }
+
+    showToast(`Document status updated to ${newStatus}`, 'info');
+  };
+
+  const deleteStudentDocument = async (docId) => {
+    const target = documents.find(d => d.id === docId);
+    if (!target) return;
+
+    if (isSupabaseConfigured() && target.storagePath) {
+      try {
+        await supabase.storage.from('student-documents').remove([target.storagePath]);
+      } catch (e) {}
+      try {
+        await supabase.from('student_documents').delete().eq('storage_path', target.storagePath);
+      } catch (e) {}
+    }
+
+    const updated = documents.filter(d => d.id !== docId);
+    setDocuments(updated);
+    try {
+      localStorage.setItem('vistas_documents', JSON.stringify(updated));
+    } catch (e) {}
+    broadcastChange('SYNC', { documents: updated });
+    await syncDocumentsToSupabase(updated);
+
+    showToast(`Deleted document "${target.documentTitle}"`, 'info');
+  };
+
+  const getDocumentSignedUrl = async (doc) => {
+    if (!doc) return '';
+    if (isSupabaseConfigured() && doc.storagePath) {
+      try {
+        const { data, error } = await supabase.storage
+          .from('student-documents')
+          .createSignedUrl(doc.storagePath, 3600); // 1-hour secure URL
+        if (!error && data?.signedUrl) {
+          return data.signedUrl;
+        }
+      } catch (e) {}
+    }
+    return doc.localPreviewUrl || '';
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -1027,6 +1312,7 @@ export function AppProvider({ children }) {
         appointments,
         students,
         announcements,
+        documents,
         theme,
         toggleTheme,
         unreadCount,
@@ -1052,6 +1338,11 @@ export function AppProvider({ children }) {
         deleteAnnouncement,
         clearAllAnnouncements,
         loadSampleAnnouncements,
+        uploadStudentDocument,
+        replaceStudentDocument,
+        updateDocumentStatus,
+        deleteStudentDocument,
+        getDocumentSignedUrl,
         toggleAnnouncementActive,
         toggleAnnouncementPin,
         loginAdmin,
