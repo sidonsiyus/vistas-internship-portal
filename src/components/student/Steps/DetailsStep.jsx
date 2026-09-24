@@ -1,18 +1,123 @@
-import React, { useState } from 'react';
-import { User, FileText, Phone, Mail, Building, GraduationCap, AlertTriangle, CheckCircle2, Sparkles } from 'lucide-react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { User, FileText, Phone, Mail, Building, GraduationCap, AlertTriangle, CheckCircle2, Sparkles, Search, X } from 'lucide-react';
 import { QUERY_CATEGORIES, DEPARTMENTS } from '../../../mock/sampleData';
 import { useApp } from '../../../context/AppContext';
 import studentsDatabase from '../../../data/studentsDatabase.json';
 
 export default function DetailsStep({ formData, setFormData, onSubmit, onBack }) {
-  const { appointments } = useApp();
+  const { appointments, students: contextStudents = [] } = useApp();
   const [errors, setErrors] = useState({});
+
+  // Unified student pool combining studentsDatabase and live context students
+  const studentPool = useMemo(() => {
+    const map = new Map();
+    if (Array.isArray(studentsDatabase)) {
+      studentsDatabase.forEach(s => {
+        if (s && s.registerNumber) map.set(s.registerNumber.toLowerCase().trim(), s);
+      });
+    }
+    if (Array.isArray(contextStudents)) {
+      contextStudents.forEach(s => {
+        if (s && s.registerNumber && !String(s.registerNumber).startsWith('__SYS_')) {
+          const key = s.registerNumber.toLowerCase().trim();
+          map.set(key, { ...(map.get(key) || {}), ...s });
+        }
+      });
+    }
+    return Array.from(map.values());
+  }, [contextStudents]);
+
   const [matchedStudent, setMatchedStudent] = useState(() => {
     if (formData.registerNumber) {
-      return studentsDatabase.find(s => s.registerNumber.toLowerCase() === formData.registerNumber.toLowerCase().trim()) || null;
+      return studentPool.find(s => s.registerNumber.toLowerCase() === formData.registerNumber.toLowerCase().trim()) || null;
+    }
+    if (formData.name) {
+      return studentPool.find(s => s.name.toLowerCase() === formData.name.toLowerCase().trim()) || null;
     }
     return null;
   });
+
+  const [nameSuggestions, setNameSuggestions] = useState([]);
+  const [isNameDropdownOpen, setIsNameDropdownOpen] = useState(false);
+  const [regSuggestions, setRegSuggestions] = useState([]);
+  const [isRegDropdownOpen, setIsRegDropdownOpen] = useState(false);
+
+  const nameContainerRef = useRef(null);
+  const regContainerRef = useRef(null);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (nameContainerRef.current && !nameContainerRef.current.contains(e.target)) {
+        setIsNameDropdownOpen(false);
+      }
+      if (regContainerRef.current && !regContainerRef.current.contains(e.target)) {
+        setIsRegDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSelectStudent = (student) => {
+    setMatchedStudent(student);
+    setFormData(prev => ({
+      ...prev,
+      name: student.name || '',
+      registerNumber: student.registerNumber || '',
+      department: student.department || prev.department,
+      year: student.year || prev.year,
+      email: prev.email || student.email || (student.registerNumber ? `${student.registerNumber}@velshitech.edu.in` : '')
+    }));
+
+    setErrors(prev => ({
+      ...prev,
+      name: null,
+      registerNumber: null,
+      department: null,
+      year: null,
+      email: null
+    }));
+
+    setIsNameDropdownOpen(false);
+    setIsRegDropdownOpen(false);
+  };
+
+  const handleClearStudent = () => {
+    setMatchedStudent(null);
+    setFormData(prev => ({
+      ...prev,
+      name: '',
+      registerNumber: '',
+      department: '',
+      year: '3rd Year'
+    }));
+  };
+
+  const handleNameChange = (value) => {
+    setFormData(prev => ({ ...prev, name: value }));
+    if (errors.name) {
+      setErrors(prev => ({ ...prev, name: null }));
+    }
+
+    const clean = value.trim().toLowerCase();
+    if (clean.length >= 2) {
+      const matches = studentPool
+        .filter(s => s.name && s.name.toLowerCase().includes(clean))
+        .slice(0, 6);
+      setNameSuggestions(matches);
+      setIsNameDropdownOpen(matches.length > 0);
+
+      // Check exact match
+      const exact = matches.find(s => s.name && s.name.toLowerCase() === clean);
+      if (exact && !formData.registerNumber) {
+        handleSelectStudent(exact);
+      }
+    } else {
+      setNameSuggestions([]);
+      setIsNameDropdownOpen(false);
+    }
+  };
 
   const handleRegisterNumberChange = (value) => {
     const clean = value.trim();
@@ -22,30 +127,22 @@ export default function DetailsStep({ formData, setFormData, onSubmit, onBack })
       setErrors(prev => ({ ...prev, registerNumber: null }));
     }
 
-    if (clean.length >= 4) {
-      const match = studentsDatabase.find(s => s.registerNumber.toLowerCase() === clean.toLowerCase());
-      if (match) {
-        setMatchedStudent(match);
-        setFormData(prev => ({
-          ...prev,
-          registerNumber: value,
-          name: match.name,
-          department: match.department,
-          year: match.year,
-          email: prev.email || match.email
-        }));
-        // clear errors for auto-filled fields
-        setErrors(prev => ({
-          ...prev,
-          name: null,
-          department: null,
-          year: null,
-          email: null
-        }));
-        return;
+    if (clean.length >= 2) {
+      const matches = studentPool
+        .filter(s => s.registerNumber && s.registerNumber.toLowerCase().includes(clean.toLowerCase()))
+        .slice(0, 6);
+      setRegSuggestions(matches);
+      setIsRegDropdownOpen(matches.length > 0);
+
+      const exact = studentPool.find(s => s.registerNumber && s.registerNumber.toLowerCase() === clean.toLowerCase());
+      if (exact) {
+        handleSelectStudent(exact);
       }
+    } else {
+      setRegSuggestions([]);
+      setIsRegDropdownOpen(false);
+      setMatchedStudent(null);
     }
-    setMatchedStudent(null);
   };
 
   const handleChange = (field, value) => {
@@ -93,7 +190,7 @@ export default function DetailsStep({ formData, setFormData, onSubmit, onBack })
           <span>Step 3: Student Consultation Details</span>
         </h3>
         <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-          Type your University Register Number to auto-fill your verified student record.
+          Search by your <strong>Name</strong> or <strong>Register Number</strong> to auto-fill your verified student record.
         </p>
       </div>
 
@@ -132,15 +229,72 @@ export default function DetailsStep({ formData, setFormData, onSubmit, onBack })
       {/* Primary Input Fields */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
         
-        {/* Register Number (First for Auto-Fill) */}
-        <div className="space-y-1 sm:col-span-2">
+        {/* Full Name with Autocomplete Search */}
+        <div className="space-y-1 relative" ref={nameContainerRef}>
+          <div className="flex items-center justify-between">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Full Name <span className="text-rose-500">*</span>
+            </label>
+            <span className="text-[10px] text-blue-700 dark:text-blue-400 flex items-center gap-1 font-semibold">
+              <Search className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+              <span>Searchable by name</span>
+            </span>
+          </div>
+          <div className="relative">
+            <User className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-3" />
+            <input
+              type="text"
+              placeholder="e.g. Rahul Kumar (type to search)"
+              value={formData.name}
+              onChange={(e) => handleNameChange(e.target.value)}
+              onFocus={() => {
+                if (nameSuggestions.length > 0) setIsNameDropdownOpen(true);
+              }}
+              className="w-full pl-9 pr-3 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 shadow-sm"
+            />
+          </div>
+          {errors.name && <p className="text-xs text-rose-600 dark:text-rose-400 font-medium">{errors.name}</p>}
+
+          {/* Name Search Suggestions Dropdown */}
+          {isNameDropdownOpen && nameSuggestions.length > 0 && (
+            <div className="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-30 max-h-56 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700/60">
+              <div className="p-2 bg-slate-50 dark:bg-slate-800/80 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center justify-between">
+                <span>Matching Students ({nameSuggestions.length})</span>
+                <span className="text-[9px] lowercase font-normal">Click to auto-fill</span>
+              </div>
+              {nameSuggestions.map((std) => (
+                <button
+                  type="button"
+                  key={std.registerNumber || std.id}
+                  onClick={() => handleSelectStudent(std)}
+                  className="w-full p-2.5 text-left hover:bg-blue-50 dark:hover:bg-blue-950/50 flex items-center justify-between gap-2 transition-colors"
+                >
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-slate-900 dark:text-white truncate">
+                      {std.name}
+                    </p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                      {std.department} • {std.year}
+                    </p>
+                  </div>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold shrink-0">
+                    {std.registerNumber}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Register Number with Autocomplete Search */}
+        <div className="space-y-1 relative" ref={regContainerRef}>
           <div className="flex items-center justify-between">
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
               University Register Number <span className="text-rose-500">*</span>
             </label>
             <span className="text-[10px] text-blue-700 dark:text-blue-400 flex items-center gap-1 font-semibold">
               <Sparkles className="w-3 h-3 text-blue-600 dark:text-blue-400" />
-              <span>Auto-detects from official 26-27 student list</span>
+              <span>Official 26-27 list</span>
             </span>
           </div>
           <div className="relative">
@@ -150,6 +304,9 @@ export default function DetailsStep({ formData, setFormData, onSubmit, onBack })
               placeholder="e.g. 25326101 or 24156101"
               value={formData.registerNumber}
               onChange={(e) => handleRegisterNumberChange(e.target.value)}
+              onFocus={() => {
+                if (regSuggestions.length > 0) setIsRegDropdownOpen(true);
+              }}
               className="w-full pl-9 pr-3 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 font-mono tracking-wide shadow-sm"
             />
           </div>
@@ -157,6 +314,36 @@ export default function DetailsStep({ formData, setFormData, onSubmit, onBack })
             <p className="text-xs text-rose-600 dark:text-rose-400 font-medium flex items-center gap-1 mt-1">
               <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> {errors.registerNumber}
             </p>
+          )}
+
+          {/* Register Number Search Suggestions Dropdown */}
+          {isRegDropdownOpen && regSuggestions.length > 0 && (
+            <div className="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-30 max-h-56 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700/60">
+              <div className="p-2 bg-slate-50 dark:bg-slate-800/80 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center justify-between">
+                <span>Matching Register Numbers ({regSuggestions.length})</span>
+                <span className="text-[9px] lowercase font-normal">Click to auto-fill</span>
+              </div>
+              {regSuggestions.map((std) => (
+                <button
+                  type="button"
+                  key={std.registerNumber || std.id}
+                  onClick={() => handleSelectStudent(std)}
+                  className="w-full p-2.5 text-left hover:bg-blue-50 dark:hover:bg-blue-950/50 flex items-center justify-between gap-2 transition-colors"
+                >
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-slate-900 dark:text-white truncate">
+                      {std.name}
+                    </p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                      {std.department} • {std.year}
+                    </p>
+                  </div>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300 font-bold shrink-0">
+                    {std.registerNumber}
+                  </span>
+                </button>
+              ))}
+            </div>
           )}
         </div>
 
@@ -169,29 +356,21 @@ export default function DetailsStep({ formData, setFormData, onSubmit, onBack })
                 <strong>Verified Enrolled Student:</strong> {matchedStudent.name} ({matchedStudent.department} • {matchedStudent.year})
               </span>
             </div>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 font-mono">
-              OFFICIAL RECORD
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 font-mono">
+                OFFICIAL RECORD
+              </span>
+              <button
+                type="button"
+                onClick={handleClearStudent}
+                title="Clear selected student"
+                className="text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 p-1 rounded hover:bg-emerald-100/60 dark:hover:bg-emerald-900/40 transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         )}
-
-        {/* Full Name */}
-        <div className="space-y-1">
-          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-            Full Name <span className="text-rose-500">*</span>
-          </label>
-          <div className="relative">
-            <User className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-3" />
-            <input
-              type="text"
-              placeholder="e.g. Rahul Kumar"
-              value={formData.name}
-              onChange={(e) => handleChange('name', e.target.value)}
-              className="w-full pl-9 pr-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 shadow-sm"
-            />
-          </div>
-          {errors.name && <p className="text-xs text-rose-600 dark:text-rose-400 font-medium">{errors.name}</p>}
-        </div>
 
         {/* Department */}
         <div className="space-y-1">

@@ -11,24 +11,34 @@ import {
   Sparkles, 
   Pin, 
   GraduationCap, 
-  ArrowRight,
-  ShieldAlert,
-  HelpCircle,
-  FileText,
-  AlertTriangle,
-  Briefcase,
-  Megaphone,
-  Users,
-  MapPin,
-  Send,
-  FileCheck,
-  Check
+  ArrowRight, 
+  ShieldAlert, 
+  HelpCircle, 
+  FileText, 
+  AlertTriangle, 
+  Briefcase, 
+  Megaphone, 
+  Users, 
+  MapPin, 
+  Send, 
+  FileCheck, 
+  Check,
+  Download,
+  Paperclip
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { DEPARTMENTS } from '../../mock/sampleData';
 
+const formatFileSize = (bytes) => {
+  if (!bytes || bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+};
+
 export default function InternshipUpdatesView({ setActiveTab }) {
-  const { announcements, markUpdatesAsRead } = useApp();
+  const { announcements, markUpdatesAsRead, downloadAnnouncementAttachment } = useApp();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('ALL');
@@ -342,6 +352,14 @@ export default function InternshipUpdatesView({ setActiveTab }) {
                         </span>
                       )}
 
+                      {/* PDF Attached Pill */}
+                      {(ann.attachmentName || ann.attachmentUrl) && (
+                        <span className="text-[10px] font-bold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                          <Paperclip className="w-3 h-3 text-rose-600 dark:text-rose-400" />
+                          <span>PDF Attached</span>
+                        </span>
+                      )}
+
                     </div>
 
                     {/* Dates & Reference */}
@@ -541,6 +559,41 @@ export default function InternshipUpdatesView({ setActiveTab }) {
                           "{ann.coordinatorNotes}"
                         </p>
                       </div>
+                    </div>
+                  )}
+
+                  {/* Official PDF Document Attachment Box */}
+                  {(ann.attachmentName || ann.attachmentUrl) && (
+                    <div className="bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/60 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="h-11 w-11 rounded-xl bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-800/80 flex items-center justify-center text-rose-600 dark:text-rose-400 font-bold text-xs shadow-xs shrink-0">
+                          PDF
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-rose-700 dark:text-rose-300">
+                              Official Attached Circular / Document
+                            </span>
+                            {ann.attachmentSize > 0 && (
+                              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
+                                • {formatFileSize(ann.attachmentSize)}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate mt-0.5">
+                            {ann.attachmentName || 'Official_Notification_Document.pdf'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => downloadAnnouncementAttachment(ann)}
+                        className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs transition-all shadow-sm shrink-0 cursor-pointer"
+                      >
+                        <Download className="w-4 h-4" />
+                        <span>Download PDF</span>
+                      </button>
                     </div>
                   )}
 

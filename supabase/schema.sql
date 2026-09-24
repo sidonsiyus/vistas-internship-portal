@@ -102,9 +102,19 @@ CREATE TABLE IF NOT EXISTS public.announcements (
     students_included JSONB DEFAULT '[]',
     is_pinned BOOLEAN DEFAULT FALSE,
     is_active BOOLEAN DEFAULT TRUE,
+    attachment_name TEXT,
+    attachment_url TEXT,
+    attachment_path TEXT,
+    attachment_size BIGINT DEFAULT 0,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Ensure columns exist if table was already created earlier
+ALTER TABLE public.announcements ADD COLUMN IF NOT EXISTS attachment_name TEXT;
+ALTER TABLE public.announcements ADD COLUMN IF NOT EXISTS attachment_url TEXT;
+ALTER TABLE public.announcements ADD COLUMN IF NOT EXISTS attachment_path TEXT;
+ALTER TABLE public.announcements ADD COLUMN IF NOT EXISTS attachment_size BIGINT DEFAULT 0;
 
 -- 7. ROW LEVEL SECURITY (RLS) POLICIES
 ALTER TABLE public.availability ENABLE ROW LEVEL SECURITY;

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   Building2, 
   Megaphone, 
@@ -27,7 +27,12 @@ import {
   Send,
   FileCheck,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  FileText,
+  UploadCloud,
+  Paperclip,
+  Download,
+  FileUp
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { DEPARTMENTS } from '../../mock/sampleData';
@@ -45,6 +50,14 @@ const COMPANY_STATUS_OPTIONS = [
   { value: 'NO_ACTION', label: 'No Further Action Required' }
 ];
 
+const formatFileSize = (bytes) => {
+  if (!bytes || bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+};
+
 export default function AnnouncementsManager() {
   const { 
     announcements, 
@@ -52,6 +65,7 @@ export default function AnnouncementsManager() {
     createAnnouncement, 
     updateAnnouncement, 
     deleteAnnouncement, 
+    downloadAnnouncementAttachment,
     clearAllAnnouncements,
     loadSampleAnnouncements,
     toggleAnnouncementActive, 
@@ -65,6 +79,8 @@ export default function AnnouncementsManager() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [isConfirmClearOpen, setIsConfirmClearOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const fileInputRef = useRef(null);
   
   // Form State
   const defaultFormState = {
@@ -89,7 +105,13 @@ export default function AnnouncementsManager() {
     applyLink: '',
     studentsIncluded: [],
     isPinned: true,
-    isActive: true
+    isActive: true,
+    attachmentFile: null,
+    attachmentName: '',
+    attachmentSize: 0,
+    attachmentUrl: '',
+    attachmentPath: '',
+    removeAttachment: false
   };
 
   const [formData, setFormData] = useState(defaultFormState);
@@ -102,6 +124,7 @@ export default function AnnouncementsManager() {
     setFormData(defaultFormState);
     setFormErrors({});
     setStudentDirectorySearch('');
+    setIsSubmitting(false);
     setIsModalOpen(true);
   };
 
@@ -129,11 +152,58 @@ export default function AnnouncementsManager() {
       applyLink: ann.applyLink || '',
       studentsIncluded: Array.isArray(ann.studentsIncluded) ? [...ann.studentsIncluded] : [],
       isPinned: Boolean(ann.isPinned),
-      isActive: ann.isActive !== false
+      isActive: ann.isActive !== false,
+      attachmentFile: null,
+      attachmentName: ann.attachmentName || '',
+      attachmentSize: ann.attachmentSize || 0,
+      attachmentUrl: ann.attachmentUrl || '',
+      attachmentPath: ann.attachmentPath || '',
+      removeAttachment: false
     });
     setFormErrors({});
     setStudentDirectorySearch('');
+    setIsSubmitting(false);
     setIsModalOpen(true);
+  };
+
+  const handleAttachmentFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      setFormErrors(prev => ({ ...prev, attachment: 'Only PDF documents (.pdf) are supported' }));
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      setFormErrors(prev => ({ ...prev, attachment: 'File size exceeds maximum limit of 10MB' }));
+      return;
+    }
+
+    setFormErrors(prev => ({ ...prev, attachment: null }));
+    setFormData(prev => ({
+      ...prev,
+      attachmentFile: file,
+      attachmentName: file.name,
+      attachmentSize: file.size,
+      removeAttachment: false
+    }));
+  };
+
+  const handleRemoveAttachment = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    setFormData(prev => ({
+      ...prev,
+      attachmentFile: null,
+      attachmentName: '',
+      attachmentSize: 0,
+      attachmentUrl: '',
+      attachmentPath: '',
+      removeAttachment: true
+    }));
+    setFormErrors(prev => ({ ...prev, attachment: null }));
   };
 
   // Student list helpers
@@ -204,13 +274,19 @@ export default function AnnouncementsManager() {
       return;
     }
 
-    if (editingId) {
-      await updateAnnouncement(editingId, formData);
-    } else {
-      await createAnnouncement(formData);
+    try {
+      setIsSubmitting(true);
+      if (editingId) {
+        await updateAnnouncement(editingId, formData);
+      } else {
+        await createAnnouncement(formData);
+      }
+      setIsModalOpen(false);
+    } catch (err) {
+      console.error('Error saving announcement:', err);
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setIsModalOpen(false);
   };
 
   // Metrics
@@ -452,6 +528,14 @@ export default function AnnouncementsManager() {
                         {ann.studentsIncluded.length} Students Included
                       </span>
                     )}
+
+                    {/* PDF Attachment Tag */}
+                    {(ann.attachmentName || ann.attachmentUrl) && (
+                      <span className="text-[10px] font-bold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <Paperclip className="w-2.5 h-2.5 text-rose-600 dark:text-rose-400" />
+                        <span>PDF Attached</span>
+                      </span>
+                    )}
                   </div>
 
                   {/* Dates & Reference Subline */}
@@ -486,6 +570,29 @@ export default function AnnouncementsManager() {
                       {ann.content}
                     </p>
                   </div>
+
+                  {/* PDF Document attached indicator and quick download button for admin */}
+                  {(ann.attachmentName || ann.attachmentUrl) && (
+                    <div className="flex items-center gap-2 pt-1">
+                      <div className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/60 text-[11px] text-rose-800 dark:text-rose-300">
+                        <FileText className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 shrink-0" />
+                        <span className="font-semibold truncate max-w-xs">{ann.attachmentName || 'Official Attached Document.pdf'}</span>
+                        {ann.attachmentSize > 0 && (
+                          <span className="text-[10px] text-rose-600/70 dark:text-rose-400/70 font-mono">
+                            ({formatFileSize(ann.attachmentSize)})
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => downloadAnnouncementAttachment(ann)}
+                          className="ml-1 text-rose-700 dark:text-rose-300 hover:text-rose-900 dark:hover:text-white underline font-semibold flex items-center gap-1 cursor-pointer"
+                        >
+                          <Download className="w-3 h-3" />
+                          <span>Download</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Action preview */}
                   {ann.actionRequired && (
@@ -1091,6 +1198,91 @@ export default function AnnouncementsManager() {
 
               </div>
 
+              {/* PDF Document Attachment Section */}
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    <Paperclip className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                    <span>Official PDF Document Attachment (Optional)</span>
+                  </div>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                    Max 10MB • Students can download
+                  </span>
+                </div>
+
+                {/* Hidden file input */}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept=".pdf,application/pdf"
+                  onChange={handleAttachmentFileChange}
+                  className="hidden"
+                />
+
+                {(formData.attachmentFile || (formData.attachmentName && !formData.removeAttachment)) ? (
+                  /* Attached PDF Card Preview */
+                  <div className="p-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="h-10 w-10 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/60 flex items-center justify-center text-rose-600 dark:text-rose-400 shrink-0 font-bold text-xs">
+                        PDF
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                          {formData.attachmentName || formData.attachmentFile?.name || 'Attached_Document.pdf'}
+                        </p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
+                            {formatFileSize(formData.attachmentSize || formData.attachmentFile?.size || 0)}
+                          </span>
+                          <span className="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                            {formData.attachmentFile ? 'Ready to Upload' : 'Attached Document'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 font-medium transition-colors"
+                      >
+                        Change PDF
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleRemoveAttachment}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                        title="Remove attachment"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  /* Empty state / dropzone */
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="p-4 border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 rounded-xl text-center cursor-pointer transition-colors bg-white/50 dark:bg-slate-900/50 hover:bg-blue-50/20 dark:hover:bg-blue-950/20 group"
+                  >
+                    <UploadCloud className="w-7 h-7 text-slate-400 dark:text-slate-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 mx-auto transition-colors" />
+                    <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mt-1">
+                      Click to browse or drop an official circular / PDF
+                    </p>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
+                      Only PDF documents up to 10MB are permitted
+                    </p>
+                  </div>
+                )}
+
+                {formErrors.attachment && (
+                  <p className="text-[11px] text-rose-600 dark:text-rose-400 font-medium flex items-center gap-1">
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    {formErrors.attachment}
+                  </p>
+                )}
+              </div>
+
               {/* Switches: Pinned & Active */}
               <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row items-center justify-between gap-4">
                 
@@ -1129,16 +1321,19 @@ export default function AnnouncementsManager() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold transition-colors"
+                  disabled={isSubmitting}
+                  className="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold transition-colors disabled:opacity-50"
                 >
                   Cancel
                 </button>
 
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-all"
+                  disabled={isSubmitting}
+                  className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-xs font-semibold shadow-sm transition-all flex items-center gap-2"
                 >
-                  {editingId ? 'Save Changes' : 'Publish Update'}
+                  {isSubmitting && <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                  <span>{isSubmitting ? 'Uploading & Saving...' : editingId ? 'Save Changes' : 'Publish Update'}</span>
                 </button>
               </div>
 

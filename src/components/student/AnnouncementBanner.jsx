@@ -12,7 +12,8 @@ import {
   Clock,
   Sparkles,
   ChevronLeft,
-  Users
+  Users,
+  Paperclip
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 
@@ -163,6 +164,13 @@ export default function AnnouncementBanner({ setActiveTab }) {
                     <span className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
                       <Calendar className="w-3 h-3 text-slate-400 dark:text-slate-500" />
                       {current.replyDate}
+                    </span>
+                  )}
+
+                  {(current.attachmentName || current.attachmentUrl) && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 px-2 py-0.5 rounded-full">
+                      <Paperclip className="w-3 h-3 text-rose-600 dark:text-rose-400" />
+                      <span>PDF Document</span>
                     </span>
                   )}
                 </div>

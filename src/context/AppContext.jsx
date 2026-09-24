@@ -900,9 +900,92 @@ export function AppProvider({ children }) {
 
   // --- ANNOUNCEMENT & COMPANY UPDATE ACTIONS ---
 
+  const downloadAnnouncementAttachment = async (ann) => {
+    if (!ann) return;
+    const fileName = ann.attachmentName || `${(ann.title || 'Announcement').replace(/[^a-zA-Z0-9]/g, '_')}_Document.pdf`;
+    
+    let downloadUrl = ann.attachmentUrl;
+    if (isSupabaseConfigured() && ann.attachmentPath) {
+      try {
+        const { data, error } = await supabase.storage
+          .from('student-documents')
+          .createSignedUrl(ann.attachmentPath, 3600);
+        if (!error && data?.signedUrl) {
+          downloadUrl = data.signedUrl;
+        }
+      } catch (e) {
+        console.warn('Error fetching signed URL for announcement attachment:', e);
+      }
+    }
+
+    if (!downloadUrl) {
+      showToast('Attachment document file is not available', 'error');
+      return;
+    }
+
+    try {
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = fileName;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      showToast(`Downloading ${fileName}`, 'success');
+    } catch (e) {
+      window.open(downloadUrl, '_blank');
+    }
+  };
+
   const createAnnouncement = async (data) => {
     const id = `ann-${Date.now()}`;
     const nowIso = new Date().toISOString();
+
+    let attachmentName = data.attachmentName || '';
+    let attachmentSize = data.attachmentSize || 0;
+    let attachmentPath = data.attachmentPath || '';
+    let attachmentUrl = data.attachmentUrl || '';
+    let attachmentMime = data.attachmentMime || 'application/pdf';
+
+    // Handle binary file upload if attached
+    if (data.attachmentFile) {
+      attachmentName = data.attachmentFile.name;
+      attachmentSize = data.attachmentFile.size;
+      attachmentMime = data.attachmentFile.type || 'application/pdf';
+
+      // 1. Generate local data URL for instant resilient preview/download
+      try {
+        attachmentUrl = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.onerror = () => resolve('');
+          reader.readAsDataURL(data.attachmentFile);
+        });
+      } catch (e) {}
+
+      // 2. Upload to Supabase Storage in student-documents bucket
+      if (isSupabaseConfigured()) {
+        try {
+          const sanitizedFileName = data.attachmentFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+          const computedPath = `announcements/${Date.now()}_${sanitizedFileName}`;
+          const { data: uploadData, error: uploadErr } = await supabase.storage
+            .from('student-documents')
+            .upload(computedPath, data.attachmentFile, {
+              cacheControl: '3600',
+              upsert: true
+            });
+          if (!uploadErr && uploadData?.path) {
+            attachmentPath = uploadData.path;
+          } else {
+            attachmentPath = computedPath;
+          }
+        } catch (err) {
+          console.warn('Supabase announcement attachment upload error:', err);
+        }
+      }
+    }
+
     const newAnn = {
       id,
       title: data.title || '',
@@ -927,6 +1010,11 @@ export function AppProvider({ children }) {
       studentsIncluded: Array.isArray(data.studentsIncluded) ? data.studentsIncluded : [],
       isPinned: Boolean(data.isPinned),
       isActive: data.isActive !== false,
+      attachmentName,
+      attachmentSize,
+      attachmentPath,
+      attachmentUrl,
+      attachmentMime,
       createdAt: nowIso,
       updatedAt: nowIso
     };
@@ -963,7 +1051,11 @@ export function AppProvider({ children }) {
           apply_link: newAnn.applyLink,
           students_included: newAnn.studentsIncluded,
           is_pinned: newAnn.isPinned,
-          is_active: newAnn.isActive
+          is_active: newAnn.isActive,
+          attachment_name: newAnn.attachmentName,
+          attachment_url: newAnn.attachmentUrl,
+          attachment_path: newAnn.attachmentPath,
+          attachment_size: newAnn.attachmentSize
         }]).select('*').single();
 
         if (dbData) {
@@ -980,7 +1072,74 @@ export function AppProvider({ children }) {
 
   const updateAnnouncement = async (id, updatedFields) => {
     const nowIso = new Date().toISOString();
-    const updated = announcements.map(a => a.id === id ? { ...a, ...updatedFields, updatedAt: nowIso } : a);
+    const existing = announcements.find(a => a.id === id);
+
+    let attachmentName = existing?.attachmentName || '';
+    let attachmentSize = existing?.attachmentSize || 0;
+    let attachmentPath = existing?.attachmentPath || '';
+    let attachmentUrl = existing?.attachmentUrl || '';
+    let attachmentMime = existing?.attachmentMime || 'application/pdf';
+
+    if (updatedFields.removeAttachment) {
+      attachmentName = '';
+      attachmentSize = 0;
+      attachmentPath = '';
+      attachmentUrl = '';
+      attachmentMime = '';
+    } else if (updatedFields.attachmentFile) {
+      attachmentName = updatedFields.attachmentFile.name;
+      attachmentSize = updatedFields.attachmentFile.size;
+      attachmentMime = updatedFields.attachmentFile.type || 'application/pdf';
+
+      try {
+        attachmentUrl = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.onerror = () => resolve('');
+          reader.readAsDataURL(updatedFields.attachmentFile);
+        });
+      } catch (e) {}
+
+      if (isSupabaseConfigured()) {
+        try {
+          const sanitizedFileName = updatedFields.attachmentFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+          const computedPath = `announcements/${Date.now()}_${sanitizedFileName}`;
+          const { data: uploadData, error: uploadErr } = await supabase.storage
+            .from('student-documents')
+            .upload(computedPath, updatedFields.attachmentFile, {
+              cacheControl: '3600',
+              upsert: true
+            });
+          if (!uploadErr && uploadData?.path) {
+            attachmentPath = uploadData.path;
+          } else {
+            attachmentPath = computedPath;
+          }
+        } catch (err) {
+          console.warn('Supabase announcement attachment upload error:', err);
+        }
+      }
+    } else if (updatedFields.attachmentName !== undefined) {
+      attachmentName = updatedFields.attachmentName;
+      attachmentSize = updatedFields.attachmentSize || 0;
+      attachmentPath = updatedFields.attachmentPath || '';
+      attachmentUrl = updatedFields.attachmentUrl || '';
+      attachmentMime = updatedFields.attachmentMime || 'application/pdf';
+    }
+
+    const { attachmentFile, removeAttachment, ...fieldsToApply } = updatedFields;
+
+    const mergedFields = {
+      ...fieldsToApply,
+      attachmentName,
+      attachmentSize,
+      attachmentPath,
+      attachmentUrl,
+      attachmentMime,
+      updatedAt: nowIso
+    };
+
+    const updated = announcements.map(a => a.id === id ? { ...a, ...mergedFields } : a);
     setAnnouncements(updated);
     try {
       localStorage.setItem('vistas_announcements', JSON.stringify(updated));
@@ -991,28 +1150,32 @@ export function AppProvider({ children }) {
     if (isSupabaseConfigured()) {
       try {
         const payload = {};
-        if (updatedFields.title !== undefined) payload.title = updatedFields.title;
-        if (updatedFields.content !== undefined) payload.content = updatedFields.content;
-        if (updatedFields.type !== undefined) payload.type = updatedFields.type;
-        if (updatedFields.category !== undefined) payload.category = updatedFields.category;
-        if (updatedFields.companyName !== undefined) payload.company_name = updatedFields.companyName;
-        if (updatedFields.companyLocation !== undefined) payload.company_location = updatedFields.companyLocation;
-        if (updatedFields.companyContactEmail !== undefined) payload.company_contact_email = updatedFields.companyContactEmail;
-        if (updatedFields.requestSentDate !== undefined) payload.request_sent_date = updatedFields.requestSentDate || null;
-        if (updatedFields.emailReference !== undefined) payload.email_reference = updatedFields.emailReference;
-        if (updatedFields.companyStatus !== undefined) payload.company_status = updatedFields.companyStatus;
-        if (updatedFields.replyDate !== undefined) payload.reply_date = updatedFields.replyDate || null;
-        if (updatedFields.department !== undefined) payload.department = updatedFields.department;
-        if (updatedFields.duration !== undefined) payload.duration = updatedFields.duration;
-        if (updatedFields.eligibility !== undefined) payload.eligibility = updatedFields.eligibility;
-        if (updatedFields.deadline !== undefined) payload.deadline = updatedFields.deadline || null;
-        if (updatedFields.requiredDocuments !== undefined) payload.required_documents = updatedFields.requiredDocuments;
-        if (updatedFields.actionRequired !== undefined) payload.action_required = updatedFields.actionRequired;
-        if (updatedFields.coordinatorNotes !== undefined) payload.coordinator_notes = updatedFields.coordinatorNotes;
-        if (updatedFields.applyLink !== undefined) payload.apply_link = updatedFields.applyLink;
-        if (updatedFields.studentsIncluded !== undefined) payload.students_included = updatedFields.studentsIncluded;
-        if (updatedFields.isPinned !== undefined) payload.is_pinned = updatedFields.isPinned;
-        if (updatedFields.isActive !== undefined) payload.is_active = updatedFields.isActive;
+        if (mergedFields.title !== undefined) payload.title = mergedFields.title;
+        if (mergedFields.content !== undefined) payload.content = mergedFields.content;
+        if (mergedFields.type !== undefined) payload.type = mergedFields.type;
+        if (mergedFields.category !== undefined) payload.category = mergedFields.category;
+        if (mergedFields.companyName !== undefined) payload.company_name = mergedFields.companyName;
+        if (mergedFields.companyLocation !== undefined) payload.company_location = mergedFields.companyLocation;
+        if (mergedFields.companyContactEmail !== undefined) payload.company_contact_email = mergedFields.companyContactEmail;
+        if (mergedFields.requestSentDate !== undefined) payload.request_sent_date = mergedFields.requestSentDate || null;
+        if (mergedFields.emailReference !== undefined) payload.email_reference = mergedFields.emailReference;
+        if (mergedFields.companyStatus !== undefined) payload.company_status = mergedFields.companyStatus;
+        if (mergedFields.replyDate !== undefined) payload.reply_date = mergedFields.replyDate || null;
+        if (mergedFields.department !== undefined) payload.department = mergedFields.department;
+        if (mergedFields.duration !== undefined) payload.duration = mergedFields.duration;
+        if (mergedFields.eligibility !== undefined) payload.eligibility = mergedFields.eligibility;
+        if (mergedFields.deadline !== undefined) payload.deadline = mergedFields.deadline || null;
+        if (mergedFields.requiredDocuments !== undefined) payload.required_documents = mergedFields.requiredDocuments;
+        if (mergedFields.actionRequired !== undefined) payload.action_required = mergedFields.actionRequired;
+        if (mergedFields.coordinatorNotes !== undefined) payload.coordinator_notes = mergedFields.coordinatorNotes;
+        if (mergedFields.applyLink !== undefined) payload.apply_link = mergedFields.applyLink;
+        if (mergedFields.studentsIncluded !== undefined) payload.students_included = mergedFields.studentsIncluded;
+        if (mergedFields.isPinned !== undefined) payload.is_pinned = mergedFields.isPinned;
+        if (mergedFields.isActive !== undefined) payload.is_active = mergedFields.isActive;
+        payload.attachment_name = attachmentName;
+        payload.attachment_url = attachmentUrl;
+        payload.attachment_path = attachmentPath;
+        payload.attachment_size = attachmentSize;
         payload.updated_at = nowIso;
 
         await supabase.from('announcements').update(payload).eq('id', id);
@@ -1336,6 +1499,7 @@ export function AppProvider({ children }) {
         createAnnouncement,
         updateAnnouncement,
         deleteAnnouncement,
+        downloadAnnouncementAttachment,
         clearAllAnnouncements,
         loadSampleAnnouncements,
         uploadStudentDocument,
