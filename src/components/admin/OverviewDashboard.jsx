@@ -272,7 +272,11 @@ export default function OverviewDashboard({ setActiveAdminPage }) {
                 <TokenBadge tokenNumber={currentlyMeetingApt.tokenNumber} size="large" variant="blue" />
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">{currentlyMeetingApt.studentName}</h3>
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">
+                      {currentlyMeetingApt.students && currentlyMeetingApt.students.length > 1
+                        ? currentlyMeetingApt.students.map(s => s.name).join(', ')
+                        : currentlyMeetingApt.studentName}
+                    </h3>
                     {(currentlyMeetingApt.isBulk || currentlyMeetingApt.studentCount > 1 || (currentlyMeetingApt.students && currentlyMeetingApt.students.length > 1)) && (
                       <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300 flex items-center gap-1">
                         <Users className="w-3.5 h-3.5" />
@@ -281,7 +285,11 @@ export default function OverviewDashboard({ setActiveAdminPage }) {
                     )}
                   </div>
                   <p className="text-xs text-slate-600 dark:text-slate-300">{currentlyMeetingApt.department} • {currentlyMeetingApt.year}</p>
-                  <p className="text-xs font-mono text-slate-500 dark:text-slate-400">Reg: {currentlyMeetingApt.registerNumber}</p>
+                  <p className="text-xs font-mono text-slate-500 dark:text-slate-400">
+                    Reg: {currentlyMeetingApt.students && currentlyMeetingApt.students.length > 1
+                      ? currentlyMeetingApt.students.map(s => s.registerNumber).filter(Boolean).join(', ')
+                      : currentlyMeetingApt.registerNumber}
+                  </p>
                 </div>
               </div>
 
@@ -343,14 +351,23 @@ export default function OverviewDashboard({ setActiveAdminPage }) {
                   <TokenBadge tokenNumber={nextInLineApt.tokenNumber} size="large" variant={nextInLineApt.status === 'CALLED' ? 'orange' : 'amber'} />
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="text-base font-bold text-slate-900 dark:text-white">{nextInLineApt.studentName}</h3>
-                      {(nextInLineApt.isBulk || nextInLineApt.studentCount > 1) && (
+                      <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                        {nextInLineApt.students && nextInLineApt.students.length > 1
+                          ? nextInLineApt.students.map(s => s.name).join(', ')
+                          : nextInLineApt.studentName}
+                      </h3>
+                      {(nextInLineApt.isBulk || nextInLineApt.studentCount > 1 || (nextInLineApt.students && nextInLineApt.students.length > 1)) && (
                         <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300">
                           👥 Group ({nextInLineApt.studentCount || nextInLineApt.students?.length})
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-slate-600 dark:text-slate-300">{nextInLineApt.department} • {nextInLineApt.appointmentTime}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-300">
+                      {nextInLineApt.department} • {nextInLineApt.appointmentTime}
+                      {nextInLineApt.students && nextInLineApt.students.length > 1 && (
+                        <span> • Reg: {nextInLineApt.students.map(s => s.registerNumber).filter(Boolean).join(', ')}</span>
+                      )}
+                    </p>
                     <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 mt-0.5">{nextInLineApt.category}</p>
                   </div>
                 </div>
@@ -409,7 +426,19 @@ export default function OverviewDashboard({ setActiveAdminPage }) {
                 <span className="font-mono text-slate-400 dark:text-slate-500 font-bold w-5">#{idx + 1}</span>
                 <TokenBadge tokenNumber={apt.tokenNumber} size="small" variant={apt.status === 'CALLED' ? 'orange' : 'blue'} />
                 <div>
-                  <span className="font-bold text-slate-800 dark:text-slate-200 block">{apt.studentName}</span>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="font-bold text-slate-800 dark:text-slate-200 block">
+                      {apt.students && apt.students.length > 1
+                        ? apt.students.map(s => s.name).join(', ')
+                        : apt.studentName}
+                    </span>
+                    {(apt.isBulk || (apt.students && apt.students.length > 1) || apt.studentCount > 1) && (
+                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 flex items-center gap-0.5">
+                        <Users className="w-2.5 h-2.5" />
+                        <span>Group ({apt.studentCount || apt.students?.length})</span>
+                      </span>
+                    )}
+                  </div>
                   <span className="text-slate-500 dark:text-slate-400">{apt.department} • {apt.category}</span>
                 </div>
               </div>
@@ -441,7 +470,18 @@ export default function OverviewDashboard({ setActiveAdminPage }) {
       <Modal isOpen={isEndMeetingOpen} onClose={() => setIsEndMeetingOpen(false)} title="✓ Complete Consultation Meeting" maxWidth="max-w-md">
         <div className="space-y-4 text-xs text-slate-700 dark:text-slate-300">
           <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1.5">
-            <p className="text-xs font-bold text-slate-900 dark:text-white">Student: {currentlyMeetingApt?.studentName}</p>
+            <p className="text-xs font-bold text-slate-900 dark:text-white">
+              Student{currentlyMeetingApt?.students?.length > 1 ? 's' : ''}: {
+                currentlyMeetingApt?.students && currentlyMeetingApt.students.length > 1
+                  ? currentlyMeetingApt.students.map(s => s.name).join(', ')
+                  : currentlyMeetingApt?.studentName
+              }
+            </p>
+            {currentlyMeetingApt?.students && currentlyMeetingApt.students.length > 1 && (
+              <p className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
+                Reg: {currentlyMeetingApt.students.map(s => s.registerNumber).filter(Boolean).join(', ')}
+              </p>
+            )}
             <p className="text-xs font-mono text-blue-600 dark:text-blue-400">Token: {currentlyMeetingApt?.tokenNumber}</p>
             <p className="text-xs text-slate-600 dark:text-slate-300">Meeting Duration: <strong className="text-slate-900 dark:text-white">{formatTimer(timerSeconds)}</strong></p>
           </div>

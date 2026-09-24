@@ -327,10 +327,47 @@ export function AppProvider({ children }) {
               if (match) studentCount = parseInt(match[1], 10);
             }
 
+            // Reconstruct students roster from description if cached was missing
+            if ((!students || students.length === 0) && a.description && a.description.includes('Members:')) {
+              const membersMatch = a.description.match(/Members:\s*([^\n]+)/);
+              if (membersMatch) {
+                const rawList = membersMatch[1].split(',').map(s => s.trim());
+                students = rawList.map((item, idx) => {
+                  const matchReg = item.match(/^(.*?)\s*\((.*?)\)$/);
+                  if (matchReg) {
+                    return {
+                      name: matchReg[1].trim(),
+                      registerNumber: matchReg[2].trim(),
+                      department: a.department,
+                      year: a.year,
+                      isLead: idx === 0
+                    };
+                  }
+                  return {
+                    name: item,
+                    registerNumber: idx === 0 ? a.register_number : '',
+                    department: a.department,
+                    year: a.year,
+                    isLead: idx === 0
+                  };
+                });
+                if (students.length > 1) {
+                  studentCount = students.length;
+                  isBulk = true;
+                }
+              }
+            }
+
+            let displayName = a.student_name;
+            if (Array.isArray(students) && students.length > 1) {
+              displayName = students.map(s => s.name).join(', ');
+            }
+
             return {
               id: a.id,
               tokenNumber: a.token_number,
-              studentName: a.student_name,
+              studentName: displayName,
+              leadStudentName: (Array.isArray(students) && students[0]?.name) || a.student_name,
               registerNumber: a.register_number,
               department: a.department,
               year: a.year,
@@ -637,11 +674,15 @@ export function AppProvider({ children }) {
           isLead: true
         }];
     const studentCount = allStudents.length;
+    const allNames = isBulk && studentCount > 1
+      ? allStudents.map(s => s.name).join(', ')
+      : bookingData.name;
 
     const newApt = {
       id: `apt-${Date.now()}`,
       tokenNumber,
-      studentName: bookingData.name,
+      studentName: allNames,
+      leadStudentName: bookingData.name,
       registerNumber: bookingData.registerNumber,
       department: bookingData.department,
       year: bookingData.year,
@@ -673,7 +714,7 @@ export function AppProvider({ children }) {
     if (isSupabaseConfigured()) {
       try {
         const studentDisplayName = isBulk && studentCount > 1
-          ? `${bookingData.name} (+${studentCount - 1} students)`
+          ? allStudents.map(s => s.name).join(', ')
           : bookingData.name;
 
         let descToSave = bookingData.description || '';

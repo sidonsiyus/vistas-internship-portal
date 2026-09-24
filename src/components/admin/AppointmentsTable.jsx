@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   CalendarDays, 
   Search, 
@@ -28,19 +28,99 @@ export default function AppointmentsTable() {
 
   const [selectedApt, setSelectedApt] = useState(null);
 
-  // Filter appointments
-  const filtered = appointments.filter(apt => {
-    const matchesSearch = 
-      apt.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      apt.tokenNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      apt.registerNumber.toLowerCase().includes(searchTerm.toLowerCase());
+  // Helper to extract student list for an appointment
+  const getAppointmentStudents = (apt) => {
+    if (Array.isArray(apt.students) && apt.students.length > 0) {
+      return apt.students;
+    }
+    // If students array wasn't cached, check if comma-separated studentName exists
+    if (typeof apt.studentName === 'string' && apt.studentName.includes(',')) {
+      return apt.studentName.split(',').map((name, i) => ({
+        name: name.trim(),
+        registerNumber: i === 0 ? apt.registerNumber : '',
+        department: apt.department,
+        year: apt.year,
+        isLead: i === 0
+      }));
+    }
+    return [{
+      name: apt.studentName,
+      registerNumber: apt.registerNumber,
+      department: apt.department,
+      year: apt.year,
+      email: apt.email,
+      phone: apt.phone,
+      isLead: true
+    }];
+  };
 
-    const matchesDept = !selectedDept || apt.department === selectedDept;
-    const matchesCategory = !selectedCategory || apt.category === selectedCategory;
-    const matchesStatus = !selectedStatus || apt.status === selectedStatus;
+  // Expand bulk appointments into individual student entries
+  const expandedAppointments = useMemo(() => {
+    const list = [];
+    (appointments || []).forEach(apt => {
+      const studentsList = getAppointmentStudents(apt);
+      const isMulti = apt.isBulk || studentsList.length > 1;
 
-    return matchesSearch && matchesDept && matchesCategory && matchesStatus;
-  });
+      if (isMulti && studentsList.length > 1) {
+        studentsList.forEach((std, index) => {
+          list.push({
+            ...apt,
+            uniqueRowId: `${apt.id || apt.tokenNumber}-std-${std.registerNumber || index}`,
+            studentName: std.name || apt.studentName,
+            registerNumber: std.registerNumber || apt.registerNumber,
+            department: std.department || apt.department,
+            year: std.year || apt.year,
+            email: std.email || apt.email,
+            phone: std.phone || apt.phone,
+            isGroupMember: true,
+            isLeadStudent: !!std.isLead || index === 0,
+            groupMemberIndex: index + 1,
+            groupTotalCount: studentsList.length,
+            groupStudents: studentsList,
+            parentAppointment: apt
+          });
+        });
+      } else {
+        const std = studentsList[0] || {};
+        list.push({
+          ...apt,
+          uniqueRowId: apt.id || apt.tokenNumber,
+          studentName: std.name || apt.studentName,
+          registerNumber: std.registerNumber || apt.registerNumber,
+          department: std.department || apt.department,
+          year: std.year || apt.year,
+          email: std.email || apt.email,
+          phone: std.phone || apt.phone,
+          isGroupMember: false,
+          isLeadStudent: true,
+          groupMemberIndex: 1,
+          groupTotalCount: 1,
+          groupStudents: [std],
+          parentAppointment: apt
+        });
+      }
+    });
+    return list;
+  }, [appointments]);
+
+  // Filter individual student entries
+  const filtered = useMemo(() => {
+    return expandedAppointments.filter(apt => {
+      const q = searchTerm.toLowerCase().trim();
+      const matchesSearch = !q ||
+        (apt.studentName && apt.studentName.toLowerCase().includes(q)) ||
+        (apt.tokenNumber && apt.tokenNumber.toLowerCase().includes(q)) ||
+        (apt.registerNumber && String(apt.registerNumber).toLowerCase().includes(q)) ||
+        (apt.companyName && apt.companyName.toLowerCase().includes(q)) ||
+        (apt.parentAppointment?.studentName && apt.parentAppointment.studentName.toLowerCase().includes(q));
+
+      const matchesDept = !selectedDept || apt.department === selectedDept;
+      const matchesCategory = !selectedCategory || apt.category === selectedCategory;
+      const matchesStatus = !selectedStatus || apt.status === selectedStatus;
+
+      return matchesSearch && matchesDept && matchesCategory && matchesStatus;
+    });
+  }, [expandedAppointments, searchTerm, selectedDept, selectedCategory, selectedStatus]);
 
   return (
     <div className="space-y-6">
@@ -52,7 +132,7 @@ export default function AppointmentsTable() {
             Appointments & Consultation Log
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Search, filter, and audit all consultation bookings across departments.
+            Search, filter, and audit all consultation bookings across departments ({filtered.length} individual student {filtered.length === 1 ? 'entry' : 'entries'}).
           </p>
         </div>
 
@@ -146,21 +226,23 @@ export default function AppointmentsTable() {
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
               {filtered.map((apt) => (
-                <tr key={apt.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors">
+                <tr key={apt.uniqueRowId} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors">
                   <td className="p-4">
                     <TokenBadge tokenNumber={apt.tokenNumber} size="small" variant="blue" />
                   </td>
                   <td className="p-4">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="font-bold text-slate-900 dark:text-white text-sm">{apt.studentName}</span>
-                      {(apt.isBulk || (apt.students && apt.students.length > 1) || (apt.studentCount > 1)) && (
+                      {apt.isGroupMember && (
                         <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 flex items-center gap-1">
                           <Users className="w-3 h-3" />
-                          <span>Bulk ({apt.studentCount || apt.students?.length})</span>
+                          <span>{apt.isLeadStudent ? 'Group Lead' : `Group (${apt.groupMemberIndex}/${apt.groupTotalCount})`}</span>
                         </span>
                       )}
                     </div>
-                    <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">Reg: {apt.registerNumber}</div>
+                    <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+                      Reg: {apt.registerNumber || 'N/A'}
+                    </div>
                   </td>
                   <td className="p-4 text-slate-600 dark:text-slate-400">
                     <div>{apt.department}</div>
@@ -189,7 +271,7 @@ export default function AppointmentsTable() {
               {filtered.length === 0 && (
                 <tr>
                   <td colSpan="7" className="p-8 text-center text-slate-400 dark:text-slate-500 text-xs">
-                    No matching appointments found.
+                    No matching consultation records found.
                   </td>
                 </tr>
               )}
@@ -209,21 +291,31 @@ export default function AppointmentsTable() {
           <div className="space-y-4 text-xs text-slate-700 dark:text-slate-300">
             <div className="bg-slate-50 dark:bg-slate-800/80 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1.5">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-900 dark:text-white text-base">{selectedApt.studentName}</span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-bold text-slate-900 dark:text-white text-base">{selectedApt.studentName}</span>
+                  {selectedApt.isGroupMember && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300 flex items-center gap-1">
+                      <Users className="w-3 h-3" />
+                      <span>{selectedApt.isLeadStudent ? 'Group Lead Booker' : `Group Member (${selectedApt.groupMemberIndex}/${selectedApt.groupTotalCount})`}</span>
+                    </span>
+                  )}
+                </div>
                 <StatusBadge status={selectedApt.status} />
               </div>
-              <p className="text-xs text-slate-600 dark:text-slate-400">Reg: {selectedApt.registerNumber} • {selectedApt.department}</p>
+              <p className="text-xs text-slate-600 dark:text-slate-400">Reg: {selectedApt.registerNumber || 'N/A'} • {selectedApt.department} • {selectedApt.year}</p>
+              {selectedApt.email && <p className="text-xs text-slate-500">Email: {selectedApt.email}</p>}
+              {selectedApt.phone && <p className="text-xs text-slate-500">Phone: {selectedApt.phone}</p>}
               <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold">Category: {selectedApt.category}</p>
               <p className="text-xs text-slate-500 dark:text-slate-400">Slot: {selectedApt.appointmentDate} at {selectedApt.appointmentTime}</p>
             </div>
 
-            {/* If Bulk Appointment: Show all group members */}
-            {(selectedApt.isBulk || (selectedApt.students && selectedApt.students.length > 1) || selectedApt.studentCount > 1) && (
+            {/* If Group Appointment: Show all attendees */}
+            {(selectedApt.isGroupMember || selectedApt.isBulk || (selectedApt.groupStudents && selectedApt.groupStudents.length > 1) || (selectedApt.students && selectedApt.students.length > 1)) && (
               <div className="p-3.5 bg-blue-50/60 dark:bg-blue-950/40 rounded-xl border border-blue-200/80 dark:border-blue-900/60 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-blue-900 dark:text-blue-200 flex items-center gap-1.5 uppercase tracking-wider">
                     <Users className="w-3.5 h-3.5" />
-                    <span>Group Meeting Attendees ({selectedApt.studentCount || selectedApt.students?.length || 1} Students)</span>
+                    <span>All Group Meeting Attendees ({selectedApt.groupTotalCount || selectedApt.groupStudents?.length || selectedApt.students?.length} Students)</span>
                   </span>
                   {selectedApt.companyName && (
                     <span className="text-[10px] font-semibold text-blue-700 dark:text-blue-300">
@@ -232,29 +324,41 @@ export default function AppointmentsTable() {
                   )}
                 </div>
                 <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                  {(selectedApt.students && selectedApt.students.length > 0
+                  {(selectedApt.groupStudents && selectedApt.groupStudents.length > 0
+                    ? selectedApt.groupStudents
+                    : selectedApt.students && selectedApt.students.length > 0
                     ? selectedApt.students
                     : [{ name: selectedApt.studentName, registerNumber: selectedApt.registerNumber, department: selectedApt.department, year: selectedApt.year, isLead: true }]
-                  ).map((std, idx) => (
-                    <div key={idx} className="p-2 bg-white dark:bg-slate-900 rounded-lg border border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 font-bold text-[10px] flex items-center justify-center shrink-0">
-                          {idx + 1}
-                        </span>
-                        <div className="min-w-0">
-                          <span className="font-bold text-slate-900 dark:text-white text-xs truncate block">
-                            {std.name} {std.isLead ? '(Lead)' : ''}
+                  ).map((std, idx) => {
+                    const isCurrentInspect = String(std.registerNumber || '').trim().toLowerCase() === String(selectedApt.registerNumber || '').trim().toLowerCase() && std.name === selectedApt.studentName;
+                    return (
+                      <div 
+                        key={idx} 
+                        className={`p-2 rounded-lg border flex items-center justify-between ${
+                          isCurrentInspect 
+                            ? 'bg-blue-100/70 dark:bg-blue-900/50 border-blue-300 dark:border-blue-700' 
+                            : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 font-bold text-[10px] flex items-center justify-center shrink-0">
+                            {idx + 1}
                           </span>
-                          <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
-                            {std.department || selectedApt.department} • {std.year || selectedApt.year}
-                          </p>
+                          <div className="min-w-0">
+                            <span className="font-bold text-slate-900 dark:text-white text-xs truncate block">
+                              {std.name} {std.isLead ? '(Lead Booker)' : ''} {isCurrentInspect ? '• Currently Viewing' : ''}
+                            </span>
+                            <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                              {std.department || selectedApt.department} • {std.year || selectedApt.year}
+                            </p>
+                          </div>
                         </div>
+                        <span className="text-[10px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded shrink-0 ml-2">
+                          {std.registerNumber || 'N/A'}
+                        </span>
                       </div>
-                      <span className="text-[10px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded shrink-0 ml-2">
-                        {std.registerNumber}
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -279,7 +383,8 @@ export default function AppointmentsTable() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => {
-                    markNoShow(selectedApt.id);
+                    const targetId = selectedApt.parentAppointment?.id || selectedApt.id;
+                    markNoShow(targetId);
                     setSelectedApt(null);
                   }}
                   className="px-3 py-2 rounded-lg bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-400 font-semibold border border-rose-200 dark:border-rose-900/50 transition-colors"
@@ -288,12 +393,13 @@ export default function AppointmentsTable() {
                 </button>
                 <button
                   onClick={() => {
-                    cancelAppointment(selectedApt.id);
+                    const targetId = selectedApt.parentAppointment?.id || selectedApt.id;
+                    cancelAppointment(targetId);
                     setSelectedApt(null);
                   }}
                   className="px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold transition-colors"
                 >
-                  Cancel
+                  Cancel Booking
                 </button>
               </div>
 

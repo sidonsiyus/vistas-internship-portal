@@ -126,15 +126,25 @@ export default function LiveQueueManager() {
               <TokenBadge tokenNumber={currentlyServing.tokenNumber} size="large" variant="blue" />
               <div>
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white">{currentlyServing.studentName}</h3>
-                  {(currentlyServing.isBulk || currentlyServing.studentCount > 1) && (
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                    {currentlyServing.students && currentlyServing.students.length > 1
+                      ? currentlyServing.students.map(s => s.name).join(', ')
+                      : currentlyServing.studentName}
+                  </h3>
+                  {(currentlyServing.isBulk || currentlyServing.studentCount > 1 || (currentlyServing.students && currentlyServing.students.length > 1)) && (
                     <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300 flex items-center gap-1">
                       <Users className="w-3 h-3" />
                       <span>Group ({currentlyServing.studentCount || currentlyServing.students?.length})</span>
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-slate-600 dark:text-slate-400">{currentlyServing.department} • Reg: {currentlyServing.registerNumber}</p>
+                <p className="text-xs text-slate-600 dark:text-slate-400">
+                  {currentlyServing.department} • Reg: {
+                    currentlyServing.students && currentlyServing.students.length > 1
+                      ? currentlyServing.students.map(s => s.registerNumber).filter(Boolean).join(', ')
+                      : currentlyServing.registerNumber
+                  }
+                </p>
                 <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 mt-1">{currentlyServing.category}</p>
               </div>
 
@@ -169,8 +179,25 @@ export default function LiveQueueManager() {
             <div className="space-y-3">
               <TokenBadge tokenNumber={calledStudent.tokenNumber} size="large" variant="orange" />
               <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">{calledStudent.studentName}</h3>
-                <p className="text-xs text-slate-600 dark:text-slate-400">{calledStudent.department} • {calledStudent.appointmentTime}</p>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                    {calledStudent.students && calledStudent.students.length > 1
+                      ? calledStudent.students.map(s => s.name).join(', ')
+                      : calledStudent.studentName}
+                  </h3>
+                  {(calledStudent.isBulk || calledStudent.studentCount > 1 || (calledStudent.students && calledStudent.students.length > 1)) && (
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300 flex items-center gap-1">
+                      <Users className="w-3 h-3" />
+                      <span>Group ({calledStudent.studentCount || calledStudent.students?.length})</span>
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-600 dark:text-slate-400">
+                  {calledStudent.department} • {calledStudent.appointmentTime}
+                  {calledStudent.students && calledStudent.students.length > 1 && (
+                    <span> • Reg: {calledStudent.students.map(s => s.registerNumber).filter(Boolean).join(', ')}</span>
+                  )}
+                </p>
                 <p className="text-xs font-bold text-amber-600 dark:text-amber-400 mt-1">Called • Student En Route to Office</p>
               </div>
 
@@ -220,8 +247,12 @@ export default function LiveQueueManager() {
 
                 <div>
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="font-bold text-slate-900 dark:text-white text-sm">{apt.studentName}</span>
-                    {(apt.isBulk || apt.studentCount > 1) && (
+                    <span className="font-bold text-slate-900 dark:text-white text-sm">
+                      {apt.students && apt.students.length > 1
+                        ? apt.students.map(s => s.name).join(', ')
+                        : apt.studentName}
+                    </span>
+                    {(apt.isBulk || apt.studentCount > 1 || (apt.students && apt.students.length > 1)) && (
                       <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 flex items-center gap-0.5">
                         <Users className="w-3 h-3" />
                         <span>Group ({apt.studentCount || apt.students?.length})</span>
@@ -233,7 +264,12 @@ export default function LiveQueueManager() {
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">{apt.department} • {apt.appointmentTime}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {apt.department} • {apt.appointmentTime}
+                    {apt.students && apt.students.length > 1 && (
+                      <span> • Reg: {apt.students.map(s => s.registerNumber).filter(Boolean).join(', ')}</span>
+                    )}
+                  </p>
                   <p className="text-[11px] text-blue-600 dark:text-blue-400 font-medium mt-0.5">{apt.category}</p>
                 </div>
               </div>

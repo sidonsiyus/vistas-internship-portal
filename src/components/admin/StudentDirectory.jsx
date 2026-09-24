@@ -349,7 +349,7 @@ export default function StudentDirectory() {
                                     {isLead ? (
                                       <span>Group Lead Booker (Attended with {memberCount - 1} other classmates in this slot)</span>
                                     ) : (
-                                      <span>Attended in group consultation with {apt.studentName} (Lead Booker)</span>
+                                      <span>Attended in group consultation with {apt.leadStudentName || (apt.students && apt.students[0]?.name) || apt.studentName} (Lead Booker)</span>
                                     )}
                                   </div>
                                 )}
