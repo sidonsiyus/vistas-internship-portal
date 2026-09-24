@@ -125,15 +125,15 @@ export default function StudentDocumentSubmission({ setActiveTab }) {
   const handleSearchChange = (val) => {
     setSearchQuery(val);
     const clean = val.trim().toLowerCase();
-    if (clean.length >= 2) {
+    if (clean.length >= 1) {
       const matches = studentPool
         .filter(s => 
           (s.name && s.name.toLowerCase().includes(clean)) ||
           (s.registerNumber && s.registerNumber.toLowerCase().includes(clean))
         )
-        .slice(0, 6);
+        .slice(0, 8);
       setSuggestions(matches);
-      setIsDropdownOpen(matches.length > 0);
+      setIsDropdownOpen(true);
     } else {
       setSuggestions([]);
       setIsDropdownOpen(false);
@@ -290,10 +290,10 @@ export default function StudentDocumentSubmission({ setActiveTab }) {
       </div>
 
       {/* Main Container Card */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm relative">
         
         {/* Step 1: Student Lookup */}
-        <div className="p-6 md:p-8 border-b border-slate-100 dark:border-slate-800 space-y-4">
+        <div className={`p-6 md:p-8 ${selectedStudent ? 'border-b border-slate-100 dark:border-slate-800' : ''} space-y-4`}>
           <div className="flex items-center justify-between">
             <div>
               <span className="text-[11px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 block">
@@ -307,7 +307,7 @@ export default function StudentDocumentSubmission({ setActiveTab }) {
               <button
                 type="button"
                 onClick={handleClearStudent}
-                className="text-xs text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 font-medium flex items-center gap-1 transition-colors"
+                className="text-xs text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 font-medium flex items-center gap-1 transition-colors cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
                 <span>Switch Student</span>
@@ -316,48 +316,83 @@ export default function StudentDocumentSubmission({ setActiveTab }) {
           </div>
 
           {!selectedStudent ? (
-            <div className="relative" ref={searchContainerRef}>
+            <div className="relative z-30" ref={searchContainerRef}>
               <div className="relative">
-                <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   type="text"
                   placeholder="Type your Full Name (e.g. Aakash) or Register Number (e.g. 25326101)..."
                   value={searchQuery}
                   onChange={(e) => handleSearchChange(e.target.value)}
                   onFocus={() => {
-                    if (suggestions.length > 0) setIsDropdownOpen(true);
+                    if (searchQuery.trim().length >= 1) setIsDropdownOpen(true);
                   }}
-                  className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 shadow-xs"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && suggestions.length > 0) {
+                      e.preventDefault();
+                      handleSelectStudent(suggestions[0]);
+                    } else if (e.key === 'Escape') {
+                      setIsDropdownOpen(false);
+                    }
+                  }}
+                  className="w-full pl-10 pr-10 py-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 shadow-xs"
                 />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery('');
+                      setSuggestions([]);
+                      setIsDropdownOpen(false);
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 cursor-pointer"
+                    title="Clear search"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
 
               {/* Suggestions Dropdown */}
-              {isDropdownOpen && suggestions.length > 0 && (
-                <div className="absolute left-0 right-0 top-full mt-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-30 max-h-64 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700/60">
-                  <div className="p-2.5 bg-slate-50 dark:bg-slate-800/80 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center justify-between">
-                    <span>Enrolled Students Found ({suggestions.length})</span>
-                    <span className="text-[9px] lowercase font-normal">Click your profile to continue</span>
-                  </div>
-                  {suggestions.map((std) => (
-                    <button
-                      type="button"
-                      key={std.registerNumber || std.id}
-                      onClick={() => handleSelectStudent(std)}
-                      className="w-full p-3 text-left hover:bg-blue-50 dark:hover:bg-blue-950/50 flex items-center justify-between gap-3 transition-colors"
-                    >
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                          {std.name}
-                        </p>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                          {std.department} • {std.year}
-                        </p>
+              {isDropdownOpen && (
+                <div className="absolute left-0 right-0 top-full mt-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl z-50 overflow-hidden ring-1 ring-slate-900/10">
+                  {suggestions.length > 0 ? (
+                    <div className="max-h-72 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700/60">
+                      <div className="p-3 bg-slate-50 dark:bg-slate-800/95 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center justify-between sticky top-0 backdrop-blur-xs z-10 border-b border-slate-100 dark:border-slate-700/50">
+                        <span>Enrolled Students Found ({suggestions.length})</span>
+                        <span className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold normal-case">Click your profile to continue</span>
                       </div>
-                      <span className="text-[11px] font-mono px-2.5 py-1 rounded bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300 font-bold shrink-0">
-                        {std.registerNumber}
-                      </span>
-                    </button>
-                  ))}
+                      {suggestions.map((std) => (
+                        <button
+                          type="button"
+                          key={std.registerNumber || std.id}
+                          onClick={() => handleSelectStudent(std)}
+                          className="w-full p-3.5 text-left hover:bg-blue-50 dark:hover:bg-blue-950/60 flex items-center justify-between gap-3 transition-colors cursor-pointer group"
+                        >
+                          <div className="min-w-0 flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-xl bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 font-bold text-xs flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                              {std.name ? std.name.charAt(0).toUpperCase() : 'S'}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold text-slate-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                                {std.name}
+                              </p>
+                              <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                                {std.department || 'Engineering'} • {std.year || 'Student'}
+                              </p>
+                            </div>
+                          </div>
+                          <span className="text-[11px] font-mono px-2.5 py-1 rounded-md bg-blue-50 dark:bg-blue-950/50 border border-blue-200/60 dark:border-blue-800/60 text-blue-700 dark:text-blue-300 font-bold shrink-0 group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-600 transition-colors">
+                            {std.registerNumber}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : searchQuery.trim().length >= 1 ? (
+                    <div className="p-4 text-center text-xs text-slate-500 dark:text-slate-400">
+                      No enrolled student found matching "<span className="font-semibold text-slate-800 dark:text-slate-200">{searchQuery}</span>". Check your name spelling or register number.
+                    </div>
+                  ) : null}
                 </div>
               )}
             </div>
