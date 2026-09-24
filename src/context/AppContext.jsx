@@ -300,28 +300,60 @@ export function AppProvider({ children }) {
 
         if (aptRes.status === 'fulfilled' && aptRes.value.data) {
           const aptData = aptRes.value.data;
-          const formatted = aptData.map(a => ({
-            id: a.id,
-            tokenNumber: a.token_number,
-            studentName: a.student_name,
-            registerNumber: a.register_number,
-            department: a.department,
-            year: a.year,
-            phone: a.phone,
-            email: a.email,
-            category: a.category,
-            description: a.description,
-            status: a.status,
-            queuePosition: a.queue_position,
-            appointmentDate: a.appointment_date,
-            appointmentTime: a.appointment_time,
-            isWalkIn: a.is_walk_in,
-            durationMinutes: a.duration_minutes,
-            notes: a.notes,
-            startedAt: a.started_at,
-            completedAt: a.completed_at,
-            createdAt: a.created_at || a.appointment_date
-          }));
+          let localAptMap = new Map();
+          try {
+            const rawLocal = localStorage.getItem('vistas_appointments');
+            if (rawLocal) {
+              const parsed = JSON.parse(rawLocal);
+              if (Array.isArray(parsed)) {
+                parsed.forEach(p => {
+                  if (p.tokenNumber) localAptMap.set(p.tokenNumber, p);
+                  if (p.id) localAptMap.set(p.id, p);
+                });
+              }
+            }
+          } catch (e) {}
+
+          const formatted = aptData.map(a => {
+            const cached = localAptMap.get(a.token_number) || localAptMap.get(a.id) || {};
+            let isBulk = cached.isBulk;
+            let studentCount = cached.studentCount;
+            let students = cached.students;
+            let companyName = cached.companyName;
+
+            if (!isBulk && a.description && a.description.includes('[Group Consultation:')) {
+              isBulk = true;
+              const match = a.description.match(/\[Group Consultation:\s*(\d+)\s*Students/i);
+              if (match) studentCount = parseInt(match[1], 10);
+            }
+
+            return {
+              id: a.id,
+              tokenNumber: a.token_number,
+              studentName: a.student_name,
+              registerNumber: a.register_number,
+              department: a.department,
+              year: a.year,
+              phone: a.phone,
+              email: a.email,
+              category: a.category,
+              description: a.description,
+              companyName: companyName || '',
+              isBulk: !!isBulk,
+              studentCount: studentCount || (Array.isArray(students) && students.length > 0 ? students.length : 1),
+              students: students || [],
+              status: a.status,
+              queuePosition: a.queue_position,
+              appointmentDate: a.appointment_date,
+              appointmentTime: a.appointment_time,
+              isWalkIn: a.is_walk_in,
+              durationMinutes: a.duration_minutes,
+              notes: a.notes,
+              startedAt: a.started_at,
+              completedAt: a.completed_at,
+              createdAt: a.created_at || a.appointment_date
+            };
+          });
           setAppointments(formatted);
           const active = formatted.find(a => a.status === 'IN_PROGRESS');
           setActiveMeeting(active || null);
@@ -592,6 +624,20 @@ export function AppProvider({ children }) {
     const queuePosition = activeWaiting.length + 1;
     const nowIso = new Date().toISOString();
 
+    const isBulk = !!bookingData.isBulk;
+    const allStudents = isBulk && Array.isArray(bookingData.students) && bookingData.students.length > 0
+      ? bookingData.students
+      : [{
+          name: bookingData.name,
+          registerNumber: bookingData.registerNumber,
+          department: bookingData.department,
+          year: bookingData.year,
+          phone: bookingData.phone,
+          email: bookingData.email,
+          isLead: true
+        }];
+    const studentCount = allStudents.length;
+
     const newApt = {
       id: `apt-${Date.now()}`,
       tokenNumber,
@@ -602,7 +648,11 @@ export function AppProvider({ children }) {
       phone: bookingData.phone,
       email: bookingData.email,
       category: bookingData.category,
+      companyName: bookingData.companyName || '',
       description: bookingData.description,
+      isBulk,
+      studentCount,
+      students: allStudents,
       status: 'WAITING',
       queuePosition,
       appointmentDate: bookingData.date,
@@ -614,21 +664,34 @@ export function AppProvider({ children }) {
     // 1. Optimistic Local State Update (Instant Feedback)
     const updated = [...appointments, newApt];
     setAppointments(updated);
+    try {
+      localStorage.setItem('vistas_appointments', JSON.stringify(updated));
+    } catch (e) {}
     broadcastChange('SYNC', { appointments: updated });
 
     // 2. Persist to Supabase Cloud
     if (isSupabaseConfigured()) {
       try {
+        const studentDisplayName = isBulk && studentCount > 1
+          ? `${bookingData.name} (+${studentCount - 1} students)`
+          : bookingData.name;
+
+        let descToSave = bookingData.description || '';
+        if (isBulk && studentCount > 1) {
+          const membersList = allStudents.map(s => `${s.name} (${s.registerNumber})`).join(', ');
+          descToSave = `[Group Consultation: ${studentCount} Students${bookingData.companyName ? ` • ${bookingData.companyName}` : ''}]\nMembers: ${membersList}\n\n${descToSave}`.trim();
+        }
+
         const { data, error } = await supabase.from('appointments').insert([{
           token_number: tokenNumber,
-          student_name: bookingData.name,
+          student_name: studentDisplayName,
           register_number: bookingData.registerNumber,
           department: bookingData.department,
           year: bookingData.year,
           phone: bookingData.phone,
           email: bookingData.email,
           category: bookingData.category,
-          description: bookingData.description,
+          description: descToSave,
           status: 'WAITING',
           queue_position: queuePosition,
           appointment_date: bookingData.date,
@@ -649,7 +712,12 @@ export function AppProvider({ children }) {
     }
 
     setTrackedToken(tokenNumber);
-    showToast(`Confirmed! Your Token is ${tokenNumber}`, 'success');
+    showToast(
+      isBulk && studentCount > 1
+        ? `Confirmed! Group Token is ${tokenNumber} (${studentCount} students)`
+        : `Confirmed! Your Token is ${tokenNumber}`,
+      'success'
+    );
     return newApt;
   };
 

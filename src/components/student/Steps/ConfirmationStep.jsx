@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { CheckCircle2, Ticket, Download, ArrowRight, MapPin } from 'lucide-react';
+import { CheckCircle2, Ticket, Download, ArrowRight, MapPin, Users } from 'lucide-react';
 import TokenBadge from '../../common/TokenBadge';
 import { downloadIcsFile } from '../../../utils/calendar';
 import { useApp } from '../../../context/AppContext';
@@ -74,6 +74,38 @@ export default function ConfirmationStep({ appointment, onTrackToken, onCancel }
             </span>
           </div>
         </div>
+
+        {/* Bulk Group Attendees List */}
+        {(appointment.isBulk || (appointment.students && appointment.students.length > 1)) && (
+          <div className="text-left border-t border-slate-100 dark:border-slate-800 pt-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1.5 uppercase tracking-wider">
+                <Users className="w-3.5 h-3.5" />
+                <span>Group Consultation ({appointment.studentCount || appointment.students?.length} Students)</span>
+              </span>
+              {appointment.companyName && (
+                <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 truncate max-w-[140px]">
+                  {appointment.companyName}
+                </span>
+              )}
+            </div>
+            <div className="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-2.5 space-y-1.5 border border-slate-200/80 dark:border-slate-700/80 max-h-40 overflow-y-auto">
+              {(appointment.students || []).map((std, idx) => (
+                <div key={idx} className="flex items-center justify-between text-[11px]">
+                  <span className="text-slate-800 dark:text-slate-200 font-semibold truncate">
+                    {idx + 1}. {std.name} {std.isLead ? '(Lead)' : ''}
+                  </span>
+                  <span className="font-mono text-slate-500 dark:text-slate-400 shrink-0 ml-2">
+                    {std.registerNumber}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <p className="text-[10px] text-slate-500 dark:text-slate-400 italic">
+              All {appointment.studentCount || appointment.students?.length} students are officially registered under Token {actualTokenNumber}.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Primary Navigation Actions */}

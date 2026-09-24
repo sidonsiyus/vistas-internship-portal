@@ -25,9 +25,11 @@ export default function QuickStats() {
       bg: 'bg-amber-50 dark:bg-amber-950/60 border-amber-200 dark:border-amber-800'
     },
     {
-      label: 'Completed',
-      value: metrics.completedCount,
-      subtext: 'Consultations done',
+      label: 'Students Met',
+      value: metrics.completedStudentsCount || metrics.completedCount,
+      subtext: metrics.completedSlotsCount && metrics.completedSlotsCount !== (metrics.completedStudentsCount || metrics.completedCount)
+        ? `${metrics.completedSlotsCount} slots completed`
+        : 'Consultations done',
       icon: CheckCircle2,
       color: 'text-emerald-600 dark:text-emerald-400',
       bg: 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800'

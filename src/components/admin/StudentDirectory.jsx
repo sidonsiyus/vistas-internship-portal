@@ -32,6 +32,19 @@ export default function StudentDirectory() {
   const startIndex = (currentPage - 1) * PAGE_SIZE;
   const paginatedStudents = filtered.slice(startIndex, startIndex + PAGE_SIZE);
 
+  // Match appointments where student is lead or co-attendee in bulk slot
+  const getStudentAppointments = (stdReg) => {
+    if (!stdReg) return [];
+    const cleanReg = String(stdReg).toLowerCase().trim();
+    return appointments.filter(a => {
+      if (a.registerNumber && String(a.registerNumber).toLowerCase().trim() === cleanReg) return true;
+      if (Array.isArray(a.students)) {
+        return a.students.some(s => s.registerNumber && String(s.registerNumber).toLowerCase().trim() === cleanReg);
+      }
+      return false;
+    });
+  };
+
   const handleSearchChange = (val) => {
     setSearchTerm(val);
     setCurrentPage(1);
@@ -157,7 +170,7 @@ export default function StudentDirectory() {
       {/* Student Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
         {paginatedStudents.map((std) => {
-          const studentApts = appointments.filter(a => a.registerNumber === std.registerNumber);
+          const studentApts = getStudentAppointments(std.registerNumber);
           const studentDocs = documents.filter(d => 
             String(d.studentRegisterNumber || '').toLowerCase().trim() === String(std.registerNumber || '').toLowerCase().trim()
           );
@@ -288,25 +301,68 @@ export default function StudentDirectory() {
               <div className="space-y-4">
                 {/* Past Consultation History */}
                 <div className="space-y-2">
-                  <span className="font-semibold text-slate-700 dark:text-slate-300 block uppercase tracking-wider text-[11px]">
-                    Consultation History Log ({appointments.filter(a => a.registerNumber === selectedStudent.registerNumber).length})
-                  </span>
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {appointments
-                      .filter(a => a.registerNumber === selectedStudent.registerNumber)
-                      .map(apt => (
-                        <div key={apt.id} className="p-3 bg-white dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 text-xs flex items-center justify-between shadow-xs">
-                          <div>
-                            <span className="font-semibold text-slate-900 dark:text-white block">{apt.category}</span>
-                            <span className="text-slate-500 dark:text-slate-400 text-[11px]">{apt.appointmentDate} • {apt.appointmentTime}</span>
-                          </div>
-                          <span className="text-blue-600 dark:text-blue-400 font-mono text-xs font-bold">{apt.tokenNumber}</span>
+                  {(() => {
+                    const studentAptsList = getStudentAppointments(selectedStudent.registerNumber);
+                    return (
+                      <>
+                        <span className="font-semibold text-slate-700 dark:text-slate-300 block uppercase tracking-wider text-[11px]">
+                          Consultation History Log ({studentAptsList.length})
+                        </span>
+                        <div className="space-y-2 max-h-52 overflow-y-auto">
+                          {studentAptsList.map(apt => {
+                            const isGroup = apt.isBulk || (apt.students && apt.students.length > 1);
+                            const isLead = String(apt.registerNumber || '').toLowerCase().trim() === String(selectedStudent.registerNumber || '').toLowerCase().trim();
+                            const memberCount = apt.studentCount || (apt.students ? apt.students.length : 1);
+
+                            return (
+                              <div key={apt.id} className="p-3 bg-white dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 text-xs space-y-1.5 shadow-xs">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="font-semibold text-slate-900 dark:text-white">{apt.category}</span>
+                                    {isGroup && (
+                                      <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                                        👥 Group ({memberCount} Students)
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span className="text-blue-600 dark:text-blue-400 font-mono text-xs font-bold">{apt.tokenNumber}</span>
+                                </div>
+
+                                <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                                  <span>{apt.appointmentDate} • {apt.appointmentTime}</span>
+                                  <span className={`px-1.5 py-0.2 rounded font-bold text-[10px] ${
+                                    apt.status === 'COMPLETED' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' :
+                                    apt.status === 'WAITING' ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300' :
+                                    'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300'
+                                  }`}>
+                                    {apt.status === 'COMPLETED' ? '✓ Met with Coordinator' : apt.status}
+                                  </span>
+                                </div>
+
+                                {isGroup && (
+                                  <div className="text-[10px] text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/80 p-2 rounded-lg border border-slate-100 dark:border-slate-700/60">
+                                    {apt.companyName && (
+                                      <span className="font-semibold block text-blue-700 dark:text-blue-300 mb-0.5">
+                                        Target: {apt.companyName}
+                                      </span>
+                                    )}
+                                    {isLead ? (
+                                      <span>Group Lead Booker (Attended with {memberCount - 1} other classmates in this slot)</span>
+                                    ) : (
+                                      <span>Attended in group consultation with {apt.studentName} (Lead Booker)</span>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                          {studentAptsList.length === 0 && (
+                            <p className="text-slate-400 italic py-2 text-center">No past consultations recorded yet.</p>
+                          )}
                         </div>
-                      ))}
-                    {appointments.filter(a => a.registerNumber === selectedStudent.registerNumber).length === 0 && (
-                      <p className="text-slate-400 italic py-2 text-center">No past consultations recorded yet.</p>
-                    )}
-                  </div>
+                      </>
+                    );
+                  })()}
                 </div>
 
                 {/* Private Coordinator Notes */}

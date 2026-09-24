@@ -156,9 +156,13 @@ export default function OverviewDashboard({ setActiveAdminPage }) {
 
         <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-5 rounded-2xl shadow-sm flex items-center justify-between">
           <div>
-            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">COMPLETED</span>
-            <div className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 font-mono mt-1">{metrics.completedCount}</div>
-            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Consultations Done</span>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">STUDENTS MET</span>
+            <div className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 font-mono mt-1">{metrics.completedStudentsCount || metrics.completedCount}</div>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+              {metrics.completedSlotsCount && metrics.completedSlotsCount !== (metrics.completedStudentsCount || metrics.completedCount)
+                ? `${metrics.completedStudentsCount || metrics.completedCount} students (${metrics.completedSlotsCount} slots)`
+                : 'Consultations Done'}
+            </span>
           </div>
           <div className="p-3 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 rounded-xl border border-emerald-100 dark:border-emerald-900">
             <CheckCircle2 className="w-5 h-5" />
@@ -267,11 +271,37 @@ export default function OverviewDashboard({ setActiveAdminPage }) {
               <div className="flex items-center gap-4">
                 <TokenBadge tokenNumber={currentlyMeetingApt.tokenNumber} size="large" variant="blue" />
                 <div>
-                  <h3 className="text-xl font-bold text-slate-900 dark:text-white">{currentlyMeetingApt.studentName}</h3>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">{currentlyMeetingApt.studentName}</h3>
+                    {(currentlyMeetingApt.isBulk || currentlyMeetingApt.studentCount > 1 || (currentlyMeetingApt.students && currentlyMeetingApt.students.length > 1)) && (
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300 flex items-center gap-1">
+                        <Users className="w-3.5 h-3.5" />
+                        <span>Group ({currentlyMeetingApt.studentCount || currentlyMeetingApt.students?.length} Students)</span>
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-slate-600 dark:text-slate-300">{currentlyMeetingApt.department} • {currentlyMeetingApt.year}</p>
                   <p className="text-xs font-mono text-slate-500 dark:text-slate-400">Reg: {currentlyMeetingApt.registerNumber}</p>
                 </div>
               </div>
+
+              {/* Group members list if bulk meeting */}
+              {(currentlyMeetingApt.isBulk || (currentlyMeetingApt.students && currentlyMeetingApt.students.length > 1)) && (
+                <div className="p-3 bg-blue-50/70 dark:bg-blue-950/40 rounded-xl border border-blue-200/70 dark:border-blue-900/60 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs font-bold text-blue-900 dark:text-blue-200">
+                    <span className="uppercase tracking-wider">All Students in this Consultation ({currentlyMeetingApt.studentCount || currentlyMeetingApt.students?.length})</span>
+                    {currentlyMeetingApt.companyName && <span className="text-blue-700 dark:text-blue-300">Target: {currentlyMeetingApt.companyName}</span>}
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-0.5 max-h-32 overflow-y-auto">
+                    {(currentlyMeetingApt.students || []).map((std, idx) => (
+                      <div key={idx} className="p-1.5 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs">
+                        <span className="font-semibold text-slate-800 dark:text-slate-200 truncate">{idx + 1}. {std.name} {std.isLead ? '(Lead)' : ''}</span>
+                        <span className="font-mono text-[10px] text-slate-500 ml-1 shrink-0">{std.registerNumber}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200/80 dark:border-slate-700 space-y-1">
                 <span className="text-xs font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wider">
@@ -312,7 +342,14 @@ export default function OverviewDashboard({ setActiveAdminPage }) {
                 <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
                   <TokenBadge tokenNumber={nextInLineApt.tokenNumber} size="large" variant={nextInLineApt.status === 'CALLED' ? 'orange' : 'amber'} />
                   <div>
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white">{nextInLineApt.studentName}</h3>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-base font-bold text-slate-900 dark:text-white">{nextInLineApt.studentName}</h3>
+                      {(nextInLineApt.isBulk || nextInLineApt.studentCount > 1) && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300">
+                          👥 Group ({nextInLineApt.studentCount || nextInLineApt.students?.length})
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-slate-600 dark:text-slate-300">{nextInLineApt.department} • {nextInLineApt.appointmentTime}</p>
                     <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 mt-0.5">{nextInLineApt.category}</p>
                   </div>

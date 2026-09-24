@@ -11,7 +11,8 @@ import {
   X, 
   Clock, 
   Sparkles,
-  CheckCircle2
+  CheckCircle2,
+  Users
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import TokenBadge from '../common/TokenBadge';
@@ -124,7 +125,15 @@ export default function LiveQueueManager() {
             <div className="space-y-3">
               <TokenBadge tokenNumber={currentlyServing.tokenNumber} size="large" variant="blue" />
               <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">{currentlyServing.studentName}</h3>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">{currentlyServing.studentName}</h3>
+                  {(currentlyServing.isBulk || currentlyServing.studentCount > 1) && (
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300 flex items-center gap-1">
+                      <Users className="w-3 h-3" />
+                      <span>Group ({currentlyServing.studentCount || currentlyServing.students?.length})</span>
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-slate-600 dark:text-slate-400">{currentlyServing.department} • Reg: {currentlyServing.registerNumber}</p>
                 <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 mt-1">{currentlyServing.category}</p>
               </div>
@@ -210,8 +219,14 @@ export default function LiveQueueManager() {
                 <TokenBadge tokenNumber={apt.tokenNumber} size="normal" variant={apt.status === 'CALLED' ? 'orange' : 'blue'} />
 
                 <div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 flex-wrap">
                     <span className="font-bold text-slate-900 dark:text-white text-sm">{apt.studentName}</span>
+                    {(apt.isBulk || apt.studentCount > 1) && (
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 flex items-center gap-0.5">
+                        <Users className="w-3 h-3" />
+                        <span>Group ({apt.studentCount || apt.students?.length})</span>
+                      </span>
+                    )}
                     {apt.isWalkIn && (
                       <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                         WALK-IN

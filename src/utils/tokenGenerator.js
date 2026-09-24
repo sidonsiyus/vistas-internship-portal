@@ -52,6 +52,17 @@ export function calculateQueueMetrics(appointments = []) {
     return false;
   };
 
+  // Helper to extract student count from appointment (1 for individual, or total in group for bulk)
+  const getAppointmentStudentCount = (apt) => {
+    if (apt.studentCount && typeof apt.studentCount === 'number' && apt.studentCount > 0) {
+      return apt.studentCount;
+    }
+    if (Array.isArray(apt.students) && apt.students.length > 0) {
+      return apt.students.length;
+    }
+    return 1;
+  };
+
   // 1. Total Booked Today: Non-cancelled appointments booked for today OR created/booked on today
   const bookedTodayApts = appointments.filter(a => {
     if (a.status === 'CANCELLED') return false;
@@ -71,10 +82,18 @@ export function calculateQueueMetrics(appointments = []) {
   const avgDuration = completed.length > 0 ? Math.round(totalDurations / completed.length) : 11;
   const totalWaitMinutes = waitingList.length * avgDuration;
 
+  const totalStudentsMet = completed.reduce((sum, a) => sum + getAppointmentStudentCount(a), 0);
+  const totalStudentsBookedToday = bookedTodayApts.reduce((sum, a) => sum + getAppointmentStudentCount(a), 0);
+  const totalStudentsWaiting = waitingList.reduce((sum, a) => sum + getAppointmentStudentCount(a), 0);
+
   return {
     totalToday: bookedTodayApts.length,
-    completedCount: completed.length,
+    totalTodayStudents: totalStudentsBookedToday,
+    completedCount: totalStudentsMet, // Primary metric reflects total students actually met
+    completedSlotsCount: completed.length,
+    completedStudentsCount: totalStudentsMet,
     waitingCount: waitingList.length,
+    waitingStudentsCount: totalStudentsWaiting,
     upcomingCount: waitingList.filter(a => a.status === 'WAITING').length,
     inProgressCount: inProgress ? 1 : 0,
     noShowCount: noShow.length,

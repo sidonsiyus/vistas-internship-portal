@@ -9,7 +9,8 @@ import {
   MoreVertical,
   CheckCircle2,
   XCircle,
-  UserX
+  UserX,
+  Users
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import TokenBadge from '../common/TokenBadge';
@@ -150,7 +151,15 @@ export default function AppointmentsTable() {
                     <TokenBadge tokenNumber={apt.tokenNumber} size="small" variant="blue" />
                   </td>
                   <td className="p-4">
-                    <div className="font-bold text-slate-900 dark:text-white text-sm">{apt.studentName}</div>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-bold text-slate-900 dark:text-white text-sm">{apt.studentName}</span>
+                      {(apt.isBulk || (apt.students && apt.students.length > 1) || (apt.studentCount > 1)) && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 flex items-center gap-1">
+                          <Users className="w-3 h-3" />
+                          <span>Bulk ({apt.studentCount || apt.students?.length})</span>
+                        </span>
+                      )}
+                    </div>
                     <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">Reg: {apt.registerNumber}</div>
                   </td>
                   <td className="p-4 text-slate-600 dark:text-slate-400">
@@ -169,7 +178,7 @@ export default function AppointmentsTable() {
                   <td className="p-4 text-right">
                     <button
                       onClick={() => setSelectedApt(apt)}
-                      className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs transition-colors"
+                      className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs transition-colors cursor-pointer"
                     >
                       Inspect Details
                     </button>
@@ -207,6 +216,48 @@ export default function AppointmentsTable() {
               <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold">Category: {selectedApt.category}</p>
               <p className="text-xs text-slate-500 dark:text-slate-400">Slot: {selectedApt.appointmentDate} at {selectedApt.appointmentTime}</p>
             </div>
+
+            {/* If Bulk Appointment: Show all group members */}
+            {(selectedApt.isBulk || (selectedApt.students && selectedApt.students.length > 1) || selectedApt.studentCount > 1) && (
+              <div className="p-3.5 bg-blue-50/60 dark:bg-blue-950/40 rounded-xl border border-blue-200/80 dark:border-blue-900/60 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-blue-900 dark:text-blue-200 flex items-center gap-1.5 uppercase tracking-wider">
+                    <Users className="w-3.5 h-3.5" />
+                    <span>Group Meeting Attendees ({selectedApt.studentCount || selectedApt.students?.length || 1} Students)</span>
+                  </span>
+                  {selectedApt.companyName && (
+                    <span className="text-[10px] font-semibold text-blue-700 dark:text-blue-300">
+                      Target: {selectedApt.companyName}
+                    </span>
+                  )}
+                </div>
+                <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                  {(selectedApt.students && selectedApt.students.length > 0
+                    ? selectedApt.students
+                    : [{ name: selectedApt.studentName, registerNumber: selectedApt.registerNumber, department: selectedApt.department, year: selectedApt.year, isLead: true }]
+                  ).map((std, idx) => (
+                    <div key={idx} className="p-2 bg-white dark:bg-slate-900 rounded-lg border border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 font-bold text-[10px] flex items-center justify-center shrink-0">
+                          {idx + 1}
+                        </span>
+                        <div className="min-w-0">
+                          <span className="font-bold text-slate-900 dark:text-white text-xs truncate block">
+                            {std.name} {std.isLead ? '(Lead)' : ''}
+                          </span>
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                            {std.department || selectedApt.department} • {std.year || selectedApt.year}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded shrink-0 ml-2">
+                        {std.registerNumber}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="space-y-1">
               <span className="font-bold text-slate-600 dark:text-slate-400 block uppercase tracking-wider">Query Description:</span>

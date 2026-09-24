@@ -126,7 +126,14 @@ export default function LiveTokenTracker({ setActiveTab }) {
               <div className="space-y-2.5">
                 <TokenBadge tokenNumber={currentlyServing.tokenNumber} size="large" variant="blue" />
                 <div>
-                  <p className="text-sm font-bold text-slate-900 dark:text-white">{currentlyServing.studentName}</p>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <p className="text-sm font-bold text-slate-900 dark:text-white">{currentlyServing.studentName}</p>
+                    {(currentlyServing.isBulk || currentlyServing.studentCount > 1) && (
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300">
+                        👥 Group ({currentlyServing.studentCount || currentlyServing.students?.length})
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-slate-600 dark:text-slate-300">{currentlyServing.department}</p>
                   <p className="text-[11px] text-blue-700 dark:text-blue-300 font-medium mt-0.5">{currentlyServing.category}</p>
                 </div>
@@ -274,6 +281,43 @@ export default function LiveTokenTracker({ setActiveTab }) {
                 )}
               </p>
             </div>
+
+            {/* If Bulk Appointment: Show attending students */}
+            {(myAppointment.isBulk || (myAppointment.students && myAppointment.students.length > 1)) && (
+              <div className="md:col-span-3 pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1.5 uppercase tracking-wider">
+                    <Users className="w-3.5 h-3.5" />
+                    <span>Group Consultation ({myAppointment.studentCount || myAppointment.students?.length} Students Booked in this Slot)</span>
+                  </span>
+                  {myAppointment.companyName && (
+                    <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                      Company: {myAppointment.companyName}
+                    </span>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                  {(myAppointment.students && myAppointment.students.length > 0
+                    ? myAppointment.students
+                    : [{ name: myAppointment.studentName, registerNumber: myAppointment.registerNumber, department: myAppointment.department, year: myAppointment.year, isLead: true }]
+                  ).map((std, idx) => (
+                    <div key={idx} className="p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-between">
+                      <div className="min-w-0 pr-2">
+                        <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                          {std.name} {std.isLead ? '(Lead)' : ''}
+                        </p>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                          {std.department || myAppointment.department}
+                        </p>
+                      </div>
+                      <span className="text-[10px] font-mono font-bold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded border border-blue-200/60 dark:border-blue-900/60 shrink-0">
+                        {std.registerNumber}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
           </div>
         ) : (

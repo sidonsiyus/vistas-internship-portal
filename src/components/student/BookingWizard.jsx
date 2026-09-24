@@ -21,6 +21,8 @@ export default function BookingWizard({ setActiveTab }) {
   const [selectedDate, setSelectedDate] = useState(getTodayIso);
   const [selectedTime, setSelectedTime] = useState('');
   const [formData, setFormData] = useState({
+    bookingType: 'INDIVIDUAL',
+    isBulk: false,
     name: '',
     registerNumber: '',
     department: '',
@@ -28,7 +30,9 @@ export default function BookingWizard({ setActiveTab }) {
     phone: '',
     email: '',
     category: 'Internship Opportunity',
-    description: ''
+    companyName: '',
+    description: '',
+    coAttendees: []
   });
 
   const [confirmedAppointment, setConfirmedAppointment] = useState(null);
@@ -41,8 +45,25 @@ export default function BookingWizard({ setActiveTab }) {
   ];
 
   const handleBookingSubmit = async () => {
+    const isBulk = formData.bookingType === 'BULK';
+    const allStudents = [
+      {
+        name: formData.name,
+        registerNumber: formData.registerNumber,
+        department: formData.department,
+        year: formData.year,
+        phone: formData.phone,
+        email: formData.email,
+        isLead: true
+      },
+      ...(isBulk && Array.isArray(formData.coAttendees) ? formData.coAttendees : [])
+    ];
+
     const bookingPayload = {
       ...formData,
+      isBulk,
+      studentCount: allStudents.length,
+      students: allStudents,
       date: selectedDate,
       timeSlot: selectedTime
     };
