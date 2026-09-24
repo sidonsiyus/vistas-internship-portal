@@ -13,6 +13,7 @@ import CoordinatorStatusView from './components/student/CoordinatorStatusView';
 import AnnouncementBanner from './components/student/AnnouncementBanner';
 import InternshipUpdatesView from './components/student/InternshipUpdatesView';
 import PreBookingModal from './components/student/PreBookingModal';
+import StudentDocumentSubmission from './components/student/StudentDocumentSubmission';
 
 // Admin views
 import AdminLogin from './components/admin/AdminLogin';
@@ -119,6 +120,8 @@ function AppContent() {
         )}
 
         {activeTab === 'updates' && <InternshipUpdatesView setActiveTab={setActiveTab} />}
+
+        {activeTab === 'certificates' && <StudentDocumentSubmission setActiveTab={setActiveTab} />}
 
         {activeTab === 'book' && <BookingWizard setActiveTab={setActiveTab} />}
 

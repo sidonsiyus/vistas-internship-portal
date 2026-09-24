@@ -158,7 +158,9 @@ export default function StudentDirectory() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
         {paginatedStudents.map((std) => {
           const studentApts = appointments.filter(a => a.registerNumber === std.registerNumber);
-          const studentDocs = documents.filter(d => d.studentRegisterNumber === std.registerNumber);
+          const studentDocs = documents.filter(d => 
+            String(d.studentRegisterNumber || '').toLowerCase().trim() === String(std.registerNumber || '').toLowerCase().trim()
+          );
 
           return (
             <div 
@@ -261,7 +263,9 @@ export default function StudentDirectory() {
                   }`}
                 >
                   <FileText className="w-3.5 h-3.5" />
-                  <span>Documents ({documents.filter(d => d.studentRegisterNumber === selectedStudent.registerNumber).length})</span>
+                  <span>Documents ({documents.filter(d => 
+                    String(d.studentRegisterNumber || '').toLowerCase().trim() === String(selectedStudent.registerNumber || '').toLowerCase().trim()
+                  ).length})</span>
                 </button>
                 <button
                   type="button"

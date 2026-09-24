@@ -1,5 +1,5 @@
 import React from 'react';
-import { Ticket, Clock, ArrowRight, ShieldCheck, MapPin, AlertCircle, Building2 } from 'lucide-react';
+import { Ticket, Clock, ArrowRight, ShieldCheck, MapPin, AlertCircle, Building2, Award } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import StatusBadge from '../common/StatusBadge';
 import { OFFICE_LOCATION } from '../../mock/sampleData';
@@ -53,7 +53,7 @@ export default function HeroSection({ setActiveTab, onBookClick }) {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
             <button
               onClick={handleBook}
-              className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm shadow-sm transition-all transform hover:-translate-y-0.5"
+              className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm shadow-sm transition-all transform hover:-translate-y-0.5 cursor-pointer"
             >
               <Ticket className="w-4 h-4 text-white" />
               <span>BOOK A TOKEN SLOT</span>
@@ -62,21 +62,29 @@ export default function HeroSection({ setActiveTab, onBookClick }) {
 
             <button
               onClick={() => setActiveTab('track')}
-              className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-xl bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold text-sm border border-slate-200 dark:border-slate-700 shadow-sm transition-all"
+              className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-xl bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold text-sm border border-slate-200 dark:border-slate-700 shadow-sm transition-all cursor-pointer"
             >
               <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               <span>TRACK MY TOKEN LIVE</span>
             </button>
           </div>
 
-          {/* Company Response Reminder Pill */}
-          <div className="pt-1">
+          {/* Quick Shortcuts */}
+          <div className="pt-1 flex flex-wrap items-center justify-center gap-2">
+            <button 
+              onClick={() => setActiveTab('certificates')}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100/70 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-medium transition-all shadow-xs cursor-pointer"
+            >
+              <Award className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>Finished your internship? <strong className="text-emerald-950 dark:text-emerald-100 underline underline-offset-2">Upload Completed Certificate →</strong></span>
+            </button>
+
             <button 
               onClick={() => setActiveTab('updates')}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100/70 dark:hover:bg-blue-900/60 border border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-300 text-xs font-medium transition-all shadow-sm"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100/70 dark:hover:bg-blue-900/60 border border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-300 text-xs font-medium transition-all shadow-xs cursor-pointer"
             >
               <Building2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-              <span>Checking on company email replies? <strong className="text-blue-900 dark:text-blue-100 underline underline-offset-2">View Company Response Updates →</strong></span>
+              <span>Company replies: <strong className="text-blue-900 dark:text-blue-100 underline underline-offset-2">View Updates →</strong></span>
             </button>
           </div>
 

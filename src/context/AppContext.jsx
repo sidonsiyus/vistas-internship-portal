@@ -1304,7 +1304,7 @@ export function AppProvider({ children }) {
       status: metadata.status || 'Under Review',
       adminNotes: metadata.adminNotes || '',
       version: 1,
-      uploadedBy: adminAuth?.email || 'Admin Coordinator',
+      uploadedBy: metadata.uploadedBy || adminAuth?.email || 'Student (Self-Service)',
       uploadedAt: nowIso,
       updatedAt: nowIso
     };

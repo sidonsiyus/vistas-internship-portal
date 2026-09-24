@@ -41,6 +41,11 @@ export default function Footer({ setActiveTab }) {
                 </button>
               </li>
               <li>
+                <button onClick={() => setActiveTab('certificates')} className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                  Upload Internship Certificate
+                </button>
+              </li>
+              <li>
                 <button onClick={() => setActiveTab('status')} className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                   Coordinator Desk Status
                 </button>

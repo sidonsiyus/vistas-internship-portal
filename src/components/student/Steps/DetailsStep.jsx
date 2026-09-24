@@ -160,9 +160,12 @@ export default function DetailsStep({ formData, setFormData, onSubmit, onBack })
     if (!formData.name.trim()) newErrors.name = 'Full Name is required';
     if (!formData.department) newErrors.department = 'Department selection is required';
     if (!formData.year) newErrors.year = 'Year of study is required';
-    if (!formData.phone.trim()) newErrors.phone = 'Mobile number is required for updates';
-    if (!formData.email.trim() || !formData.email.includes('@')) newErrors.email = 'Valid university email is required';
     if (!formData.category) newErrors.category = 'Query category is required';
+
+    // Email is optional, but if entered, validate format
+    if (formData.email && formData.email.trim() && !formData.email.includes('@')) {
+      newErrors.email = 'Please enter a valid university email address';
+    }
 
     // Duplicate active booking check
     const existingActive = appointments.find(
@@ -415,7 +418,7 @@ export default function DetailsStep({ formData, setFormData, onSubmit, onBack })
         {/* Phone */}
         <div className="space-y-1">
           <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-            Mobile Number (For Live Updates) <span className="text-rose-500">*</span>
+            Mobile Number <span className="text-slate-400 dark:text-slate-500 font-normal">(Optional)</span>
           </label>
           <div className="relative">
             <Phone className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-3" />
@@ -433,7 +436,7 @@ export default function DetailsStep({ formData, setFormData, onSubmit, onBack })
         {/* Email */}
         <div className="space-y-1 sm:col-span-2">
           <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-            University Email Address <span className="text-rose-500">*</span>
+            University Email Address <span className="text-slate-400 dark:text-slate-500 font-normal">(Optional)</span>
           </label>
           <div className="relative">
             <Mail className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-3" />

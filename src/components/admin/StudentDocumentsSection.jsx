@@ -57,7 +57,9 @@ export default function StudentDocumentsSection({ student }) {
 
   if (!student) return null;
 
-  const studentDocs = documents.filter(d => d.studentRegisterNumber === student.registerNumber);
+  const studentDocs = documents.filter(d => 
+    String(d.studentRegisterNumber || '').toLowerCase().trim() === String(student.registerNumber || '').toLowerCase().trim()
+  );
 
   // Metrics calculation
   const totalCount = studentDocs.length;

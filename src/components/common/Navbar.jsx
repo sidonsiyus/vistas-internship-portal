@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { GraduationCap, Menu, X, Shield, Clock, Ticket, UserCheck, Building2, Bell, Sun, Moon } from 'lucide-react';
+import { GraduationCap, Menu, X, Shield, Clock, Ticket, UserCheck, Building2, Bell, Sun, Moon, Award } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import StatusBadge from './StatusBadge';
 
@@ -24,6 +24,7 @@ export default function Navbar({ activeTab, setActiveTab, onBookClick }) {
       badge: unreadCount > 0 ? `${unreadCount} New` : null,
       isAlertBadge: unreadCount > 0
     },
+    { id: 'certificates', label: 'Upload Certificate', icon: Award },
     { id: 'book', label: 'Book Slot', icon: Clock },
     { id: 'track', label: 'Track Token', icon: Ticket, badge: trackedToken },
     { id: 'status', label: 'Desk Status', icon: UserCheck },
