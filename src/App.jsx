@@ -14,6 +14,8 @@ import AnnouncementBanner from './components/student/AnnouncementBanner';
 import InternshipUpdatesView from './components/student/InternshipUpdatesView';
 import PreBookingModal from './components/student/PreBookingModal';
 import StudentDocumentSubmission from './components/student/StudentDocumentSubmission';
+import StudentBugReportModal from './components/student/StudentBugReportModal';
+import { Bug } from 'lucide-react';
 
 // Admin views
 import AdminLogin from './components/admin/AdminLogin';
@@ -37,6 +39,9 @@ function AppContent() {
 
   // Pre-booking advisory modal state
   const [isPreBookingModalOpen, setIsPreBookingModalOpen] = useState(false);
+
+  // Student Bug Report modal state
+  const [isStudentBugReportOpen, setIsStudentBugReportOpen] = useState(false);
 
   // Admin sub-page state: 'overview', 'live-queue', 'announcements', 'appointments', 'availability', 'students', 'reports', 'settings'
   const [activeAdminPage, setActiveAdminPage] = useState('overview');
@@ -106,7 +111,12 @@ function AppContent() {
         }}
       />
 
-      <Navbar activeTab={activeTab} setActiveTab={setActiveTab} onBookClick={handleBookTrigger} />
+      <Navbar 
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab} 
+        onBookClick={handleBookTrigger} 
+        onReportBugClick={() => setIsStudentBugReportOpen(true)}
+      />
 
       <main className="flex-1">
         {activeTab === 'home' && (
@@ -132,7 +142,28 @@ function AppContent() {
         {activeTab === 'status' && <CoordinatorStatusView setActiveTab={setActiveTab} />}
       </main>
 
-      <Footer setActiveTab={setActiveTab} />
+      {/* Floating Student Bug Report Helper Button */}
+      <button
+        onClick={() => setIsStudentBugReportOpen(true)}
+        className="fixed bottom-5 left-5 z-30 flex items-center gap-1.5 px-3 py-2 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 font-bold text-xs shadow-md hover:shadow-lg transition-all cursor-pointer group hover:scale-105"
+        title="Report a bug or broken feature"
+      >
+        <span className="p-1 rounded-full bg-rose-50 dark:bg-rose-950/60 group-hover:bg-rose-100 dark:group-hover:bg-rose-900/40">
+          <Bug className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+        </span>
+        <span className="hidden sm:inline">Report Issue</span>
+      </button>
+
+      {/* Student Bug Reporting Modal */}
+      <StudentBugReportModal
+        isOpen={isStudentBugReportOpen}
+        onClose={() => setIsStudentBugReportOpen(false)}
+      />
+
+      <Footer 
+        setActiveTab={setActiveTab} 
+        onReportBugClick={() => setIsStudentBugReportOpen(true)} 
+      />
     </div>
   );
 }

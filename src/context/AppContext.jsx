@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { INITIAL_APPOINTMENTS, INITIAL_AVAILABILITY, MOCK_STUDENTS, INITIAL_ANNOUNCEMENTS } from '../mock/sampleData';
 import { generateNextTokenNumber } from '../utils/tokenGenerator';
+import { sendTicketEmailAlert } from '../utils/emailNotifier';
 
 const AppContext = createContext();
 const CHANNEL_NAME = 'VISTAS_REALTIME_QUEUE';
@@ -1708,8 +1709,10 @@ export function AppProvider({ children }) {
       description: (ticketData.description || '').trim(),
       reproductionSteps: (ticketData.reproductionSteps || '').trim(),
       expectedBenefit: (ticketData.expectedBenefit || '').trim(),
-      submitterName: (ticketData.submitterName || adminAuth?.name || 'Placement Coordinator').trim(),
-      submitterEmail: (ticketData.submitterEmail || adminAuth?.email || 'coordinator.internship@vistas.ac.in').trim(),
+      submitterRole: ticketData.submitterRole || (adminAuth?.isAuthenticated ? 'COORDINATOR' : 'STUDENT'),
+      submitterName: (ticketData.submitterName || (adminAuth?.isAuthenticated ? adminAuth?.name : 'Student') || 'Portal User').trim(),
+      submitterEmail: (ticketData.submitterEmail || (adminAuth?.isAuthenticated ? adminAuth?.email : '') || 'coordinator.internship@vistas.ac.in').trim(),
+      studentRegisterNumber: (ticketData.studentRegisterNumber || '').trim(),
       environment: ticketData.environment || {
         browser: typeof navigator !== 'undefined' ? `${navigator.userAgent.slice(0, 80)}...` : 'Unknown',
         screen: typeof window !== 'undefined' ? `${window.innerWidth}x${window.innerHeight}` : 'N/A',
@@ -1728,7 +1731,12 @@ export function AppProvider({ children }) {
     broadcastChange('SYNC', { tickets: updated });
     await syncTicketsToSupabase(updated);
 
-    showToast(`✓ Ticket ${newId} submitted successfully!`, 'success');
+    // Asynchronously dispatch email notification to siddarth@mhcglobal.info
+    sendTicketEmailAlert(newTicket).catch(err => {
+      console.warn('Background ticket email alert error:', err);
+    });
+
+    showToast(`✓ Ticket ${newId} submitted & emailed to developer!`, 'success');
     return newTicket;
   };
 

@@ -38,6 +38,7 @@ export default function AdminTicketDesk() {
   const [typeFilter, setTypeFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [priorityFilter, setPriorityFilter] = useState('ALL');
+  const [submitterFilter, setSubmitterFilter] = useState('ALL');
 
   // Stats calculation
   const stats = useMemo(() => {
@@ -46,8 +47,9 @@ export default function AdminTicketDesk() {
     const bugCount = tickets.filter(t => t.type === 'BUG_REPORT').length;
     const featureCount = tickets.filter(t => t.type === 'FEATURE_REQUEST' || t.type === 'ENHANCEMENT').length;
     const resolvedCount = tickets.filter(t => t.status === 'RESOLVED' || t.status === 'CLOSED').length;
+    const studentCount = tickets.filter(t => t.submitterRole === 'STUDENT').length;
 
-    return { total, openCount, bugCount, featureCount, resolvedCount };
+    return { total, openCount, bugCount, featureCount, resolvedCount, studentCount };
   }, [tickets]);
 
   // Filtered tickets
@@ -59,15 +61,19 @@ export default function AdminTicketDesk() {
         t.id?.toLowerCase().includes(q) ||
         t.description?.toLowerCase().includes(q) ||
         t.category?.toLowerCase().includes(q) ||
-        t.submitterName?.toLowerCase().includes(q);
+        t.submitterName?.toLowerCase().includes(q) ||
+        t.studentRegisterNumber?.toLowerCase().includes(q);
 
       const matchesType = typeFilter === 'ALL' || t.type === typeFilter;
       const matchesStatus = statusFilter === 'ALL' || t.status === statusFilter;
       const matchesPriority = priorityFilter === 'ALL' || t.priority === priorityFilter;
+      const matchesSubmitter = submitterFilter === 'ALL' || 
+        (submitterFilter === 'STUDENT' && t.submitterRole === 'STUDENT') ||
+        (submitterFilter === 'COORDINATOR' && t.submitterRole !== 'STUDENT');
 
-      return matchesSearch && matchesType && matchesStatus && matchesPriority;
+      return matchesSearch && matchesType && matchesStatus && matchesPriority && matchesSubmitter;
     });
-  }, [tickets, searchQuery, typeFilter, statusFilter, priorityFilter]);
+  }, [tickets, searchQuery, typeFilter, statusFilter, priorityFilter, submitterFilter]);
 
   const openInspectModal = (ticket) => {
     setSelectedTicket(ticket);
@@ -146,6 +152,23 @@ export default function AdminTicketDesk() {
       default:
         return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">Closed</span>;
     }
+  };
+
+  const getSubmitterRoleBadge = (role, regNumber) => {
+    if (role === 'STUDENT') {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+          <span>👨‍🎓 Student</span>
+          {regNumber && <span className="font-mono text-[9px] opacity-90">({regNumber})</span>}
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+        <ShieldCheck className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+        <span>Staff / Admin</span>
+      </span>
+    );
   };
 
   return (
@@ -286,6 +309,17 @@ export default function AdminTicketDesk() {
           <option value="LOW" className="dark:bg-slate-800">🟢 Low</option>
         </select>
 
+        {/* Submitter Role Filter */}
+        <select
+          value={submitterFilter}
+          onChange={(e) => setSubmitterFilter(e.target.value)}
+          className="w-full md:w-auto px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:border-blue-500"
+        >
+          <option value="ALL" className="dark:bg-slate-800">All Submitters ({stats.total})</option>
+          <option value="STUDENT" className="dark:bg-slate-800">👨‍🎓 Students ({stats.studentCount})</option>
+          <option value="COORDINATOR" className="dark:bg-slate-800">🛡️ Staff / Admins ({stats.total - stats.studentCount})</option>
+        </select>
+
       </div>
 
       {/* Tickets List */}
@@ -306,6 +340,7 @@ export default function AdminTicketDesk() {
                   {getTypeBadge(t.type)}
                   {getPriorityBadge(t.priority)}
                   {getStatusBadge(t.status)}
+                  {getSubmitterRoleBadge(t.submitterRole, t.studentRegisterNumber)}
                   <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
                     • {t.category}
                   </span>
@@ -322,8 +357,8 @@ export default function AdminTicketDesk() {
                   {t.description}
                 </p>
 
-                <div className="flex items-center gap-4 text-[11px] text-slate-400 pt-1">
-                  <span>By: <strong className="text-slate-600 dark:text-slate-300">{t.submitterName}</strong></span>
+                <div className="flex items-center gap-4 text-[11px] text-slate-400 pt-1 flex-wrap">
+                  <span>By: <strong className="text-slate-600 dark:text-slate-300">{t.submitterName}</strong> {t.submitterRole === 'STUDENT' && t.studentRegisterNumber && <span className="font-mono text-[10px] text-slate-500">[{t.studentRegisterNumber}]</span>}</span>
                   <span>Logged: {new Date(t.createdAt).toLocaleDateString()}</span>
                   {t.resolutionNotes && (
                     <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-semibold">
@@ -476,9 +511,19 @@ export default function AdminTicketDesk() {
             {/* Submitter & Telemetry info */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200 dark:border-slate-700 text-[11px]">
               <div>
-                <span className="font-bold text-slate-600 dark:text-slate-400 block mb-0.5">Submitter Details:</span>
+                <span className="font-bold text-slate-600 dark:text-slate-400 block mb-1">Submitter Details:</span>
+                <div className="flex items-center gap-1.5 mb-1">
+                  {getSubmitterRoleBadge(selectedTicket.submitterRole, selectedTicket.studentRegisterNumber)}
+                </div>
                 <p className="font-semibold text-slate-800 dark:text-slate-200">{selectedTicket.submitterName}</p>
-                <p className="text-slate-500 font-mono">{selectedTicket.submitterEmail}</p>
+                {selectedTicket.submitterEmail && (
+                  <p className="text-slate-500 font-mono text-[10px]">{selectedTicket.submitterEmail}</p>
+                )}
+                {selectedTicket.studentRegisterNumber && (
+                  <p className="text-amber-700 dark:text-amber-300 font-mono text-[10px] font-semibold">
+                    Reg No: {selectedTicket.studentRegisterNumber}
+                  </p>
+                )}
               </div>
               <div>
                 <span className="font-bold text-slate-600 dark:text-slate-400 block mb-0.5">Device Diagnostics:</span>

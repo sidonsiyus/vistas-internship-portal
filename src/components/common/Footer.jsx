@@ -1,8 +1,8 @@
 import React from 'react';
-import { GraduationCap, MapPin, Clock } from 'lucide-react';
+import { GraduationCap, MapPin, Clock, Bug } from 'lucide-react';
 import { OFFICE_LOCATION } from '../../mock/sampleData';
 
-export default function Footer({ setActiveTab }) {
+export default function Footer({ setActiveTab, onReportBugClick }) {
   return (
     <footer className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 py-10 mt-auto font-sans transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -48,6 +48,15 @@ export default function Footer({ setActiveTab }) {
               <li>
                 <button onClick={() => setActiveTab('status')} className="text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                   Coordinator Desk Status
+                </button>
+              </li>
+              <li>
+                <button 
+                  onClick={onReportBugClick} 
+                  className="text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <Bug className="w-3.5 h-3.5" />
+                  <span>Report Broken Feature / Bug</span>
                 </button>
               </li>
             </ul>

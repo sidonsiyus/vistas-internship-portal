@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { GraduationCap, Menu, X, Shield, Clock, Ticket, UserCheck, Building2, Bell, Sun, Moon, Award } from 'lucide-react';
+import { GraduationCap, Menu, X, Shield, Clock, Ticket, UserCheck, Building2, Bell, Sun, Moon, Award, Bug } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import StatusBadge from './StatusBadge';
 
-export default function Navbar({ activeTab, setActiveTab, onBookClick }) {
+export default function Navbar({ activeTab, setActiveTab, onBookClick, onReportBugClick }) {
   const { availability, trackedToken, unreadCount, theme, toggleTheme } = useApp();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -101,6 +101,16 @@ export default function Navbar({ activeTab, setActiveTab, onBookClick }) {
               )}
             </button>
 
+            {/* Report Bug / Issue Button */}
+            <button
+              onClick={onReportBugClick}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-rose-200 dark:border-rose-900/60 bg-rose-50/70 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 text-xs font-semibold transition-all shadow-2xs cursor-pointer"
+              title="Report a broken feature or portal issue to coordinator & developer"
+            >
+              <Bug className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+              <span className="hidden lg:inline">Report Issue</span>
+            </button>
+
             <button
               onClick={() => setActiveTab('admin')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
@@ -172,7 +182,18 @@ export default function Navbar({ activeTab, setActiveTab, onBookClick }) {
             );
           })}
 
-          <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+          <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
+            <button
+              onClick={() => {
+                if (onReportBugClick) onReportBugClick();
+                setMobileMenuOpen(false);
+              }}
+              className="w-full flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 font-semibold text-xs border border-rose-200 dark:border-rose-900/60 transition-colors"
+            >
+              <Bug className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+              <span>Report Broken Feature / Portal Issue</span>
+            </button>
+
             <button
               onClick={() => {
                 setActiveTab('admin');
