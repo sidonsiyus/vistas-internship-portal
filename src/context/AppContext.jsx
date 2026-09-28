@@ -6,6 +6,51 @@ import { generateNextTokenNumber } from '../utils/tokenGenerator';
 const AppContext = createContext();
 const CHANNEL_NAME = 'VISTAS_REALTIME_QUEUE';
 
+const INITIAL_SAMPLE_TICKETS = [
+  {
+    id: 'TCK-1001',
+    type: 'FEATURE_REQUEST',
+    title: 'Export Student Attendance & Consultation Log to CSV/Excel',
+    category: 'Appointments & Queue',
+    priority: 'HIGH',
+    status: 'IN_REVIEW',
+    description: 'Add a 1-click option in Appointments Log to export attendance directly into an Excel/CSV spreadsheet format for academic dean review.',
+    reproductionSteps: '',
+    expectedBenefit: 'Saves 30 minutes every Friday when compiling weekly consultation statistics for the university placement report.',
+    submitterName: 'Placement Coordinator',
+    submitterEmail: 'coordinator.internship@vistas.ac.in',
+    environment: {
+      browser: 'Chrome / macOS',
+      screen: '1512x982',
+      url: '/admin/appointments'
+    },
+    resolutionNotes: 'Under review for upcoming update release.',
+    createdAt: new Date(Date.now() - 3600000 * 24 * 2).toISOString(),
+    updatedAt: new Date(Date.now() - 3600000 * 12).toISOString()
+  },
+  {
+    id: 'TCK-1002',
+    type: 'BUG_REPORT',
+    title: 'Active queue button wrap on narrow mobile screens',
+    category: 'UI & Mobile Display',
+    priority: 'MEDIUM',
+    status: 'RESOLVED',
+    description: 'When viewing the Active Queue Sequence on mobile devices, action buttons can overflow horizontally.',
+    reproductionSteps: '1. Open admin live queue on mobile screen (< 480px width).\n2. Observe action buttons layout.',
+    expectedBenefit: '',
+    submitterName: 'Placement Coordinator',
+    submitterEmail: 'coordinator.internship@vistas.ac.in',
+    environment: {
+      browser: 'Mobile Safari / iOS',
+      screen: '390x844',
+      url: '/admin/live-queue'
+    },
+    resolutionNotes: 'Fixed by wrapping button groups with flex-wrap and responsive padding.',
+    createdAt: new Date(Date.now() - 3600000 * 24 * 4).toISOString(),
+    updatedAt: new Date(Date.now() - 3600000 * 24 * 1).toISOString()
+  }
+];
+
 export function AppProvider({ children }) {
   const [availability, setAvailability] = useState(() => {
     try {
@@ -94,6 +139,18 @@ export function AppProvider({ children }) {
     return [];
   });
 
+  // Admin Feedback & Bug/Feature Request Ticketing State
+  const [tickets, setTickets] = useState(() => {
+    try {
+      const saved = localStorage.getItem('vistas_admin_tickets');
+      if (saved !== null) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return INITIAL_SAMPLE_TICKETS;
+  });
+
   // Timestamp of when student last viewed the updates section
   const [lastViewedUpdates, setLastViewedUpdates] = useState(() => {
     return localStorage.getItem('vistas_last_viewed_updates') || '1970-01-01T00:00:00.000Z';
@@ -177,6 +234,13 @@ export function AppProvider({ children }) {
             type: 'broadcast',
             event: 'appointment_sync',
             payload: { appointments: payload.appointments }
+          });
+        }
+        if (payload?.tickets) {
+          globalRealtimeChannelRef.current.send({
+            type: 'broadcast',
+            event: 'ticket_sync',
+            payload: { tickets: payload.tickets }
           });
         }
       } catch (err) {
@@ -283,6 +347,31 @@ export function AppProvider({ children }) {
     }
   };
 
+  const syncTicketsToSupabase = async (updatedTickets) => {
+    if (!isSupabaseConfigured()) return;
+    try {
+      if (globalRealtimeChannelRef.current) {
+        globalRealtimeChannelRef.current.send({
+          type: 'broadcast',
+          event: 'ticket_sync',
+          payload: { tickets: updatedTickets }
+        });
+      }
+
+      await supabase.from('students').upsert({
+        register_number: '__SYS_TICKETS__',
+        name: 'SYSTEM_TICKETS',
+        department: 'SYSTEM',
+        year: 'ALL',
+        email: 'sys_tickets@vistas.internal',
+        phone: '',
+        private_notes: JSON.stringify(updatedTickets)
+      }, { onConflict: 'register_number' });
+    } catch (e) {
+      console.warn('Sync tickets exception:', e);
+    }
+  };
+
   // --- SUPABASE REALTIME & FETCH ---
   useEffect(() => {
     const fetchSupabaseState = async () => {
@@ -294,7 +383,7 @@ export function AppProvider({ children }) {
         const [aptRes, availRes, sysRes, stdRes] = await Promise.allSettled([
           supabase.from('appointments').select('*').order('created_at', { ascending: true }),
           supabase.from('availability').select('*').single(),
-          supabase.from('students').select('register_number, private_notes').in('register_number', ['__SYS_ANNOUNCEMENTS__', '__SYS_AVAILABILITY__', '__SYS_DOCUMENTS__']),
+          supabase.from('students').select('register_number, private_notes').in('register_number', ['__SYS_ANNOUNCEMENTS__', '__SYS_AVAILABILITY__', '__SYS_DOCUMENTS__', '__SYS_TICKETS__']),
           supabase.from('students').select('*').not('register_number', 'like', '__SYS_%').order('name', { ascending: true })
         ]);
 
@@ -454,6 +543,19 @@ export function AppProvider({ children }) {
               }
             } catch (e) {}
           }
+
+          const ticketRecord = sysRes.value.data.find(s => s.register_number === '__SYS_TICKETS__');
+          if (ticketRecord && ticketRecord.private_notes) {
+            try {
+              const parsedTickets = JSON.parse(ticketRecord.private_notes);
+              if (Array.isArray(parsedTickets) && parsedTickets.length > 0) {
+                setTickets(parsedTickets);
+                try {
+                  localStorage.setItem('vistas_admin_tickets', JSON.stringify(parsedTickets));
+                } catch (e) {}
+              }
+            } catch (e) {}
+          }
         }
 
         if (stdRes.status === 'fulfilled' && stdRes.value.data && stdRes.value.data.length > 0) {
@@ -528,6 +630,14 @@ export function AppProvider({ children }) {
             } catch (e) {}
           }
         })
+        .on('broadcast', { event: 'ticket_sync' }, ({ payload }) => {
+          if (payload?.tickets && Array.isArray(payload.tickets)) {
+            setTickets(payload.tickets);
+            try {
+              localStorage.setItem('vistas_admin_tickets', JSON.stringify(payload.tickets));
+            } catch (e) {}
+          }
+        })
         // 📡 POSTGRES DATABASE REPLICATION LISTENERS
         .on('postgres_changes', { event: '*', schema: 'public', table: 'appointments' }, payload => {
           fetchSupabaseState();
@@ -561,6 +671,12 @@ export function AppProvider({ children }) {
           }
           if (event.data.payload.announcements) {
             setAnnouncements(event.data.payload.announcements);
+          }
+          if (event.data.payload.documents) {
+            setDocuments(event.data.payload.documents);
+          }
+          if (event.data.payload.tickets) {
+            setTickets(event.data.payload.tickets);
           }
         }
       };
@@ -1577,6 +1693,81 @@ export function AppProvider({ children }) {
     return doc.localPreviewUrl || '';
   };
 
+  // --- ADMIN BUG & FEATURE REQUEST TICKETING ACTIONS ---
+  const createTicket = async (ticketData) => {
+    const nowIso = new Date().toISOString();
+    const newId = `TCK-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    const newTicket = {
+      id: newId,
+      type: ticketData.type || 'BUG_REPORT', // 'BUG_REPORT' | 'FEATURE_REQUEST' | 'ENHANCEMENT'
+      title: (ticketData.title || '').trim(),
+      category: ticketData.category || 'General & Other',
+      priority: ticketData.priority || 'MEDIUM', // 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
+      status: 'OPEN', // 'OPEN' | 'IN_REVIEW' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED'
+      description: (ticketData.description || '').trim(),
+      reproductionSteps: (ticketData.reproductionSteps || '').trim(),
+      expectedBenefit: (ticketData.expectedBenefit || '').trim(),
+      submitterName: (ticketData.submitterName || adminAuth?.name || 'Placement Coordinator').trim(),
+      submitterEmail: (ticketData.submitterEmail || adminAuth?.email || 'coordinator.internship@vistas.ac.in').trim(),
+      environment: ticketData.environment || {
+        browser: typeof navigator !== 'undefined' ? `${navigator.userAgent.slice(0, 80)}...` : 'Unknown',
+        screen: typeof window !== 'undefined' ? `${window.innerWidth}x${window.innerHeight}` : 'N/A',
+        url: typeof window !== 'undefined' ? window.location.pathname : '/'
+      },
+      resolutionNotes: '',
+      createdAt: nowIso,
+      updatedAt: nowIso
+    };
+
+    const updated = [newTicket, ...tickets];
+    setTickets(updated);
+    try {
+      localStorage.setItem('vistas_admin_tickets', JSON.stringify(updated));
+    } catch (e) {}
+    broadcastChange('SYNC', { tickets: updated });
+    await syncTicketsToSupabase(updated);
+
+    showToast(`✓ Ticket ${newId} submitted successfully!`, 'success');
+    return newTicket;
+  };
+
+  const updateTicketStatus = async (ticketId, newStatus, resolutionNotes = null) => {
+    const nowIso = new Date().toISOString();
+    const updated = tickets.map(t => {
+      if (t.id === ticketId) {
+        return {
+          ...t,
+          status: newStatus,
+          resolutionNotes: resolutionNotes !== null ? resolutionNotes : t.resolutionNotes,
+          updatedAt: nowIso
+        };
+      }
+      return t;
+    });
+
+    setTickets(updated);
+    try {
+      localStorage.setItem('vistas_admin_tickets', JSON.stringify(updated));
+    } catch (e) {}
+    broadcastChange('SYNC', { tickets: updated });
+    await syncTicketsToSupabase(updated);
+
+    showToast(`Ticket ${ticketId} status updated to ${newStatus.replace('_', ' ')}`, 'info');
+  };
+
+  const deleteTicket = async (ticketId) => {
+    const updated = tickets.filter(t => t.id !== ticketId);
+    setTickets(updated);
+    try {
+      localStorage.setItem('vistas_admin_tickets', JSON.stringify(updated));
+    } catch (e) {}
+    broadcastChange('SYNC', { tickets: updated });
+    await syncTicketsToSupabase(updated);
+
+    showToast(`Ticket ${ticketId} deleted`, 'info');
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -1585,6 +1776,7 @@ export function AppProvider({ children }) {
         students,
         announcements,
         documents,
+        tickets,
         theme,
         toggleTheme,
         unreadCount,
@@ -1616,6 +1808,9 @@ export function AppProvider({ children }) {
         updateDocumentStatus,
         deleteStudentDocument,
         getDocumentSignedUrl,
+        createTicket,
+        updateTicketStatus,
+        deleteTicket,
         toggleAnnouncementActive,
         toggleAnnouncementPin,
         loginAdmin,

@@ -27,6 +27,7 @@ import AnalyticsReports from './components/admin/AnalyticsReports';
 import SettingsPage from './components/admin/SettingsPage';
 import AnnouncementsManager from './components/admin/AnnouncementsManager';
 import GlobalDocumentManagement from './components/admin/GlobalDocumentManagement';
+import AdminTicketDesk from './components/admin/AdminTicketDesk';
 
 function AppContent() {
   const { adminAuth, toastNotification } = useApp();
@@ -73,6 +74,7 @@ function AppContent() {
         {activeAdminPage === 'students' && <StudentDirectory />}
         {activeAdminPage === 'documents' && <GlobalDocumentManagement />}
         {activeAdminPage === 'reports' && <AnalyticsReports />}
+        {activeAdminPage === 'tickets' && <AdminTicketDesk />}
         {activeAdminPage === 'settings' && <SettingsPage />}
       </AdminLayout>
     );

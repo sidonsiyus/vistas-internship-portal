@@ -14,14 +14,20 @@ import {
   Megaphone,
   Sun,
   Moon,
-  FolderGit2
+  FolderGit2,
+  LifeBuoy,
+  Bug
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import CreateTicketModal from './CreateTicketModal';
 
 export default function AdminLayout({ activeAdminPage, setActiveAdminPage, children }) {
-  const { logoutAdmin, availability, updateAvailabilityStatus, toastNotification, announcements, documents = [], theme, toggleTheme } = useApp();
+  const { logoutAdmin, availability, updateAvailabilityStatus, toastNotification, announcements, documents = [], tickets = [], theme, toggleTheme } = useApp();
+
+  const [isTicketModalOpen, setIsTicketModalOpen] = React.useState(false);
 
   const pendingDocsCount = documents.filter(d => d.status === 'Under Review' || d.status === 'Uploaded' || d.status === 'Replacement Required').length;
+  const openTicketsCount = tickets.filter(t => t.status === 'OPEN' || t.status === 'IN_REVIEW' || t.status === 'IN_PROGRESS').length;
 
   const navItems = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
@@ -32,6 +38,7 @@ export default function AdminLayout({ activeAdminPage, setActiveAdminPage, child
     { id: 'students', label: 'Students Directory', icon: Users },
     { id: 'documents', label: 'Document Vault', icon: FolderGit2, badge: pendingDocsCount > 0 ? `${pendingDocsCount} Review` : null },
     { id: 'reports', label: 'Reports & Analytics', icon: BarChart3 },
+    { id: 'tickets', label: 'Support & Tickets', icon: LifeBuoy, badge: openTicketsCount > 0 ? `${openTicketsCount} Open` : null },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
@@ -89,6 +96,18 @@ export default function AdminLayout({ activeAdminPage, setActiveAdminPage, child
               );
             })}
           </nav>
+
+          {/* Quick Raise Ticket CTA in Sidebar */}
+          <div className="px-3 pt-1 pb-2">
+            <button
+              type="button"
+              onClick={() => setIsTicketModalOpen(true)}
+              className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-slate-50 hover:bg-rose-50 hover:text-rose-700 dark:bg-slate-800/80 dark:hover:bg-rose-950/40 dark:hover:text-rose-300 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-colors shadow-2xs cursor-pointer"
+            >
+              <Bug className="w-3.5 h-3.5 text-rose-500" />
+              <span>+ Raise Ticket</span>
+            </button>
+          </div>
         </div>
 
         {/* Sidebar Bottom Profile */}
@@ -181,6 +200,12 @@ export default function AdminLayout({ activeAdminPage, setActiveAdminPage, child
           {children}
         </div>
       </main>
+
+      {/* Global Admin Raise Ticket Modal */}
+      <CreateTicketModal
+        isOpen={isTicketModalOpen}
+        onClose={() => setIsTicketModalOpen(false)}
+      />
 
     </div>
   );
