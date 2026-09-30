@@ -80,7 +80,7 @@ function AppContent() {
         {activeAdminPage === 'documents' && <GlobalDocumentManagement />}
         {activeAdminPage === 'reports' && <AnalyticsReports />}
         {activeAdminPage === 'tickets' && <AdminTicketDesk />}
-        {activeAdminPage === 'settings' && <SettingsPage />}
+        {activeAdminPage === 'settings' && <SettingsPage setActiveAdminPage={setActiveAdminPage} />}
       </AdminLayout>
     );
   }

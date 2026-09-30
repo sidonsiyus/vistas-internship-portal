@@ -1,13 +1,19 @@
 import React from 'react';
 import { Calendar, Ticket, Activity, UserCheck, ArrowRight } from 'lucide-react';
 import { OFFICE_LOCATION } from '../../mock/sampleData';
+import { useApp } from '../../context/AppContext';
+import { formatTimeDisplay } from '../../utils/slotGenerator';
 
 export default function HowItWorks({ setActiveTab }) {
+  const { availability = {} } = useApp();
+  const formattedStart = formatTimeDisplay(availability.startTime || '15:30');
+  const slotDuration = availability.slotDuration || 15;
+
   const steps = [
     {
       step: '01',
       title: 'Book a Slot',
-      description: 'Select your preferred date and 15-minute time slot (regular slots start after 3:00 PM).',
+      description: `Select your preferred date and ${slotDuration}-minute time slot (regular slots start after ${formattedStart}).`,
       icon: Calendar,
     },
     {

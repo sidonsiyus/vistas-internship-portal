@@ -58,9 +58,13 @@ export function AppProvider({ children }) {
       const saved = localStorage.getItem('vistas_availability');
       if (saved) {
         const parsed = JSON.parse(saved);
+        // Automatically migrate legacy 15:00 default to new 15:30 schedule
+        const startTime = (parsed.startTime === '15:00' || !parsed.startTime) ? '15:30' : parsed.startTime;
         return {
           ...INITIAL_AVAILABILITY,
           ...parsed,
+          startTime,
+          slotDuration: parsed.slotDuration || INITIAL_AVAILABILITY.slotDuration,
           workingDays: parsed.workingDays || INITIAL_AVAILABILITY.workingDays,
           dateOverrides: parsed.dateOverrides || INITIAL_AVAILABILITY.dateOverrides
         };

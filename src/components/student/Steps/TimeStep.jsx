@@ -1,9 +1,15 @@
-import React from 'react';
-import { Clock, Sunset, AlertTriangle, Info } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { Clock, Sunset, AlertTriangle, Info, Coffee } from 'lucide-react';
 import { useApp } from '../../../context/AppContext';
+import { 
+  generateRegularSlots, 
+  generateEmergencySlots, 
+  formatTimeDisplay, 
+  timeToMinutes 
+} from '../../../utils/slotGenerator';
 
 export default function TimeStep({ selectedDate, selectedTime, setSelectedTime, onNext, onBack }) {
-  const { appointments } = useApp();
+  const { appointments = [], availability = {} } = useApp();
 
   const now = new Date();
   const todayYear = now.getFullYear();
@@ -13,42 +19,38 @@ export default function TimeStep({ selectedDate, selectedTime, setSelectedTime, 
 
   const isToday = selectedDate === todayIso;
 
+  // Configuration parameters from admin
+  const regularStartTime = availability.startTime || '15:30';
+  const regularEndTime = availability.endTime || '17:30';
+  const slotDuration = availability.slotDuration || 15;
+
+  // Formatted labels
+  const formattedStart = formatTimeDisplay(regularStartTime);
+  const formattedEnd = formatTimeDisplay(regularEndTime);
+
+  // Dynamically generate regular slots based on admin duration (e.g. 10 mins or 15 mins)
+  const regularSlots = useMemo(() => {
+    return generateRegularSlots({
+      startTime: regularStartTime,
+      endTime: regularEndTime,
+      slotDuration: slotDuration,
+      breakStartTime: availability.breakStartTime,
+      breakEndTime: availability.breakEndTime
+    });
+  }, [regularStartTime, regularEndTime, slotDuration, availability.breakStartTime, availability.breakEndTime]);
+
+  // Dynamically generate emergency slots prior to regular start time
+  const emergencySlots = useMemo(() => {
+    return generateEmergencySlots(regularStartTime);
+  }, [regularStartTime]);
+
   // Check if a time slot has already passed today
   const isTimePassed = (timeVal) => {
     if (!isToday) return false;
-    const parts = timeVal.split(' ');
-    if (parts.length < 2) return false;
-    const [timeStr, modifier] = parts;
-    let [hours, minutes] = timeStr.split(':').map(Number);
-    if (modifier === 'PM' && hours !== 12) hours += 12;
-    if (modifier === 'AM' && hours === 12) hours = 0;
-
-    const currentH = now.getHours();
-    const currentM = now.getMinutes();
-    return currentH > hours || (currentH === hours && currentM >= minutes);
+    const slotMin = timeToMinutes(timeVal);
+    const currentMin = now.getHours() * 60 + now.getMinutes();
+    return currentMin >= slotMin;
   };
-
-  // Pre-3:00 PM Emergency slots
-  const emergencySlots = [
-    { time: '11:00 AM (Emergency Only)', value: '11:00 AM' },
-    { time: '11:30 AM (Emergency Only)', value: '11:30 AM' },
-    { time: '01:30 PM (Emergency Only)', value: '01:30 PM' },
-    { time: '02:30 PM (Emergency Only)', value: '02:30 PM' },
-  ];
-
-  // Regular slots after 3:00 PM (15-min intervals)
-  const regularAfter3Slots = [
-    { time: '03:00 PM', value: '03:00 PM' },
-    { time: '03:15 PM', value: '03:15 PM' },
-    { time: '03:30 PM', value: '03:30 PM' },
-    { time: '03:45 PM', value: '03:45 PM' },
-    { time: '04:00 PM', value: '04:00 PM' },
-    { time: '04:15 PM', value: '04:15 PM' },
-    { time: '04:30 PM', value: '04:30 PM' },
-    { time: '04:45 PM', value: '04:45 PM' },
-    { time: '05:00 PM', value: '05:00 PM' },
-    { time: '05:15 PM', value: '05:15 PM' },
-  ];
 
   const checkIsBooked = (timeVal) => {
     return appointments.some(
@@ -58,9 +60,8 @@ export default function TimeStep({ selectedDate, selectedTime, setSelectedTime, 
     );
   };
 
-  const isEmergencyTime = selectedTime && (
-    selectedTime.includes('11:') || selectedTime.includes('01:') || selectedTime.includes('02:')
-  );
+  // Any appointment booked prior to regular start time is treated as emergency
+  const isEmergencyTime = selectedTime && (timeToMinutes(selectedTime) < timeToMinutes(regularStartTime));
 
   return (
     <div className="space-y-6 font-sans transition-colors duration-200">
@@ -71,7 +72,7 @@ export default function TimeStep({ selectedDate, selectedTime, setSelectedTime, 
             <span>Select Consultation Time Slot</span>
           </h3>
           <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-            15 Mins / Student
+            {slotDuration} Mins / Slot
           </span>
         </div>
         <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
@@ -97,7 +98,7 @@ export default function TimeStep({ selectedDate, selectedTime, setSelectedTime, 
               <p className="text-sm font-bold text-slate-900 dark:text-white">
                 {selectedDate} at <span className="font-mono text-blue-700 dark:text-blue-400">{selectedTime}</span>
               </p>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">15-minute consultation with Coordinator</p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">{slotDuration}-minute consultation with Coordinator</p>
             </div>
           </div>
           <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 rounded-full border border-emerald-200 dark:border-emerald-800">
@@ -106,27 +107,35 @@ export default function TimeStep({ selectedDate, selectedTime, setSelectedTime, 
         </div>
       )}
 
-      {/* SECTION 1: REGULAR CONSULTATIONS AFTER 3:00 PM */}
+      {/* SECTION 1: REGULAR CONSULTATIONS */}
       <div className="space-y-3">
         <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
           <div className="flex items-center gap-2 text-slate-900 dark:text-white font-bold text-sm">
             <Sunset className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-            <span>Regular Consultations (03:00 PM – 05:30 PM)</span>
+            <span>Regular Consultations ({formattedStart} – {formattedEnd})</span>
           </div>
-          <span className="text-[10px] text-emerald-700 dark:text-emerald-300 font-semibold bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
-            ● Live Status
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">
+              {regularSlots.length} Slots Available
+            </span>
+            <span className="text-[10px] text-emerald-700 dark:text-emerald-300 font-semibold bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+              ● Live Status
+            </span>
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-          {regularAfter3Slots.map((slot) => {
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+          {regularSlots.map((slot) => {
             const isSelected = selectedTime === slot.value;
             const isBooked = checkIsBooked(slot.value);
             const passed = isTimePassed(slot.value);
-            const isDisabled = isBooked || passed;
+            const isBreak = slot.isBreak;
+            const isDisabled = isBooked || passed || isBreak;
 
             let btnStyle = 'bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600 hover:shadow-sm';
-            if (passed) {
+            if (isBreak) {
+              btnStyle = 'bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/40 text-amber-600 dark:text-amber-400 cursor-not-allowed opacity-75';
+            } else if (passed) {
               btnStyle = 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed opacity-60';
             } else if (isBooked) {
               btnStyle = 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed opacity-60';
@@ -142,7 +151,11 @@ export default function TimeStep({ selectedDate, selectedTime, setSelectedTime, 
                 className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all ${btnStyle}`}
               >
                 <span className="font-mono font-bold text-xs">{slot.time}</span>
-                {passed ? (
+                {isBreak ? (
+                  <span className="text-[10px] font-medium text-amber-700 dark:text-amber-400 flex items-center gap-1">
+                    <Coffee className="w-2.5 h-2.5" /> Break
+                  </span>
+                ) : passed ? (
                   <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500">Passed</span>
                 ) : isBooked ? (
                   <span className="text-[10px] font-bold uppercase text-rose-600 dark:text-rose-400">Booked</span>
@@ -157,19 +170,19 @@ export default function TimeStep({ selectedDate, selectedTime, setSelectedTime, 
         </div>
       </div>
 
-      {/* SECTION 2: EMERGENCY SLOTS BEFORE 3:00 PM */}
+      {/* SECTION 2: EMERGENCY SLOTS BEFORE REGULAR HOURS */}
       <div className="space-y-3 pt-2">
         <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
           <div className="flex items-center gap-2 text-rose-800 dark:text-rose-300 font-bold text-sm">
             <AlertTriangle className="w-4 h-4 text-rose-500" />
-            <span>Pre-3:00 PM Emergency Slots (Urgent Requests Only)</span>
+            <span>Pre-{formattedStart} Emergency Slots (Urgent Requests Only)</span>
           </div>
           <span className="text-[10px] text-rose-700 dark:text-rose-300 font-semibold bg-rose-50 dark:bg-rose-950/60 px-2.5 py-0.5 rounded-full border border-rose-200 dark:border-rose-800">
             Emergency Justification Required
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2">
           {emergencySlots.map((slot) => {
             const isSelected = selectedTime === slot.value;
             const isBooked = checkIsBooked(slot.value);

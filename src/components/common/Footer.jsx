@@ -1,8 +1,12 @@
 import React from 'react';
 import { GraduationCap, MapPin, Clock, Bug } from 'lucide-react';
 import { OFFICE_LOCATION } from '../../mock/sampleData';
+import { useApp } from '../../context/AppContext';
+import { formatTimeDisplay } from '../../utils/slotGenerator';
 
 export default function Footer({ setActiveTab, onReportBugClick }) {
+  const { availability = {} } = useApp();
+  const formattedStart = formatTimeDisplay(availability.startTime || '15:30');
   return (
     <footer className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 py-10 mt-auto font-sans transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -72,7 +76,7 @@ export default function Footer({ setActiveTab, onReportBugClick }) {
               </li>
               <li className="flex items-center gap-2">
                 <Clock className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
-                <span>Regular Slots: After 03:00 PM (Emergency pre-3 PM)</span>
+                <span>Regular Slots: After {formattedStart} (Emergency pre-{formattedStart})</span>
               </li>
             </ul>
           </div>

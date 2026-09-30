@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Clock, Save, Sliders, Calendar, Plus, Trash2, Check, AlertCircle, Sun, CalendarCheck } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Clock, Save, Sliders, Calendar, Plus, Trash2, Check, AlertCircle, Sun, CalendarCheck, Sparkles, Coffee } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { generateRegularSlots, formatTimeDisplay } from '../../utils/slotGenerator';
 
 const DAYS_OF_WEEK = [
   { key: 'Mon', label: 'Monday', short: 'Mon' },
@@ -16,11 +17,11 @@ export default function AvailabilityConfig() {
   const { availability, updateAvailabilityConfig, updateAvailabilityStatus } = useApp();
 
   const [formData, setFormData] = useState({
-    startTime: availability.startTime || '15:00',
+    startTime: availability.startTime || '15:30',
     endTime: availability.endTime || '17:30',
     slotDuration: availability.slotDuration || 15,
-    breakStartTime: availability.breakStartTime || '16:15',
-    breakEndTime: availability.breakEndTime || '16:30',
+    breakStartTime: availability.breakStartTime || '16:30',
+    breakEndTime: availability.breakEndTime || '16:45',
     maxBookings: availability.maxBookings || 25,
     bookingDeadline: availability.bookingDeadline || '17:00',
     workingDays: availability.workingDays || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
@@ -329,39 +330,111 @@ export default function AvailabilityConfig() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Start Time */}
           <div className="space-y-1">
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">Desk Opening Time</label>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Regular Consultation Start Time
+            </label>
             <input
               type="time"
               value={formData.startTime}
               onChange={(e) => setFormData(p => ({ ...p, startTime: e.target.value }))}
               className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white font-mono focus:border-blue-500 focus:outline-none"
             />
+            <span className="text-[10px] text-slate-500 dark:text-slate-400">
+              Regular slots start at this time (e.g. 15:30 = 03:30 PM). Slots before this are emergency.
+            </span>
           </div>
 
           {/* End Time */}
           <div className="space-y-1">
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">Desk Closing Time</label>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Regular Consultation End Time
+            </label>
             <input
               type="time"
               value={formData.endTime}
               onChange={(e) => setFormData(p => ({ ...p, endTime: e.target.value }))}
               className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white font-mono focus:border-blue-500 focus:outline-none"
             />
+            <span className="text-[10px] text-slate-500 dark:text-slate-400">
+              Desk closing time for student appointments (e.g. 17:30 = 05:30 PM).
+            </span>
           </div>
 
           {/* Slot Duration */}
-          <div className="space-y-1">
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">Consultation Slot Duration</label>
-            <select
-              value={formData.slotDuration}
-              onChange={(e) => setFormData(p => ({ ...p, slotDuration: parseInt(e.target.value, 10) }))}
-              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white font-mono focus:border-blue-500 focus:outline-none"
-            >
-              <option value={10} className="dark:bg-slate-800">10 Minutes / Slot</option>
-              <option value={15} className="dark:bg-slate-800">15 Minutes / Slot (Default)</option>
-              <option value={20} className="dark:bg-slate-800">20 Minutes / Slot</option>
-              <option value={30} className="dark:bg-slate-800">30 Minutes / Slot</option>
-            </select>
+          <div className="space-y-1 sm:col-span-2">
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Consultation Slot Duration (Pace)
+              </label>
+              <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400">
+                Current: {formData.slotDuration} Minutes per slot
+              </span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-2">
+              <select
+                value={formData.slotDuration}
+                onChange={(e) => setFormData(p => ({ ...p, slotDuration: parseInt(e.target.value, 10) }))}
+                className="w-full sm:w-1/2 px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white font-mono focus:border-blue-500 focus:outline-none"
+              >
+                <option value={5} className="dark:bg-slate-800">5 Minutes / Slot (Rapid Check-in)</option>
+                <option value={10} className="dark:bg-slate-800">10 Minutes / Slot (High Capacity - Fast Pace)</option>
+                <option value={15} className="dark:bg-slate-800">15 Minutes / Slot (Standard Pace - Default)</option>
+                <option value={20} className="dark:bg-slate-800">20 Minutes / Slot (In-Depth Review)</option>
+                <option value={25} className="dark:bg-slate-800">25 Minutes / Slot</option>
+                <option value={30} className="dark:bg-slate-800">30 Minutes / Slot (Extended Consultation)</option>
+                <option value={45} className="dark:bg-slate-800">45 Minutes / Slot</option>
+                <option value={60} className="dark:bg-slate-800">60 Minutes / Slot</option>
+              </select>
+
+              {/* Quick Preset Buttons */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => setFormData(p => ({ ...p, slotDuration: 10 }))}
+                  className={`text-[11px] px-2.5 py-1.5 rounded-lg border font-medium transition-all ${
+                    formData.slotDuration === 10
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+                  }`}
+                >
+                  ⚡ 10 Mins (High Vol)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData(p => ({ ...p, slotDuration: 15 }))}
+                  className={`text-[11px] px-2.5 py-1.5 rounded-lg border font-medium transition-all ${
+                    formData.slotDuration === 15
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+                  }`}
+                >
+                  Standard 15 Mins
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData(p => ({ ...p, slotDuration: 20 }))}
+                  className={`text-[11px] px-2.5 py-1.5 rounded-lg border font-medium transition-all ${
+                    formData.slotDuration === 20
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+                  }`}
+                >
+                  20 Mins
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData(p => ({ ...p, slotDuration: 30 }))}
+                  className={`text-[11px] px-2.5 py-1.5 rounded-lg border font-medium transition-all ${
+                    formData.slotDuration === 30
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+                  }`}
+                >
+                  30 Mins
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Max Bookings */}
@@ -379,7 +452,7 @@ export default function AvailabilityConfig() {
 
           {/* Break Start */}
           <div className="space-y-1">
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">Lunch / Break Start Time</label>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">Administrative / Break Start Time</label>
             <input
               type="time"
               value={formData.breakStartTime}
@@ -390,7 +463,7 @@ export default function AvailabilityConfig() {
 
           {/* Break End */}
           <div className="space-y-1">
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">Lunch / Break Resume Time</label>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">Administrative / Break Resume Time</label>
             <input
               type="time"
               value={formData.breakEndTime}
@@ -400,14 +473,63 @@ export default function AvailabilityConfig() {
           </div>
         </div>
 
+        {/* LIVE PREVIEW OF GENERATED SLOTS */}
+        {(() => {
+          const previewSlots = generateRegularSlots({
+            startTime: formData.startTime,
+            endTime: formData.endTime,
+            slotDuration: formData.slotDuration,
+            breakStartTime: formData.breakStartTime,
+            breakEndTime: formData.breakEndTime
+          });
+
+          return (
+            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-2.5">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <span className="text-xs font-bold text-slate-900 dark:text-white">
+                    Live Booking Grid Preview for Students ({previewSlots.length} Regular Slots)
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                  {formatTimeDisplay(formData.startTime)} – {formatTimeDisplay(formData.endTime)} ({formData.slotDuration} min intervals)
+                </span>
+              </div>
+
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {previewSlots.map((slot) => (
+                  <span
+                    key={slot.value}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-mono font-medium border ${
+                      slot.isBreak
+                        ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900/50'
+                        : 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-700'
+                    }`}
+                  >
+                    {slot.time}
+                    {slot.isBreak && ' (Break)'}
+                  </span>
+                ))}
+                {previewSlots.length === 0 && (
+                  <span className="text-xs text-rose-500 italic">No slots fit within the chosen start and end times.</span>
+                )}
+              </div>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 italic">
+                * Note: Saving this will instantly update the slot intervals for all students booking consultations.
+              </p>
+            </div>
+          );
+        })()}
+
         {/* Submit Button */}
         <div className="pt-3 flex justify-end">
           <button
             type="submit"
-            className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-sm flex items-center gap-1.5 transition-all"
+            className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-sm flex items-center gap-1.5 transition-all cursor-pointer"
           >
             <Save className="w-4 h-4" />
-            <span>SAVE AVAILABILITY & WORKING DAYS CONFIGURATION</span>
+            <span>SAVE TIMING & WORKING DAYS CONFIGURATION</span>
           </button>
         </div>
 

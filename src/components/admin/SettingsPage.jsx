@@ -3,7 +3,7 @@ import { Bell, Database, Lock, CheckCircle2, KeyRound } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 
-export default function SettingsPage() {
+export default function SettingsPage({ setActiveAdminPage }) {
   const { showToast, usingSupabase, resetAllTokens } = useApp();
 
   const [soundAlerts, setSoundAlerts] = useState(true);
@@ -167,6 +167,30 @@ export default function SettingsPage() {
             Save System Preferences
           </button>
         </div>
+      </div>
+
+      {/* CONSULTATION SLOTS & TIMINGS SHORTCUT CARD */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-6 rounded-2xl shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-bold text-slate-900 dark:text-white">📅 Consultation Timings & Slot Duration</span>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 font-bold">
+              3:30 PM Start • 15 Mins (Configurable)
+            </span>
+          </div>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Change daily start & closing times, or increase/decrease consultation slot durations (e.g. 10 mins, 15 mins, 20 mins, 30 mins) with live preview.
+          </p>
+        </div>
+        {setActiveAdminPage && (
+          <button
+            type="button"
+            onClick={() => setActiveAdminPage('availability')}
+            className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-all shadow-sm shrink-0 cursor-pointer"
+          >
+            Configure Slot Timings →
+          </button>
+        )}
       </div>
 
       {/* Reset Data Card */}

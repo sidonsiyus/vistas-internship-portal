@@ -3,9 +3,13 @@ import { Ticket, Clock, ArrowRight, ShieldCheck, MapPin, AlertCircle, Building2,
 import { useApp } from '../../context/AppContext';
 import StatusBadge from '../common/StatusBadge';
 import { OFFICE_LOCATION } from '../../mock/sampleData';
+import { formatTimeDisplay } from '../../utils/slotGenerator';
 
 export default function HeroSection({ setActiveTab, onBookClick }) {
-  const { availability } = useApp();
+  const { availability = {} } = useApp();
+
+  const formattedStart = formatTimeDisplay(availability.startTime || '15:30');
+  const slotDuration = availability.slotDuration || 15;
 
   const handleBook = () => {
     if (onBookClick) onBookClick();
@@ -46,7 +50,7 @@ export default function HeroSection({ setActiveTab, onBookClick }) {
 
           {/* Subtitle */}
           <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 font-normal leading-relaxed max-w-xl mx-auto">
-            Reserve your 15-minute consultation slot with the Internship Coordinator. Regular hours run <span className="text-slate-900 dark:text-white font-semibold">after 3:00 PM</span>. Pre-3:00 PM slots are designated for emergency requests.
+            Reserve your {slotDuration}-minute consultation slot with the Internship Coordinator. Regular hours run <span className="text-slate-900 dark:text-white font-semibold">after {formattedStart}</span>. Pre-{formattedStart} slots are designated for emergency requests.
           </p>
 
           {/* Action Buttons */}
@@ -92,12 +96,12 @@ export default function HeroSection({ setActiveTab, onBookClick }) {
           <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3 text-xs text-slate-500 dark:text-slate-400">
             <div className="flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span>Regular Slots: <strong className="text-slate-800 dark:text-slate-200 font-medium">After 3:00 PM</strong> (15 Mins / Student)</span>
+              <span>Regular Slots: <strong className="text-slate-800 dark:text-slate-200 font-medium">After {formattedStart}</strong> ({slotDuration} Mins / Student)</span>
             </div>
             <span className="hidden sm:inline text-slate-300 dark:text-slate-700">•</span>
             <div className="flex items-center gap-1.5 text-rose-600 dark:text-rose-400">
               <AlertCircle className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-              <span>Pre-3 PM: Emergency Requests Only</span>
+              <span>Pre-{formattedStart}: Emergency Requests Only</span>
             </div>
           </div>
 

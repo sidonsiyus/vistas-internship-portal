@@ -1,9 +1,10 @@
 import React from 'react';
 import { Calendar as CalendarIcon, Check, Info } from 'lucide-react';
 import { useApp } from '../../../context/AppContext';
+import { timeToMinutes, formatTimeDisplay } from '../../../utils/slotGenerator';
 
 export default function DateStep({ selectedDate, setSelectedDate, onNext }) {
-  const { appointments, availability } = useApp();
+  const { appointments, availability = {} } = useApp();
 
   const maxSlotsPerDay = availability.maxBookings || 25;
   const activeWorkingDays = availability.workingDays || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
@@ -11,9 +12,9 @@ export default function DateStep({ selectedDate, setSelectedDate, onNext }) {
 
   // Real-time current date (no past days shown)
   const now = new Date();
-  const currentHour = now.getHours();
-  const currentMinute = now.getMinutes();
-  const isPastClosingToday = currentHour > 17 || (currentHour === 17 && currentMinute >= 30);
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const closingMinutes = timeToMinutes(availability.endTime || '17:30');
+  const isPastClosingToday = currentMinutes >= closingMinutes;
 
   const baseToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
@@ -103,7 +104,7 @@ export default function DateStep({ selectedDate, setSelectedDate, onNext }) {
           </span>
         </div>
         <span className="text-xs text-slate-500 dark:text-slate-400 hidden sm:inline">
-          Regular hours after 3:00 PM
+          Regular hours from {formatTimeDisplay(availability.startTime || '15:30')}
         </span>
       </div>
 
