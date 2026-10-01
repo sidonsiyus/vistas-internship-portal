@@ -72,9 +72,12 @@ export default function RescheduleAppointmentModal({ isOpen, onClose, appointmen
   const [customReason, setCustomReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Initialize form defaults when appointment changes
+  // Track the ID of the appointment being edited so periodic background polling 
+  // or parent re-renders do NOT wipe out the coordinator's selection!
+  const targetKey = appointment?.id || appointment?.tokenNumber || null;
+
   useEffect(() => {
-    if (appointment) {
+    if (appointment && isOpen) {
       setSelectedDate(appointment.appointmentDate || nextActive?.isoDate || '');
       const initialTime = appointment.appointmentTime 
         ? formatTimeDisplay(appointment.appointmentTime) 
@@ -84,7 +87,7 @@ export default function RescheduleAppointmentModal({ isOpen, onClose, appointmen
       setReasonMode('student_request');
       setCustomReason('');
     }
-  }, [appointment, nextActive, availableSlots, regularStart]);
+  }, [targetKey, isOpen]); // ONLY run when modal opens or target appointment changes, NOT on every 3s polling re-render!
 
   if (!appointment) return null;
 

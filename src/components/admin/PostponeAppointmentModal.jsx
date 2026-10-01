@@ -68,16 +68,18 @@ export default function PostponeAppointmentModal({ isOpen, onClose, appointment 
   const [customReason, setCustomReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const targetKey = appointment?.id || appointment?.tokenNumber || null;
+
   // Initialize defaults whenever modal opens for an appointment
   useEffect(() => {
-    if (appointment && nextActive) {
+    if (appointment && nextActive && isOpen) {
       setSelectedDate(nextActive.isoDate);
       setSelectedTime(availableSlots.length > 0 ? availableSlots[0].value : formatTimeDisplay(regularStart));
       setKeepFirst(true);
       setSelectedReasonPreset('duty');
       setCustomReason('');
     }
-  }, [appointment, nextActive, availableSlots, regularStart]);
+  }, [targetKey, isOpen]);
 
   if (!appointment) return null;
 
