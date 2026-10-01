@@ -17,9 +17,11 @@ import Modal from '../common/Modal';
 import { useApp } from '../../context/AppContext';
 import { 
   getNextActiveWorkingDay, 
-  getUpcomingActiveDays, 
+  getUpcomingActiveDays,
+  getRecentAndUpcomingActiveDays,
   generateRegularSlots, 
-  formatTimeDisplay 
+  formatTimeDisplay,
+  timeToMinutes
 } from '../../utils/slotGenerator';
 import TokenBadge from '../common/TokenBadge';
 
@@ -40,14 +42,16 @@ export default function RescheduleAppointmentModal({ isOpen, onClose, appointmen
     );
   }, [appointment?.appointmentDate, workingDays, dateOverrides]);
 
-  const upcomingActiveDays = useMemo(() => {
-    return getUpcomingActiveDays(
-      appointment?.appointmentDate || new Date().toISOString().split('T')[0],
-      14,
+  // Center around appointment date or today, showing both past days and future days
+  const recentAndUpcomingDays = useMemo(() => {
+    return getRecentAndUpcomingActiveDays(
+      new Date().toISOString().split('T')[0],
+      6, // past 6 working days
+      12, // next 12 working days
       workingDays,
       dateOverrides
     );
-  }, [appointment?.appointmentDate, workingDays, dateOverrides]);
+  }, [workingDays, dateOverrides]);
 
   // Available regular slots
   const availableSlots = useMemo(() => {
@@ -72,7 +76,10 @@ export default function RescheduleAppointmentModal({ isOpen, onClose, appointmen
   useEffect(() => {
     if (appointment) {
       setSelectedDate(appointment.appointmentDate || nextActive?.isoDate || '');
-      setSelectedTime(appointment.appointmentTime || (availableSlots[0]?.value || formatTimeDisplay(regularStart)));
+      const initialTime = appointment.appointmentTime 
+        ? formatTimeDisplay(appointment.appointmentTime) 
+        : (availableSlots[0]?.value || formatTimeDisplay(regularStart));
+      setSelectedTime(initialTime);
       setKeepFirst(!!appointment.isPriority);
       setReasonMode('student_request');
       setCustomReason('');
@@ -112,7 +119,10 @@ export default function RescheduleAppointmentModal({ isOpen, onClose, appointmen
     }
   };
 
-  const isSameAsCurrent = selectedDate === appointment.appointmentDate && selectedTime === appointment.appointmentTime;
+  const isSameDateTime = String(selectedDate || '').trim() === String(appointment.appointmentDate || '').trim() && 
+    timeToMinutes(selectedTime) === timeToMinutes(appointment.appointmentTime);
+  const isSamePriority = Boolean(keepFirst) === Boolean(appointment.isPriority);
+  const isSameAsCurrent = isSameDateTime && isSamePriority && !customReason.trim();
 
   return (
     <Modal
@@ -146,15 +156,15 @@ export default function RescheduleAppointmentModal({ isOpen, onClose, appointmen
           </div>
         </div>
 
-        {/* Target Date Picker (Input + Quick Select Active Days) */}
+        {/* Target Date Picker (Input + Quick Select Past & Future Active Days) */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <label className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
               <Calendar className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-              <span>Select New Date:</span>
+              <span>Select Date (Past, Today, or Future):</span>
             </label>
             <span className="text-[10px] text-slate-500 dark:text-slate-400">
-              Pick date or choose upcoming active day
+              Choose any date or click an active day
             </span>
           </div>
 
@@ -163,17 +173,19 @@ export default function RescheduleAppointmentModal({ isOpen, onClose, appointmen
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              min={new Date().toISOString().split('T')[0]}
               className="flex-1 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white font-mono focus:outline-none focus:border-blue-500"
               required
             />
           </div>
 
-          {/* Quick Active Days Grid */}
+          {/* Quick Active Days Grid (Past, Today, Future) */}
           <div className="space-y-1">
-            <span className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold block uppercase">Quick Select Upcoming Active Days:</span>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 max-h-32 overflow-y-auto pr-1">
-              {upcomingActiveDays.slice(0, 8).map((day) => {
+            <div className="flex items-center justify-between text-[10px] text-slate-400 dark:text-slate-500 font-semibold uppercase">
+              <span>Quick Select Working Days:</span>
+              <span className="text-[9px] text-slate-400 font-normal">Past ← | → Upcoming</span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 max-h-36 overflow-y-auto pr-1">
+              {recentAndUpcomingDays.map((day) => {
                 const isSelected = selectedDate === day.isoDate;
                 return (
                   <button
@@ -183,11 +195,19 @@ export default function RescheduleAppointmentModal({ isOpen, onClose, appointmen
                     className={`p-2 rounded-lg border text-left transition-all cursor-pointer ${
                       isSelected
                         ? 'bg-blue-50 dark:bg-blue-950/60 border-2 border-blue-600 text-blue-900 dark:text-blue-100 font-semibold'
+                        : day.isPast
+                        ? 'bg-amber-50/40 dark:bg-amber-950/20 border-amber-200/60 dark:border-amber-900/40 text-slate-700 dark:text-slate-300 hover:border-amber-300'
+                        : day.isToday
+                        ? 'bg-emerald-50/50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 font-bold'
                         : 'bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-slate-700 dark:text-slate-300'
                     }`}
                   >
-                    <div className="text-[11px] font-bold">{day.weekday}</div>
-                    <div className="font-mono text-[10px] text-slate-500 dark:text-slate-400">{day.isoDate}</div>
+                    <div className="flex items-center justify-between text-[11px] font-bold">
+                      <span>{day.weekday}</span>
+                      {day.isPast && <span className="text-[9px] font-normal text-amber-700 dark:text-amber-400 uppercase">Past</span>}
+                      {day.isToday && <span className="text-[9px] font-extrabold text-emerald-600 dark:text-emerald-400 uppercase">Today</span>}
+                    </div>
+                    <div className="font-mono text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{day.isoDate}</div>
                   </button>
                 );
               })}

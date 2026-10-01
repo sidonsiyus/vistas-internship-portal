@@ -502,12 +502,16 @@ export function AppProvider({ children }) {
               isWalkIn: a.is_walk_in,
               durationMinutes: a.duration_minutes,
               notes: a.notes,
-              isPriority: !!cached.isPriority || (a.notes && a.notes.includes('[Postponed')),
+              isPriority: !!cached.isPriority || (a.notes && a.notes.includes('[Postponed')) || (a.notes && a.notes.includes('(Priority #1)')),
               priorityRank: cached.priorityRank || (cached.isPriority ? 1 : 999),
               postponedFromDate: cached.postponedFromDate,
               postponedFromTime: cached.postponedFromTime,
               postponedReason: cached.postponedReason,
               postponedAt: cached.postponedAt,
+              rescheduledFromDate: cached.rescheduledFromDate,
+              rescheduledFromTime: cached.rescheduledFromTime,
+              rescheduledReason: cached.rescheduledReason,
+              rescheduledAt: cached.rescheduledAt,
               startedAt: a.started_at,
               completedAt: a.completed_at,
               createdAt: a.created_at || a.appointment_date
@@ -1140,7 +1144,12 @@ export function AppProvider({ children }) {
   };
 
   const postponeAppointment = async (appointmentId, { newDate, newTime, reason, keepFirst = true }) => {
-    const apt = appointments.find(a => (a.id === appointmentId || a.tokenNumber === appointmentId));
+    const apt = appointments.find(a => (
+      a.id === appointmentId || 
+      a.tokenNumber === appointmentId ||
+      String(a.id) === String(appointmentId) ||
+      String(a.tokenNumber) === String(appointmentId)
+    ));
     if (!apt) return false;
 
     const targetDate = newDate;
@@ -1183,7 +1192,9 @@ export function AppProvider({ children }) {
           queue_position: keepFirst ? 1 : (apt.queuePosition || 1),
           notes: updatedApt.notes
         });
-        if (apt.id) {
+        if (apt.tokenNumber && apt.id) {
+          q = q.or(`id.eq.${apt.id},token_number.eq.${apt.tokenNumber}`);
+        } else if (apt.id) {
           q = q.eq('id', apt.id);
         } else {
           q = q.eq('token_number', apt.tokenNumber);
@@ -1199,7 +1210,12 @@ export function AppProvider({ children }) {
   };
 
   const rescheduleAppointment = async (appointmentId, { newDate, newTime, reason, keepFirst = false }) => {
-    const apt = appointments.find(a => (a.id === appointmentId || a.tokenNumber === appointmentId));
+    const apt = appointments.find(a => (
+      a.id === appointmentId || 
+      a.tokenNumber === appointmentId ||
+      String(a.id) === String(appointmentId) ||
+      String(a.tokenNumber) === String(appointmentId)
+    ));
     if (!apt) return false;
 
     const targetDate = newDate || apt.appointmentDate;
@@ -1242,7 +1258,9 @@ export function AppProvider({ children }) {
           queue_position: updatedApt.queuePosition,
           notes: updatedApt.notes
         });
-        if (apt.id) {
+        if (apt.tokenNumber && apt.id) {
+          q = q.or(`id.eq.${apt.id},token_number.eq.${apt.tokenNumber}`);
+        } else if (apt.id) {
           q = q.eq('id', apt.id);
         } else {
           q = q.eq('token_number', apt.tokenNumber);

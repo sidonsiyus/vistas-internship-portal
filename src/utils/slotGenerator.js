@@ -206,3 +206,95 @@ export function getUpcomingActiveDays(startDateStr, count = 7, workingDays = ['M
 
   return list;
 }
+
+/**
+ * Returns a list of past and upcoming working days centered around today or a target date.
+ * Useful for retroactive backdating, corrections, or scheduling ahead.
+ */
+export function getRecentAndUpcomingActiveDays(centerDateStr, pastCount = 5, futureCount = 10, workingDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'], dateOverrides = {}) {
+  const base = centerDateStr ? new Date(centerDateStr + 'T00:00:00') : new Date();
+  const pastList = [];
+  const futureList = [];
+
+  // Past active days (going backwards)
+  let pastOffset = 1;
+  while (pastList.length < pastCount && pastOffset <= 30) {
+    const candidate = new Date(base);
+    candidate.setDate(base.getDate() - pastOffset);
+
+    const yearStr = candidate.getFullYear();
+    const monthStr = String(candidate.getMonth() + 1).padStart(2, '0');
+    const dayStr = String(candidate.getDate()).padStart(2, '0');
+    const isoDate = `${yearStr}-${monthStr}-${dayStr}`;
+
+    const weekday = candidate.toLocaleDateString('en-US', { weekday: 'short' });
+    const override = dateOverrides[isoDate];
+    const isOverrideWorking = override && (typeof override === 'string' ? override === 'WORKING' : override.type === 'WORKING');
+    const isOverrideHoliday = override && (typeof override === 'string' ? override === 'HOLIDAY' : override.type === 'HOLIDAY');
+
+    const isStandardWorkingDay = workingDays.includes(weekday);
+    const isWorkingDay = isOverrideWorking || (!isOverrideHoliday && isStandardWorkingDay);
+
+    if (isWorkingDay) {
+      pastList.unshift({
+        isoDate,
+        formattedDate: candidate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+        weekday,
+        isPast: true
+      });
+    }
+    pastOffset++;
+  }
+
+  // Today if active
+  const todayCandidate = new Date(base);
+  const todayYearStr = todayCandidate.getFullYear();
+  const todayMonthStr = String(todayCandidate.getMonth() + 1).padStart(2, '0');
+  const todayDayStr = String(todayCandidate.getDate()).padStart(2, '0');
+  const todayIsoDate = `${todayYearStr}-${todayMonthStr}-${todayDayStr}`;
+  const todayWeekday = todayCandidate.toLocaleDateString('en-US', { weekday: 'short' });
+  const todayOverride = dateOverrides[todayIsoDate];
+  const isTodayOverrideWorking = todayOverride && (typeof todayOverride === 'string' ? todayOverride === 'WORKING' : todayOverride.type === 'WORKING');
+  const isTodayOverrideHoliday = todayOverride && (typeof todayOverride === 'string' ? todayOverride === 'HOLIDAY' : todayOverride.type === 'HOLIDAY');
+  const isTodayStandardWorkingDay = workingDays.includes(todayWeekday);
+  const isTodayWorkingDay = isTodayOverrideWorking || (!isTodayOverrideHoliday && isTodayStandardWorkingDay);
+
+  const todayItem = isTodayWorkingDay ? [{
+    isoDate: todayIsoDate,
+    formattedDate: todayCandidate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+    weekday: todayWeekday,
+    isToday: true
+  }] : [];
+
+  // Future active days
+  let futureOffset = 1;
+  while (futureList.length < futureCount && futureOffset <= 30) {
+    const candidate = new Date(base);
+    candidate.setDate(base.getDate() + futureOffset);
+
+    const yearStr = candidate.getFullYear();
+    const monthStr = String(candidate.getMonth() + 1).padStart(2, '0');
+    const dayStr = String(candidate.getDate()).padStart(2, '0');
+    const isoDate = `${yearStr}-${monthStr}-${dayStr}`;
+
+    const weekday = candidate.toLocaleDateString('en-US', { weekday: 'short' });
+    const override = dateOverrides[isoDate];
+    const isOverrideWorking = override && (typeof override === 'string' ? override === 'WORKING' : override.type === 'WORKING');
+    const isOverrideHoliday = override && (typeof override === 'string' ? override === 'HOLIDAY' : override.type === 'HOLIDAY');
+
+    const isStandardWorkingDay = workingDays.includes(weekday);
+    const isWorkingDay = isOverrideWorking || (!isOverrideHoliday && isStandardWorkingDay);
+
+    if (isWorkingDay) {
+      futureList.push({
+        isoDate,
+        formattedDate: candidate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+        weekday,
+        isFuture: true
+      });
+    }
+    futureOffset++;
+  }
+
+  return [...pastList, ...todayItem, ...futureList];
+}
