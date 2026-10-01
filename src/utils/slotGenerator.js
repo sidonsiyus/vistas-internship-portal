@@ -110,14 +110,13 @@ export function generateRegularSlots({
 
 /**
  * Generates emergency slots that precede the regular consultation start time.
- * If regular start time is 15:30 (3:30 PM), slots before 3:30 PM (e.g. 11:00 AM, 11:30 AM, 01:30 PM, 02:30 PM, 03:00 PM)
- * are designated as emergency request slots.
+ * Regular hours start strictly at 3:30 PM (15:30). Emergency slots are early sessions only.
  */
 export function generateEmergencySlots(regularStartTime = '15:30') {
   const regularStartMin = timeToMinutes(regularStartTime);
 
-  // Standard emergency checkpoints across the campus day
-  const candidateTimes = ['11:00 AM', '11:30 AM', '01:30 PM', '02:30 PM', '03:00 PM'];
+  // Standard emergency checkpoints across the campus day (prior to afternoon regular hours)
+  const candidateTimes = ['11:00 AM', '11:30 AM', '01:30 PM', '02:30 PM'];
 
   return candidateTimes
     .filter(t => timeToMinutes(t) < regularStartMin)
@@ -125,4 +124,85 @@ export function generateEmergencySlots(regularStartTime = '15:30') {
       time: `${t} (Emergency Only)`,
       value: t
     }));
+}
+
+/**
+ * Calculates the next active working day for the coordinator, skipping weekends/holidays.
+ */
+export function getNextActiveWorkingDay(currentDateStr, workingDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'], dateOverrides = {}) {
+  const base = currentDateStr ? new Date(currentDateStr + 'T00:00:00') : new Date();
+  
+  for (let i = 1; i <= 14; i++) {
+    const candidate = new Date(base);
+    candidate.setDate(base.getDate() + i);
+
+    const yearStr = candidate.getFullYear();
+    const monthStr = String(candidate.getMonth() + 1).padStart(2, '0');
+    const dayStr = String(candidate.getDate()).padStart(2, '0');
+    const isoDate = `${yearStr}-${monthStr}-${dayStr}`;
+
+    const weekday = candidate.toLocaleDateString('en-US', { weekday: 'short' });
+    const override = dateOverrides[isoDate];
+    const isOverrideWorking = override && (typeof override === 'string' ? override === 'WORKING' : override.type === 'WORKING');
+    const isOverrideHoliday = override && (typeof override === 'string' ? override === 'HOLIDAY' : override.type === 'HOLIDAY');
+
+    const isStandardWorkingDay = workingDays.includes(weekday);
+    const isWorkingDay = isOverrideWorking || (!isOverrideHoliday && isStandardWorkingDay);
+
+    if (isWorkingDay) {
+      return {
+        isoDate,
+        formattedDate: candidate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }),
+        weekday
+      };
+    }
+  }
+
+  // Fallback next day
+  const fallback = new Date(base);
+  fallback.setDate(base.getDate() + 1);
+  const isoFallback = fallback.toISOString().split('T')[0];
+  return {
+    isoDate: isoFallback,
+    formattedDate: fallback.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }),
+    weekday: fallback.toLocaleDateString('en-US', { weekday: 'short' })
+  };
+}
+
+/**
+ * Returns a list of upcoming active working days for scheduling.
+ */
+export function getUpcomingActiveDays(startDateStr, count = 7, workingDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'], dateOverrides = {}) {
+  const base = startDateStr ? new Date(startDateStr + 'T00:00:00') : new Date();
+  const list = [];
+  let dayOffset = 1;
+
+  while (list.length < count && dayOffset <= 30) {
+    const candidate = new Date(base);
+    candidate.setDate(base.getDate() + dayOffset);
+
+    const yearStr = candidate.getFullYear();
+    const monthStr = String(candidate.getMonth() + 1).padStart(2, '0');
+    const dayStr = String(candidate.getDate()).padStart(2, '0');
+    const isoDate = `${yearStr}-${monthStr}-${dayStr}`;
+
+    const weekday = candidate.toLocaleDateString('en-US', { weekday: 'short' });
+    const override = dateOverrides[isoDate];
+    const isOverrideWorking = override && (typeof override === 'string' ? override === 'WORKING' : override.type === 'WORKING');
+    const isOverrideHoliday = override && (typeof override === 'string' ? override === 'HOLIDAY' : override.type === 'HOLIDAY');
+
+    const isStandardWorkingDay = workingDays.includes(weekday);
+    const isWorkingDay = isOverrideWorking || (!isOverrideHoliday && isStandardWorkingDay);
+
+    if (isWorkingDay) {
+      list.push({
+        isoDate,
+        formattedDate: candidate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
+        weekday
+      });
+    }
+    dayOffset++;
+  }
+
+  return list;
 }

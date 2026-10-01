@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Ticket, Users, Clock, AlertCircle, RefreshCw, CheckCircle2, ChevronRight, Volume2, Search, ArrowRight, MapPin } from 'lucide-react';
+import { Ticket, Users, Clock, AlertCircle, RefreshCw, CheckCircle2, ChevronRight, Volume2, Search, ArrowRight, MapPin, Calendar, Sparkles } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import TokenBadge from '../common/TokenBadge';
 import StatusBadge from '../common/StatusBadge';
@@ -79,12 +79,47 @@ export default function LiveTokenTracker({ setActiveTab }) {
           </div>
           <button
             type="submit"
-            className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-colors shadow-sm"
+            className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-colors shadow-sm cursor-pointer"
           >
             Track
           </button>
         </form>
       </div>
+
+      {/* POSTPONED APPOINTMENT PRIORITY NOTICE BANNER */}
+      {myAppointment && (myAppointment.postponedFromDate || myAppointment.isPriority) && (
+        <div className="bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-transparent p-5 rounded-2xl border-2 border-amber-400/60 dark:border-amber-500/40 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="flex items-start gap-3.5">
+            <div className="p-2.5 bg-amber-500 text-white rounded-xl shadow-sm shrink-0">
+              <Sparkles className="w-6 h-6 animate-spin-slow" />
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-500 text-white uppercase tracking-wider">
+                  #1 Priority Placement Guaranteed
+                </span>
+                {myAppointment.postponedFromDate && (
+                  <span className="text-xs font-semibold text-amber-900 dark:text-amber-200">
+                    Postponed from {myAppointment.postponedFromDate}
+                  </span>
+                )}
+              </div>
+              <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+                You are First in Line for Consultation on {myAppointment.appointmentDate} at {myAppointment.appointmentTime}
+              </h3>
+              <p className="text-xs text-slate-600 dark:text-slate-300">
+                {myAppointment.postponeReason 
+                  ? `Coordinator Note: "${myAppointment.postponeReason}". Because your slot was rescheduled by the coordinator, your token retains top queue priority.`
+                  : 'Your appointment was rescheduled to this active day by the coordinator and is placed at the front of the queue.'}
+              </p>
+            </div>
+          </div>
+          <div className="shrink-0 bg-white/80 dark:bg-slate-900/80 px-3.5 py-2 rounded-xl border border-amber-300 dark:border-amber-700/60 text-right">
+            <span className="text-[10px] uppercase font-bold text-amber-700 dark:text-amber-400 block">Queue Rank</span>
+            <span className="text-xl font-extrabold text-amber-600 dark:text-amber-400 font-mono">Priority #1</span>
+          </div>
+        </div>
+      )}
 
       {/* CALL NOTIFICATION BANNER IF STUDENT IS CALLED */}
       {myAppointment?.status === 'CALLED' && (
@@ -253,17 +288,30 @@ export default function LiveTokenTracker({ setActiveTab }) {
             {/* Position Stat */}
             <div className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-xl border border-slate-200 dark:border-slate-700 text-center space-y-0.5">
               <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold uppercase">YOUR QUEUE POSITION</span>
-              <div className="text-3xl font-bold text-blue-600 dark:text-blue-400 font-mono">{myPosition > 0 ? myPosition : '—'}</div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">{studentsAhead} student{studentsAhead === 1 ? '' : 's'} ahead of you</p>
+              <div className="text-3xl font-bold text-blue-600 dark:text-blue-400 font-mono">
+                {myAppointment.isPriority ? (
+                  <span className="text-amber-500 font-extrabold flex items-center justify-center gap-1">
+                    <span>#1</span>
+                    <span className="text-xs uppercase px-1.5 py-0.5 bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 rounded">Priority</span>
+                  </span>
+                ) : myPosition > 0 ? myPosition : '—'}
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                {myAppointment.isPriority 
+                  ? 'First student called when desk opens' 
+                  : `${studentsAhead} student${studentsAhead === 1 ? '' : 's'} ahead of you`}
+              </p>
             </div>
 
             {/* Estimated Wait Stat */}
             <div className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-xl border border-slate-200 dark:border-slate-700 text-center space-y-0.5">
               <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold uppercase">ESTIMATED WAIT TIME</span>
               <div className="text-2xl font-bold text-slate-900 dark:text-white font-mono">
-                {myPosition > 0 ? formatMinutesToReadable(estimatedWaitMins) : '0 mins'}
+                {myAppointment.isPriority ? 'Next Up (0-5 mins)' : myPosition > 0 ? formatMinutesToReadable(estimatedWaitMins) : '0 mins'}
               </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">Based on live consultation pace</p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                {myAppointment.isPriority ? 'Top priority queue placement' : 'Based on live consultation pace'}
+              </p>
             </div>
 
             {/* Status Human-friendly Message */}
@@ -276,6 +324,10 @@ export default function LiveTokenTracker({ setActiveTab }) {
                   <span className="text-blue-700 dark:text-blue-300 font-semibold">You are currently meeting the Internship Coordinator.</span>
                 ) : myAppointment.status === 'COMPLETED' ? (
                   <span className="text-emerald-700 dark:text-emerald-300 font-semibold">✓ Consultation completed. Have a great day!</span>
+                ) : myAppointment.isPriority ? (
+                  <span className="text-amber-800 dark:text-amber-300 font-medium">
+                    ⭐ Postponed slot: You will be called <strong>first</strong> for consultation on {myAppointment.appointmentDate} at {myAppointment.appointmentTime}.
+                  </span>
                 ) : (
                   <span>Please wait in the lounge. There are {studentsAhead} students ahead of you.</span>
                 )}

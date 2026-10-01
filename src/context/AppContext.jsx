@@ -3,9 +3,31 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { INITIAL_APPOINTMENTS, INITIAL_AVAILABILITY, MOCK_STUDENTS, INITIAL_ANNOUNCEMENTS } from '../mock/sampleData';
 import { generateNextTokenNumber } from '../utils/tokenGenerator';
 import { sendTicketEmailAlert } from '../utils/emailNotifier';
+import { timeToMinutes, formatTimeDisplay } from '../utils/slotGenerator';
 
 const AppContext = createContext();
 const CHANNEL_NAME = 'VISTAS_REALTIME_QUEUE';
+
+/**
+ * Sorts appointments placing prioritized (e.g. postponed) students first for each date.
+ */
+export const sortAppointmentsByPriorityAndDate = (list) => {
+  if (!Array.isArray(list)) return [];
+  return [...list].sort((a, b) => {
+    // 1. Compare dates
+    if (a.appointmentDate !== b.appointmentDate) {
+      return (a.appointmentDate || '').localeCompare(b.appointmentDate || '');
+    }
+    // 2. Same date: isPriority comes first!
+    if (a.isPriority && !b.isPriority) return -1;
+    if (!a.isPriority && b.isPriority) return 1;
+    // 3. Compare appointment time
+    const timeA = timeToMinutes(a.appointmentTime);
+    const timeB = timeToMinutes(b.appointmentTime);
+    if (timeA !== timeB) return timeA - timeB;
+    return (a.queuePosition || 0) - (b.queuePosition || 0);
+  });
+};
 
 const INITIAL_SAMPLE_TICKETS = [
   {
@@ -480,24 +502,32 @@ export function AppProvider({ children }) {
               isWalkIn: a.is_walk_in,
               durationMinutes: a.duration_minutes,
               notes: a.notes,
+              isPriority: !!cached.isPriority || (a.notes && a.notes.includes('[Postponed')),
+              priorityRank: cached.priorityRank || (cached.isPriority ? 1 : 999),
+              postponedFromDate: cached.postponedFromDate,
+              postponedFromTime: cached.postponedFromTime,
+              postponedReason: cached.postponedReason,
+              postponedAt: cached.postponedAt,
               startedAt: a.started_at,
               completedAt: a.completed_at,
               createdAt: a.created_at || a.appointment_date
             };
           });
-          setAppointments(formatted);
-          const active = formatted.find(a => a.status === 'IN_PROGRESS');
+          const sortedFormatted = sortAppointmentsByPriorityAndDate(formatted);
+          setAppointments(sortedFormatted);
+          const active = sortedFormatted.find(a => a.status === 'IN_PROGRESS');
           setActiveMeeting(active || null);
         }
 
         if (availRes.status === 'fulfilled' && availRes.value.data) {
           const availData = availRes.value.data;
+          const startTime = (availData.start_time === '15:00' || !availData.start_time) ? '15:30' : availData.start_time;
           setAvailability(prev => ({
             ...prev,
             status: availData.status,
-            startTime: availData.start_time,
-            endTime: availData.end_time,
-            slotDuration: availData.slot_duration,
+            startTime,
+            endTime: availData.end_time || '17:30',
+            slotDuration: availData.slot_duration || 15,
             breakStartTime: availData.break_start_time,
             breakEndTime: availData.break_end_time,
             maxBookings: availData.max_bookings
@@ -524,13 +554,16 @@ export function AppProvider({ children }) {
             try {
               const parsedAvail = JSON.parse(availRecord.private_notes);
               if (parsedAvail && typeof parsedAvail === 'object') {
+                const startTime = (parsedAvail.startTime === '15:00' || !parsedAvail.startTime) ? '15:30' : parsedAvail.startTime;
                 setAvailability(prev => ({
                   ...prev,
                   ...parsedAvail,
+                  startTime,
+                  slotDuration: parsedAvail.slotDuration || 15,
                   status: (availRes.status === 'fulfilled' && availRes.value?.data?.status) || parsedAvail.status || prev.status
                 }));
                 try {
-                  localStorage.setItem('vistas_availability', JSON.stringify({ ...parsedAvail }));
+                  localStorage.setItem('vistas_availability', JSON.stringify({ ...parsedAvail, startTime }));
                 } catch (e) {}
               }
             } catch (e) {}
@@ -1104,6 +1137,65 @@ export function AppProvider({ children }) {
     }
 
     showToast('Appointment cancelled', 'info');
+  };
+
+  const postponeAppointment = async (appointmentId, { newDate, newTime, reason, keepFirst = true }) => {
+    const apt = appointments.find(a => (a.id === appointmentId || a.tokenNumber === appointmentId));
+    if (!apt) return false;
+
+    const targetDate = newDate;
+    const targetTime = newTime || (availability.startTime ? formatTimeDisplay(availability.startTime) : '03:30 PM');
+    const postponeReason = reason || 'Coordinator unavailable';
+
+    const updatedApt = {
+      ...apt,
+      appointmentDate: targetDate,
+      appointmentTime: targetTime,
+      status: 'WAITING',
+      isPriority: !!keepFirst,
+      priorityRank: keepFirst ? 1 : 999,
+      queuePosition: keepFirst ? 1 : (apt.queuePosition || 1),
+      postponedFromDate: apt.appointmentDate,
+      postponedFromTime: apt.appointmentTime,
+      postponedReason: postponeReason,
+      postponedAt: new Date().toISOString(),
+      notes: (apt.notes ? apt.notes + '\n' : '') + `[Postponed from ${apt.appointmentDate} to ${targetDate} at ${targetTime} (${keepFirst ? 'Priority #1 in Queue' : 'Standard'}): ${postponeReason}]`
+    };
+
+    // Replace in appointments list and re-sort priority
+    const remaining = appointments.filter(a => a.id !== apt.id && a.tokenNumber !== apt.tokenNumber);
+    const updatedList = sortAppointmentsByPriorityAndDate([...remaining, updatedApt]);
+
+    setAppointments(updatedList);
+    try {
+      localStorage.setItem('vistas_appointments', JSON.stringify(updatedList));
+    } catch (e) {}
+
+    broadcastChange('SYNC', { appointments: updatedList });
+
+    // Sync to Supabase Cloud
+    if (isSupabaseConfigured()) {
+      try {
+        let q = supabase.from('appointments').update({
+          appointment_date: targetDate,
+          appointment_time: targetTime,
+          status: 'WAITING',
+          queue_position: keepFirst ? 1 : (apt.queuePosition || 1),
+          notes: updatedApt.notes
+        });
+        if (apt.id) {
+          q = q.eq('id', apt.id);
+        } else {
+          q = q.eq('token_number', apt.tokenNumber);
+        }
+        await q;
+      } catch (err) {
+        console.warn('Supabase postpone appointment error:', err);
+      }
+    }
+
+    showToast(`Appointment for ${apt.studentName} postponed to ${targetDate} (${keepFirst ? '⭐ #1 Priority' : targetTime})`, 'success');
+    return true;
   };
 
   const updateAvailabilityStatus = async (status) => {
@@ -1807,6 +1899,7 @@ export function AppProvider({ children }) {
         endMeeting,
         markNoShow,
         cancelAppointment,
+        postponeAppointment,
         updateAvailabilityStatus,
         updateAvailabilityConfig,
         createAnnouncement,

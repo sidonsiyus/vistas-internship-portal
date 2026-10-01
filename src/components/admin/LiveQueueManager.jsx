@@ -7,17 +7,18 @@ import {
   ChevronUp, 
   ChevronDown, 
   RotateCcw, 
-  UserX, 
-  X, 
-  Clock, 
   Sparkles,
   CheckCircle2,
-  Users
+  Users,
+  Calendar,
+  UserX,
+  X
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import TokenBadge from '../common/TokenBadge';
 import StatusBadge from '../common/StatusBadge';
 import WalkInModal from './WalkInModal';
+import PostponeAppointmentModal from './PostponeAppointmentModal';
 import { calculateQueueMetrics, formatMinutesToReadable } from '../../utils/tokenGenerator';
 
 export default function LiveQueueManager() {
@@ -28,10 +29,12 @@ export default function LiveQueueManager() {
     endMeeting, 
     markNoShow, 
     cancelAppointment,
-    resetAllTokens
+    resetAllTokens,
+    postponeAppointment
   } = useApp();
 
   const [isWalkInOpen, setIsWalkInOpen] = useState(false);
+  const [postponeTargetApt, setPostponeTargetApt] = useState(null);
 
   const currentlyServing = appointments.find(a => a.status === 'IN_PROGRESS');
   const calledStudent = appointments.find(a => a.status === 'CALLED');
@@ -252,6 +255,12 @@ export default function LiveQueueManager() {
                         ? apt.students.map(s => s.name).join(', ')
                         : apt.studentName}
                     </span>
+                    {(apt.isPriority || apt.postponedFromDate) && (
+                      <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700 flex items-center gap-1 shadow-xs animate-pulse">
+                        <span>⭐ Priority #1</span>
+                        {apt.postponedFromDate && <span className="opacity-75 font-normal">(Postponed)</span>}
+                      </span>
+                    )}
                     {(apt.isBulk || apt.studentCount > 1 || (apt.students && apt.students.length > 1)) && (
                       <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 flex items-center gap-0.5">
                         <Users className="w-3 h-3" />
@@ -280,7 +289,7 @@ export default function LiveQueueManager() {
 
                 <button
                   onClick={() => callStudent(apt.id)}
-                  className="px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-500 hover:text-white text-amber-700 dark:text-amber-300 font-bold text-xs border border-amber-200 dark:border-amber-800/60 transition-colors flex items-center gap-1"
+                  className="px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-500 hover:text-white text-amber-700 dark:text-amber-300 font-bold text-xs border border-amber-200 dark:border-amber-800/60 transition-colors flex items-center gap-1 cursor-pointer"
                 >
                   <Volume2 className="w-3.5 h-3.5" />
                   <span>Call</span>
@@ -288,10 +297,19 @@ export default function LiveQueueManager() {
 
                 <button
                   onClick={() => startMeeting(apt.id)}
-                  className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm transition-colors flex items-center gap-1"
+                  className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm transition-colors flex items-center gap-1 cursor-pointer"
                 >
                   <Play className="w-3.5 h-3.5" />
                   <span>Start</span>
+                </button>
+
+                <button
+                  onClick={() => setPostponeTargetApt(apt)}
+                  className="px-2.5 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/50 text-amber-700 dark:text-amber-300 font-semibold text-xs border border-amber-200 dark:border-amber-800/60 transition-colors flex items-center gap-1 cursor-pointer"
+                  title="Postpone to Next Active Day"
+                >
+                  <Calendar className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Postpone</span>
                 </button>
 
                 <button
@@ -324,6 +342,17 @@ export default function LiveQueueManager() {
       </div>
 
       <WalkInModal isOpen={isWalkInOpen} onClose={() => setIsWalkInOpen(false)} />
+
+      {/* POSTPONE APPOINTMENT MODAL */}
+      <PostponeAppointmentModal
+        isOpen={!!postponeTargetApt}
+        onClose={() => setPostponeTargetApt(null)}
+        appointment={postponeTargetApt}
+        onConfirm={(aptId, postponeData) => {
+          postponeAppointment(aptId, postponeData);
+          setPostponeTargetApt(null);
+        }}
+      />
 
     </div>
   );
