@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   Users,
   Calendar,
+  Clock,
   UserX,
   X
 } from 'lucide-react';
@@ -19,6 +20,7 @@ import TokenBadge from '../common/TokenBadge';
 import StatusBadge from '../common/StatusBadge';
 import WalkInModal from './WalkInModal';
 import PostponeAppointmentModal from './PostponeAppointmentModal';
+import RescheduleAppointmentModal from './RescheduleAppointmentModal';
 import { calculateQueueMetrics, formatMinutesToReadable } from '../../utils/tokenGenerator';
 
 export default function LiveQueueManager() {
@@ -30,11 +32,13 @@ export default function LiveQueueManager() {
     markNoShow, 
     cancelAppointment,
     resetAllTokens,
-    postponeAppointment
+    postponeAppointment,
+    rescheduleAppointment
   } = useApp();
 
   const [isWalkInOpen, setIsWalkInOpen] = useState(false);
   const [postponeTargetApt, setPostponeTargetApt] = useState(null);
+  const [rescheduleTargetApt, setRescheduleTargetApt] = useState(null);
 
   const currentlyServing = appointments.find(a => a.status === 'IN_PROGRESS');
   const calledStudent = appointments.find(a => a.status === 'CALLED');
@@ -304,6 +308,15 @@ export default function LiveQueueManager() {
                 </button>
 
                 <button
+                  onClick={() => setRescheduleTargetApt(apt)}
+                  className="px-2.5 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-semibold text-xs border border-blue-200 dark:border-blue-800/60 transition-colors flex items-center gap-1 cursor-pointer"
+                  title="Change Appointment Date & Time Slot"
+                >
+                  <Clock className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Edit Slot</span>
+                </button>
+
+                <button
                   onClick={() => setPostponeTargetApt(apt)}
                   className="px-2.5 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/50 text-amber-700 dark:text-amber-300 font-semibold text-xs border border-amber-200 dark:border-amber-800/60 transition-colors flex items-center gap-1 cursor-pointer"
                   title="Postpone to Next Active Day"
@@ -352,6 +365,13 @@ export default function LiveQueueManager() {
           postponeAppointment(aptId, postponeData);
           setPostponeTargetApt(null);
         }}
+      />
+
+      {/* RESCHEDULE / EDIT SLOT MODAL */}
+      <RescheduleAppointmentModal
+        isOpen={!!rescheduleTargetApt}
+        onClose={() => setRescheduleTargetApt(null)}
+        appointment={rescheduleTargetApt}
       />
 
     </div>

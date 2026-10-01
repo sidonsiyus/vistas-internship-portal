@@ -121,6 +121,32 @@ export default function LiveTokenTracker({ setActiveTab }) {
         </div>
       )}
 
+      {/* RESCHEDULED APPOINTMENT (NON-PRIORITY) BANNER */}
+      {myAppointment && myAppointment.rescheduledFromDate && !myAppointment.isPriority && (
+        <div className="bg-blue-50/80 dark:bg-blue-950/40 p-4.5 rounded-2xl border border-blue-200 dark:border-blue-900 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="p-2.5 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-xl shrink-0">
+              <Calendar className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400 block">
+                Appointment Schedule Updated
+              </span>
+              <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
+                New Consultation Time: {myAppointment.appointmentDate} at {myAppointment.appointmentTime}
+              </h3>
+              <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+                Previously booked for {myAppointment.rescheduledFromDate} at {myAppointment.rescheduledFromTime}.
+                {myAppointment.rescheduledReason && ` Remark: "${myAppointment.rescheduledReason}"`}
+              </p>
+            </div>
+          </div>
+          <div className="shrink-0 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-blue-200 dark:border-blue-800 text-xs font-mono font-bold text-blue-600 dark:text-blue-400">
+            {myAppointment.appointmentTime}
+          </div>
+        </div>
+      )}
+
       {/* CALL NOTIFICATION BANNER IF STUDENT IS CALLED */}
       {myAppointment?.status === 'CALLED' && (
         <div className="bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 p-5 rounded-xl border border-amber-300 dark:border-amber-800 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">

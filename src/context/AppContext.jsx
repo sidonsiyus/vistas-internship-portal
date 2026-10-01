@@ -1198,6 +1198,65 @@ export function AppProvider({ children }) {
     return true;
   };
 
+  const rescheduleAppointment = async (appointmentId, { newDate, newTime, reason, keepFirst = false }) => {
+    const apt = appointments.find(a => (a.id === appointmentId || a.tokenNumber === appointmentId));
+    if (!apt) return false;
+
+    const targetDate = newDate || apt.appointmentDate;
+    const targetTime = newTime || apt.appointmentTime;
+    const rescheduleReason = reason || 'Rescheduled by Coordinator';
+
+    const updatedApt = {
+      ...apt,
+      appointmentDate: targetDate,
+      appointmentTime: targetTime,
+      status: apt.status === 'CANCELLED' || apt.status === 'NO_SHOW' ? 'WAITING' : apt.status,
+      isPriority: !!keepFirst,
+      priorityRank: keepFirst ? 1 : (apt.priorityRank || 999),
+      queuePosition: keepFirst ? 1 : (apt.queuePosition || 1),
+      rescheduledFromDate: apt.appointmentDate,
+      rescheduledFromTime: apt.appointmentTime,
+      rescheduledReason: rescheduleReason,
+      rescheduledAt: new Date().toISOString(),
+      notes: (apt.notes ? apt.notes + '\n' : '') + `[Rescheduled from ${apt.appointmentDate} ${apt.appointmentTime} to ${targetDate} ${targetTime}${keepFirst ? ' (Priority #1)' : ''}: ${rescheduleReason}]`
+    };
+
+    // Replace in appointments list and re-sort priority
+    const remaining = appointments.filter(a => a.id !== apt.id && a.tokenNumber !== apt.tokenNumber);
+    const updatedList = sortAppointmentsByPriorityAndDate([...remaining, updatedApt]);
+
+    setAppointments(updatedList);
+    try {
+      localStorage.setItem('vistas_appointments', JSON.stringify(updatedList));
+    } catch (e) {}
+
+    broadcastChange('SYNC', { appointments: updatedList });
+
+    // Sync to Supabase Cloud
+    if (isSupabaseConfigured()) {
+      try {
+        let q = supabase.from('appointments').update({
+          appointment_date: targetDate,
+          appointment_time: targetTime,
+          status: updatedApt.status,
+          queue_position: updatedApt.queuePosition,
+          notes: updatedApt.notes
+        });
+        if (apt.id) {
+          q = q.eq('id', apt.id);
+        } else {
+          q = q.eq('token_number', apt.tokenNumber);
+        }
+        await q;
+      } catch (err) {
+        console.warn('Supabase reschedule appointment error:', err);
+      }
+    }
+
+    showToast(`Appointment slot updated for ${apt.studentName} to ${targetDate} at ${targetTime}`, 'success');
+    return true;
+  };
+
   const updateAvailabilityStatus = async (status) => {
     const updated = { ...availability, status };
     setAvailability(updated);
@@ -1900,6 +1959,7 @@ export function AppProvider({ children }) {
         markNoShow,
         cancelAppointment,
         postponeAppointment,
+        rescheduleAppointment,
         updateAvailabilityStatus,
         updateAvailabilityConfig,
         createAnnouncement,

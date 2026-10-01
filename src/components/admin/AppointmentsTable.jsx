@@ -11,18 +11,21 @@ import {
   XCircle,
   UserX,
   Users,
-  Calendar
+  Calendar,
+  Clock
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import TokenBadge from '../common/TokenBadge';
 import StatusBadge from '../common/StatusBadge';
 import Modal from '../common/Modal';
 import PostponeAppointmentModal from './PostponeAppointmentModal';
+import RescheduleAppointmentModal from './RescheduleAppointmentModal';
 import { DEPARTMENTS, QUERY_CATEGORIES } from '../../mock/sampleData';
 
 export default function AppointmentsTable() {
-  const { appointments, markNoShow, cancelAppointment, endMeeting, postponeAppointment } = useApp();
+  const { appointments, markNoShow, cancelAppointment, endMeeting, postponeAppointment, rescheduleAppointment } = useApp();
   const [postponeTargetApt, setPostponeTargetApt] = useState(null);
+  const [rescheduleTargetApt, setRescheduleTargetApt] = useState(null);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDept, setSelectedDept] = useState('');
@@ -270,14 +273,24 @@ export default function AppointmentsTable() {
                   <td className="p-4 text-right">
                     <div className="flex items-center justify-end gap-1.5">
                       {apt.status !== 'COMPLETED' && apt.status !== 'CANCELLED' && (
-                        <button
-                          onClick={() => setPostponeTargetApt(apt.parentAppointment || apt)}
-                          className="px-2.5 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-500 hover:text-white text-amber-700 dark:text-amber-300 font-bold text-xs border border-amber-200 dark:border-amber-800/60 transition-colors flex items-center gap-1 cursor-pointer"
-                          title="Postpone to Next Active Day"
-                        >
-                          <Calendar className="w-3 h-3" />
-                          <span className="hidden sm:inline">Postpone</span>
-                        </button>
+                        <>
+                          <button
+                            onClick={() => setRescheduleTargetApt(apt.parentAppointment || apt)}
+                            className="px-2.5 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-600 hover:text-white text-blue-700 dark:text-blue-300 font-bold text-xs border border-blue-200 dark:border-blue-800/60 transition-colors flex items-center gap-1 cursor-pointer"
+                            title="Change Appointment Date & Time"
+                          >
+                            <Clock className="w-3 h-3" />
+                            <span className="hidden sm:inline">Edit Slot</span>
+                          </button>
+                          <button
+                            onClick={() => setPostponeTargetApt(apt.parentAppointment || apt)}
+                            className="px-2.5 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-500 hover:text-white text-amber-700 dark:text-amber-300 font-bold text-xs border border-amber-200 dark:border-amber-800/60 transition-colors flex items-center gap-1 cursor-pointer"
+                            title="Postpone to Next Active Day"
+                          >
+                            <Calendar className="w-3 h-3" />
+                            <span className="hidden sm:inline">Postpone</span>
+                          </button>
+                        </>
                       )}
                       <button
                         onClick={() => setSelectedApt(apt)}
@@ -404,17 +417,30 @@ export default function AppointmentsTable() {
             <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-800">
               <div className="flex items-center gap-2">
                 {selectedApt.status !== 'COMPLETED' && selectedApt.status !== 'CANCELLED' && (
-                  <button
-                    onClick={() => {
-                      const target = selectedApt.parentAppointment || selectedApt;
-                      setSelectedApt(null);
-                      setPostponeTargetApt(target);
-                    }}
-                    className="px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/50 text-amber-700 dark:text-amber-300 font-semibold border border-amber-200 dark:border-amber-800/60 transition-colors flex items-center gap-1.5"
-                  >
-                    <Calendar className="w-3.5 h-3.5" />
-                    <span>Postpone</span>
-                  </button>
+                  <>
+                    <button
+                      onClick={() => {
+                        const target = selectedApt.parentAppointment || selectedApt;
+                        setSelectedApt(null);
+                        setRescheduleTargetApt(target);
+                      }}
+                      className="px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-semibold border border-blue-200 dark:border-blue-800/60 transition-colors flex items-center gap-1.5"
+                    >
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>Edit Slot</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        const target = selectedApt.parentAppointment || selectedApt;
+                        setSelectedApt(null);
+                        setPostponeTargetApt(target);
+                      }}
+                      className="px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/50 text-amber-700 dark:text-amber-300 font-semibold border border-amber-200 dark:border-amber-800/60 transition-colors flex items-center gap-1.5"
+                    >
+                      <Calendar className="w-3.5 h-3.5" />
+                      <span>Postpone</span>
+                    </button>
+                  </>
                 )}
                 <button
                   onClick={() => {
@@ -454,10 +480,13 @@ export default function AppointmentsTable() {
         isOpen={!!postponeTargetApt}
         onClose={() => setPostponeTargetApt(null)}
         appointment={postponeTargetApt}
-        onConfirm={(aptId, postponeData) => {
-          postponeAppointment(aptId, postponeData);
-          setPostponeTargetApt(null);
-        }}
+      />
+
+      {/* RESCHEDULE / EDIT SLOT MODAL */}
+      <RescheduleAppointmentModal
+        isOpen={!!rescheduleTargetApt}
+        onClose={() => setRescheduleTargetApt(null)}
+        appointment={rescheduleTargetApt}
       />
 
     </div>
