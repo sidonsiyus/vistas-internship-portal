@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { CheckCircle2, Ticket, Download, ArrowRight, MapPin, Users } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, Ticket, Download, ArrowRight, MapPin, Users } from 'lucide-react';
 import TokenBadge from '../../common/TokenBadge';
 import { downloadIcsFile } from '../../../utils/calendar';
 import { useApp } from '../../../context/AppContext';
@@ -9,13 +9,15 @@ export const OFFICE_LOCATION = '7th Floor Staff Room, Vels Hi-Tech Campus';
 export default function ConfirmationStep({ appointment, onTrackToken, onCancel }) {
   const { cancelAppointment } = useApp();
 
+  const isPendingApproval = appointment?.status === 'PENDING_APPROVAL';
+
   useEffect(() => {
     try {
-      if (window.confetti) {
+      if (window.confetti && !isPendingApproval) {
         window.confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
       }
     } catch (e) {}
-  }, []);
+  }, [isPendingApproval]);
 
   if (!appointment) return null;
 
@@ -25,27 +27,39 @@ export default function ConfirmationStep({ appointment, onTrackToken, onCancel }
     <div className="space-y-6 text-center font-sans transition-colors duration-200">
       
       {/* Confirmation Header */}
-      <div className="inline-flex items-center justify-center p-3 bg-emerald-50 dark:bg-emerald-950/60 rounded-full border border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 mb-1">
-        <CheckCircle2 className="w-10 h-10" />
+      <div className={`inline-flex items-center justify-center p-3 rounded-full border mb-1 ${
+        isPendingApproval
+          ? 'bg-amber-50 dark:bg-amber-950/60 border-amber-200 dark:border-amber-800 text-amber-600 dark:text-amber-400'
+          : 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400'
+      }`}>
+        {isPendingApproval ? <AlertTriangle className="w-10 h-10" /> : <CheckCircle2 className="w-10 h-10" />}
       </div>
 
       <div>
-        <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-          ✓ BOOKING CONFIRMED!
+        <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+          {isPendingApproval ? 'EMERGENCY REQUEST SUBMITTED' : '✓ BOOKING CONFIRMED!'}
         </h2>
-        <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-          Your consultation slot has been reserved. Please state your token number when called.
+        <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 max-w-lg mx-auto">
+          {isPendingApproval
+            ? 'Your pre-3:00 PM consultation request has been forwarded to the Placement Coordinator for emergency validation.'
+            : 'Your consultation slot has been reserved. Please state your token number when called.'}
         </p>
       </div>
 
       {/* Prominent Token Card */}
       <div className="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-md space-y-6 max-w-md mx-auto">
         <div className="space-y-2">
-          <span className="text-xs font-extrabold uppercase tracking-widest text-blue-600 dark:text-blue-400">YOUR DIGITAL CONSULTATION TOKEN</span>
+          <span className="text-xs font-extrabold uppercase tracking-widest text-blue-600 dark:text-blue-400">
+            YOUR DIGITAL CONSULTATION TOKEN
+          </span>
           <div className="py-2">
-            <TokenBadge tokenNumber={actualTokenNumber} size="giant" variant="blue" />
+            <TokenBadge tokenNumber={actualTokenNumber} size="giant" variant={isPendingApproval ? 'orange' : 'blue'} />
           </div>
-          <p className="text-xs text-emerald-700 dark:text-emerald-400 font-mono font-bold">STATUS: CONFIRMED & QUEUED</p>
+          <p className={`text-xs font-mono font-bold ${
+            isPendingApproval ? 'text-amber-600 dark:text-amber-400 animate-pulse' : 'text-emerald-700 dark:text-emerald-400'
+          }`}>
+            STATUS: {isPendingApproval ? 'AWAITING COORDINATOR APPROVAL' : 'CONFIRMED & QUEUED'}
+          </p>
         </div>
 
         {/* Details Grid */}
@@ -66,6 +80,12 @@ export default function ConfirmationStep({ appointment, onTrackToken, onCancel }
             <span className="text-slate-500 dark:text-slate-400 block font-medium">CATEGORY</span>
             <span className="font-bold text-slate-800 dark:text-slate-200">{appointment.category}</span>
           </div>
+          {appointment.emergencyJustification && (
+            <div className="col-span-2 p-3 bg-amber-50 dark:bg-amber-950/40 rounded-xl border border-amber-200 dark:border-amber-800/80 text-amber-900 dark:text-amber-200">
+              <span className="font-bold uppercase tracking-wider text-[10px] block mb-0.5 text-amber-800 dark:text-amber-300">Submitted Emergency Justification:</span>
+              <p className="text-xs italic">"{appointment.emergencyJustification}"</p>
+            </div>
+          )}
           <div className="col-span-2 border-t border-slate-100 dark:border-slate-800 pt-2">
             <span className="text-slate-500 dark:text-slate-400 block font-medium">LOCATION</span>
             <span className="font-semibold text-slate-800 dark:text-slate-200 text-xs flex items-center gap-1 mt-0.5">

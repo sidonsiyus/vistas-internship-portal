@@ -31,6 +31,7 @@ import SettingsPage from './components/admin/SettingsPage';
 import AnnouncementsManager from './components/admin/AnnouncementsManager';
 import GlobalDocumentManagement from './components/admin/GlobalDocumentManagement';
 import AdminTicketDesk from './components/admin/AdminTicketDesk';
+import CalendarView from './components/admin/CalendarView';
 
 function AppContent() {
   const { adminAuth, toastNotification } = useApp();
@@ -74,6 +75,7 @@ function AppContent() {
       <AdminLayout activeAdminPage={activeAdminPage} setActiveAdminPage={setActiveAdminPage}>
         {activeAdminPage === 'overview' && <OverviewDashboard setActiveAdminPage={setActiveAdminPage} />}
         {activeAdminPage === 'live-queue' && <LiveQueueManager />}
+        {activeAdminPage === 'calendar' && <CalendarView />}
         {activeAdminPage === 'announcements' && <AnnouncementsManager />}
         {activeAdminPage === 'appointments' && <AppointmentsTable />}
         {activeAdminPage === 'availability' && <AvailabilityConfig />}

@@ -32,6 +32,7 @@ export default function BookingWizard({ setActiveTab }) {
     category: 'Internship Opportunity',
     companyName: '',
     description: '',
+    emergencyJustification: '',
     coAttendees: []
   });
 
@@ -144,6 +145,8 @@ export default function BookingWizard({ setActiveTab }) {
             <DetailsStep
               formData={formData}
               setFormData={setFormData}
+              selectedTime={selectedTime}
+              selectedDate={selectedDate}
               onSubmit={handleBookingSubmit}
               onBack={() => setCurrentStep(2)}
             />

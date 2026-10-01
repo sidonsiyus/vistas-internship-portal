@@ -12,7 +12,10 @@ import {
   UserX,
   Users,
   Calendar,
-  Clock
+  Clock,
+  Check,
+  X,
+  AlertTriangle
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import TokenBadge from '../common/TokenBadge';
@@ -23,9 +26,11 @@ import RescheduleAppointmentModal from './RescheduleAppointmentModal';
 import { DEPARTMENTS, QUERY_CATEGORIES } from '../../mock/sampleData';
 
 export default function AppointmentsTable() {
-  const { appointments, markNoShow, cancelAppointment, endMeeting, postponeAppointment, rescheduleAppointment } = useApp();
+  const { appointments, markNoShow, cancelAppointment, endMeeting, postponeAppointment, rescheduleAppointment, approveAppointment, denyAppointment } = useApp();
   const [postponeTargetApt, setPostponeTargetApt] = useState(null);
   const [rescheduleTargetApt, setRescheduleTargetApt] = useState(null);
+  const [denyTargetApt, setDenyTargetApt] = useState(null);
+  const [denyReason, setDenyReason] = useState('Emergency criteria not met. Please book during standard consultation hours (3:30 PM – 5:30 PM).');
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDept, setSelectedDept] = useState('');
@@ -205,6 +210,7 @@ export default function AppointmentsTable() {
           className="w-full md:w-auto px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-700 dark:text-slate-300 focus:outline-none focus:border-blue-500 focus:bg-white dark:focus:bg-slate-800"
         >
           <option value="" className="dark:bg-slate-800">All Statuses</option>
+          <option value="PENDING_APPROVAL" className="dark:bg-slate-800">PENDING_APPROVAL (Emergency)</option>
           <option value="WAITING" className="dark:bg-slate-800">WAITING</option>
           <option value="CALLED" className="dark:bg-slate-800">CALLED</option>
           <option value="IN_PROGRESS" className="dark:bg-slate-800">IN_PROGRESS</option>
@@ -239,6 +245,12 @@ export default function AppointmentsTable() {
                   <td className="p-4">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="font-bold text-slate-900 dark:text-white text-sm">{apt.studentName}</span>
+                      {(apt.isEmergency || apt.emergencyJustification) && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-50 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 flex items-center gap-1">
+                          <AlertTriangle className="w-2.5 h-2.5 text-rose-500" />
+                          <span>Emergency</span>
+                        </span>
+                      )}
                       {(apt.isPriority || apt.postponedFromDate) && (
                         <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700 flex items-center gap-1 shadow-xs animate-pulse">
                           <span>⭐ Priority #1</span>
@@ -272,7 +284,27 @@ export default function AppointmentsTable() {
                   </td>
                   <td className="p-4 text-right">
                     <div className="flex items-center justify-end gap-1.5">
-                      {apt.status !== 'COMPLETED' && apt.status !== 'CANCELLED' && (
+                      {apt.status === 'PENDING_APPROVAL' && (
+                        <>
+                          <button
+                            onClick={() => approveAppointment(apt.parentAppointment?.id || apt.id)}
+                            className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1 shadow-xs transition-colors cursor-pointer"
+                            title="Approve Emergency Slot Request"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Approve</span>
+                          </button>
+                          <button
+                            onClick={() => setDenyTargetApt(apt.parentAppointment || apt)}
+                            className="px-2.5 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-600 hover:text-white text-rose-700 dark:text-rose-300 font-bold text-xs border border-rose-200 dark:border-rose-800/60 transition-colors flex items-center gap-1 cursor-pointer"
+                            title="Deny Emergency Slot Request"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                            <span>Deny</span>
+                          </button>
+                        </>
+                      )}
+                      {apt.status !== 'COMPLETED' && apt.status !== 'CANCELLED' && apt.status !== 'PENDING_APPROVAL' && (
                         <>
                           <button
                             onClick={() => setRescheduleTargetApt(apt.parentAppointment || apt)}
@@ -343,6 +375,54 @@ export default function AppointmentsTable() {
               <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold">Category: {selectedApt.category}</p>
               <p className="text-xs text-slate-500 dark:text-slate-400">Slot: {selectedApt.appointmentDate} at {selectedApt.appointmentTime}</p>
             </div>
+
+            {/* Emergency Justification Prominent Card */}
+            {(selectedApt.emergencyJustification || selectedApt.isEmergency) && (
+              <div className="p-3.5 bg-rose-50 dark:bg-rose-950/40 rounded-xl border-2 border-rose-300 dark:border-rose-800 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-rose-900 dark:text-rose-200 uppercase tracking-wider flex items-center gap-1.5">
+                    <AlertTriangle className="w-4 h-4 text-rose-600" />
+                    <span>Pre-3:00 PM Emergency Justification</span>
+                  </span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                    selectedApt.status === 'PENDING_APPROVAL' 
+                      ? 'bg-rose-600 text-white animate-pulse'
+                      : 'bg-rose-100 dark:bg-rose-900 text-rose-800 dark:text-rose-200'
+                  }`}>
+                    {selectedApt.status === 'PENDING_APPROVAL' ? 'Approval Required' : 'Validated'}
+                  </span>
+                </div>
+                <div className="p-2.5 bg-white/80 dark:bg-slate-900/80 rounded-lg border border-rose-200 dark:border-rose-900 text-xs text-rose-950 dark:text-rose-100 italic">
+                  "{selectedApt.emergencyJustification || 'Urgent pre-3:00 PM consultation slot request.'}"
+                </div>
+                {selectedApt.status === 'PENDING_APPROVAL' && (
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      onClick={() => {
+                        const targetId = selectedApt.parentAppointment?.id || selectedApt.id;
+                        approveAppointment(targetId);
+                        setSelectedApt(null);
+                      }}
+                      className="flex-1 py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Approve & Add to Active Queue</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        const target = selectedApt.parentAppointment || selectedApt;
+                        setSelectedApt(null);
+                        setDenyTargetApt(target);
+                      }}
+                      className="py-2 px-3 rounded-lg bg-rose-100 dark:bg-rose-950/60 hover:bg-rose-600 hover:text-white text-rose-700 dark:text-rose-300 font-bold text-xs border border-rose-300 dark:border-rose-800 transition-colors cursor-pointer flex items-center gap-1"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                      <span>Deny Request</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* If Group Appointment: Show all attendees */}
             {(selectedApt.isGroupMember || selectedApt.isBulk || (selectedApt.groupStudents && selectedApt.groupStudents.length > 1) || (selectedApt.students && selectedApt.students.length > 1)) && (
@@ -469,6 +549,64 @@ export default function AppointmentsTable() {
                 className="px-4 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold transition-colors"
               >
                 Close File
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* DENY EMERGENCY REQUEST MODAL */}
+      <Modal
+        isOpen={!!denyTargetApt}
+        onClose={() => setDenyTargetApt(null)}
+        title="Deny Emergency Consultation Request"
+        maxWidth="max-w-md"
+      >
+        {denyTargetApt && (
+          <div className="space-y-4 text-xs text-slate-700 dark:text-slate-300">
+            <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-xl space-y-1">
+              <p className="font-bold text-rose-950 dark:text-rose-200 text-sm">
+                Student: {denyTargetApt.studentName} ({denyTargetApt.registerNumber || 'N/A'})
+              </p>
+              <p className="text-slate-600 dark:text-slate-400">
+                Requested Slot: {denyTargetApt.appointmentDate} at {denyTargetApt.appointmentTime}
+              </p>
+              {denyTargetApt.emergencyJustification && (
+                <p className="text-[11px] text-rose-800 dark:text-rose-300 italic pt-1 border-t border-rose-200/60 dark:border-rose-900/60">
+                  Justification: "{denyTargetApt.emergencyJustification}"
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px]">
+                Reason for Denial (Recorded in File)
+              </label>
+              <textarea
+                rows="3"
+                value={denyReason}
+                onChange={(e) => setDenyReason(e.target.value)}
+                className="w-full p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-500/10 resize-none shadow-xs"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setDenyTargetApt(null)}
+                className="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 font-semibold text-slate-700 dark:text-slate-300 text-xs"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  denyAppointment(denyTargetApt.id || denyTargetApt.tokenNumber, denyReason);
+                  setDenyTargetApt(null);
+                }}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-sm transition-colors cursor-pointer"
+              >
+                Confirm Denial
               </button>
             </div>
           </div>

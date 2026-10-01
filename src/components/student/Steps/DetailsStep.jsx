@@ -2,11 +2,14 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { User, Users, FileText, Phone, Mail, Building, GraduationCap, AlertTriangle, CheckCircle2, Sparkles, Search, X, Plus, Trash2, Building2 } from 'lucide-react';
 import { QUERY_CATEGORIES, DEPARTMENTS } from '../../../mock/sampleData';
 import { useApp } from '../../../context/AppContext';
+import { timeToMinutes } from '../../../utils/slotGenerator';
 import studentsDatabase from '../../../data/studentsDatabase.json';
 
-export default function DetailsStep({ formData, setFormData, onSubmit, onBack }) {
+export default function DetailsStep({ formData, setFormData, selectedTime, selectedDate, onSubmit, onBack }) {
   const { appointments, students: contextStudents = [] } = useApp();
   const [errors, setErrors] = useState({});
+
+  const isPre3Pm = selectedTime ? timeToMinutes(selectedTime) < 900 : false;
 
   // Unified student pool combining studentsDatabase and live context students
   const studentPool = useMemo(() => {
@@ -246,6 +249,10 @@ export default function DetailsStep({ formData, setFormData, onSubmit, onBack })
     if (!formData.department) newErrors.department = 'Department selection is required';
     if (!formData.year) newErrors.year = 'Year of study is required';
     if (!formData.category) newErrors.category = 'Query category is required';
+
+    if (isPre3Pm && (!formData.emergencyJustification || !formData.emergencyJustification.trim())) {
+      newErrors.emergencyJustification = 'Emergency justification reason is compulsory for slots booked before 3:00 PM. Please state why you urgently require this consultation.';
+    }
 
     if (isBulk && (!formData.coAttendees || formData.coAttendees.length === 0)) {
       newErrors.coAttendees = 'Please add at least 1 group member / co-attendee to this bulk consultation (or switch to Individual Booking).';
@@ -871,6 +878,51 @@ export default function DetailsStep({ formData, setFormData, onSubmit, onBack })
         </div>
       )}
 
+      {/* EMERGENCY JUSTIFICATION SECTION (COMPULSORY FOR PRE-3 PM SLOTS) */}
+      {isPre3Pm && (
+        <div className="p-4 bg-rose-50/80 dark:bg-rose-950/40 border-2 border-rose-300 dark:border-rose-800 rounded-2xl space-y-3 animate-fadeIn">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-rose-600 text-white shadow-xs shrink-0">
+                <AlertTriangle className="w-4 h-4" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-rose-900 dark:text-rose-200 uppercase tracking-wider">
+                  Emergency Consultation Justification <span className="text-rose-600 dark:text-rose-400">*</span>
+                </h4>
+                <p className="text-[11px] text-rose-700 dark:text-rose-300">
+                  Compulsory for slots booked before 3:00 PM ({selectedTime || 'Early Slot'}).
+                </p>
+              </div>
+            </div>
+            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-rose-100 dark:bg-rose-900/60 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800 uppercase tracking-wider self-start sm:self-auto">
+              Coordinator Approval Required
+            </span>
+          </div>
+
+          <p className="text-[11px] text-rose-800 dark:text-rose-300 leading-relaxed bg-white/60 dark:bg-slate-900/50 p-2.5 rounded-xl border border-rose-200/70 dark:border-rose-900/60">
+            ⚠️ Standard coordinator consultations run from 3:30 PM onwards. Early sessions before 3:00 PM require an urgent reason (e.g. today's internship offer letter deadline, urgent university NOC cutoff, sudden interview call). The coordinator must approve this request before it is confirmed in the active queue.
+          </p>
+
+          <div className="relative">
+            <textarea
+              rows="3"
+              placeholder="State your emergency justification reason in detail (compulsory)..."
+              value={formData.emergencyJustification || ''}
+              onChange={(e) => handleChange('emergencyJustification', e.target.value)}
+              className="w-full p-3 bg-white dark:bg-slate-900 border border-rose-300 dark:border-rose-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-500/10 resize-none shadow-xs"
+            />
+          </div>
+
+          {errors.emergencyJustification && (
+            <p className="text-xs text-rose-600 dark:text-rose-400 font-medium flex items-center gap-1.5 pt-0.5">
+              <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+              <span>{errors.emergencyJustification}</span>
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Query Description (Optional) */}
       <div className="space-y-1">
         <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
@@ -893,16 +945,27 @@ export default function DetailsStep({ formData, setFormData, onSubmit, onBack })
         <button
           type="button"
           onClick={onBack}
-          className="px-4 py-2 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs border border-slate-200 dark:border-slate-700 shadow-sm transition-all"
+          className="px-4 py-2 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs border border-slate-200 dark:border-slate-700 shadow-sm transition-all cursor-pointer"
         >
           ← Back to Time
         </button>
 
         <button
           type="submit"
-          className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-sm transition-all transform hover:-translate-y-0.5"
+          className={`px-6 py-2.5 rounded-xl text-white font-semibold text-xs shadow-sm transition-all transform hover:-translate-y-0.5 cursor-pointer flex items-center gap-1.5 ${
+            isPre3Pm
+              ? 'bg-rose-600 hover:bg-rose-700 ring-2 ring-rose-500/20'
+              : 'bg-blue-600 hover:bg-blue-700'
+          }`}
         >
-          GENERATE TOKEN & BOOK NOW →
+          {isPre3Pm ? (
+            <>
+              <AlertTriangle className="w-4 h-4" />
+              <span>SUBMIT EMERGENCY REQUEST FOR APPROVAL →</span>
+            </>
+          ) : (
+            <span>GENERATE TOKEN & BOOK NOW →</span>
+          )}
         </button>
       </div>
     </form>

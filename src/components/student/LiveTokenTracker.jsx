@@ -151,6 +151,49 @@ export default function LiveTokenTracker({ setActiveTab }) {
         </div>
       )}
 
+      {/* PENDING COORDINATOR APPROVAL BANNER */}
+      {myAppointment?.status === 'PENDING_APPROVAL' && (
+        <div className="p-5 rounded-2xl border-2 border-amber-300 dark:border-amber-700/80 bg-gradient-to-r from-amber-50/90 via-rose-50/60 to-transparent dark:from-amber-950/40 dark:via-rose-950/30 dark:to-transparent shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="flex items-start gap-3.5">
+            <div className="p-2.5 rounded-xl bg-amber-500 text-white shadow-sm shrink-0">
+              <AlertCircle className="w-6 h-6 animate-pulse" />
+            </div>
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider bg-amber-500 text-white">
+                  ⚠️ EMERGENCY REQUEST — AWAITING COORDINATOR APPROVAL
+                </span>
+                <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                  Pre-3:00 PM Slot: {myAppointment.appointmentDate} at {myAppointment.appointmentTime}
+                </span>
+              </div>
+
+              <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+                Emergency Consultation Justification Under Review
+              </h3>
+
+              {myAppointment.emergencyJustification && (
+                <div className="p-2.5 bg-white/80 dark:bg-slate-900/80 rounded-xl border border-amber-200/80 dark:border-amber-900/60 text-xs text-slate-700 dark:text-slate-300">
+                  <span className="font-bold text-amber-800 dark:text-amber-300 block text-[10px] uppercase tracking-wider mb-0.5">Your Submitted Emergency Reason:</span>
+                  <p className="italic">"{myAppointment.emergencyJustification}"</p>
+                </div>
+              )}
+
+              <p className="text-[11px] text-amber-800 dark:text-amber-300 font-medium">
+                The Placement Coordinator will review and either approve or deny this slot. Once approved, your active queue position will be confirmed.
+              </p>
+            </div>
+          </div>
+
+          <div className="shrink-0 bg-white/90 dark:bg-slate-900/90 px-4 py-2.5 rounded-xl border border-amber-200 dark:border-amber-800 text-right">
+            <span className="text-[10px] uppercase font-bold text-amber-700 dark:text-amber-400 block">Approval Status</span>
+            <span className="text-sm font-extrabold font-mono text-amber-600 dark:text-amber-400 animate-pulse">
+              PENDING REVIEW
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* CALL NOTIFICATION BANNER IF STUDENT IS CALLED */}
       {myAppointment?.status === 'CALLED' && (
         <div className="bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 p-5 rounded-xl border border-amber-300 dark:border-amber-800 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
@@ -319,7 +362,9 @@ export default function LiveTokenTracker({ setActiveTab }) {
             <div className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-xl border border-slate-200 dark:border-slate-700 text-center space-y-0.5">
               <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold uppercase">YOUR QUEUE POSITION</span>
               <div className="text-3xl font-bold text-blue-600 dark:text-blue-400 font-mono">
-                {myAppointment.isPriority ? (
+                {myAppointment.status === 'PENDING_APPROVAL' ? (
+                  <span className="text-amber-500 text-lg font-bold block pt-1">Under Review</span>
+                ) : myAppointment.isPriority ? (
                   <span className="text-amber-500 font-extrabold flex items-center justify-center gap-1">
                     <span>#1</span>
                     <span className="text-xs uppercase px-1.5 py-0.5 bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 rounded">Priority</span>
@@ -327,7 +372,9 @@ export default function LiveTokenTracker({ setActiveTab }) {
                 ) : myPosition > 0 ? myPosition : '—'}
               </div>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                {myAppointment.isPriority 
+                {myAppointment.status === 'PENDING_APPROVAL'
+                  ? 'Awaiting coordinator approval'
+                  : myAppointment.isPriority 
                   ? 'First student called when desk opens' 
                   : `${studentsAhead} student${studentsAhead === 1 ? '' : 's'} ahead of you`}
               </p>
@@ -337,10 +384,14 @@ export default function LiveTokenTracker({ setActiveTab }) {
             <div className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-xl border border-slate-200 dark:border-slate-700 text-center space-y-0.5">
               <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold uppercase">ESTIMATED WAIT TIME</span>
               <div className="text-2xl font-bold text-slate-900 dark:text-white font-mono">
-                {myAppointment.isPriority ? 'Next Up (0-5 mins)' : myPosition > 0 ? formatMinutesToReadable(estimatedWaitMins) : '0 mins'}
+                {myAppointment.status === 'PENDING_APPROVAL'
+                  ? 'Pending Review'
+                  : myAppointment.isPriority ? 'Next Up (0-5 mins)' : myPosition > 0 ? formatMinutesToReadable(estimatedWaitMins) : '0 mins'}
               </div>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                {myAppointment.isPriority ? 'Top priority queue placement' : 'Based on live consultation pace'}
+                {myAppointment.status === 'PENDING_APPROVAL'
+                  ? 'Queue position confirmed after validation'
+                  : myAppointment.isPriority ? 'Top priority queue placement' : 'Based on live consultation pace'}
               </p>
             </div>
 
@@ -348,7 +399,11 @@ export default function LiveTokenTracker({ setActiveTab }) {
             <div className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1.5">
               <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold uppercase block">LIVE ADVISORY</span>
               <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
-                {myAppointment.status === 'CALLED' ? (
+                {myAppointment.status === 'PENDING_APPROVAL' ? (
+                  <span className="text-amber-800 dark:text-amber-300 font-medium">
+                    ⚠️ Emergency justification under review by Coordinator. You will be notified here once approved.
+                  </span>
+                ) : myAppointment.status === 'CALLED' ? (
                   <span className="text-amber-700 dark:text-amber-300 font-semibold">Please proceed to 7th Floor Staff Room immediately!</span>
                 ) : myAppointment.status === 'IN_PROGRESS' ? (
                   <span className="text-blue-700 dark:text-blue-300 font-semibold">You are currently meeting the Internship Coordinator.</span>

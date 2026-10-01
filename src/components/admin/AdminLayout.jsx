@@ -3,6 +3,7 @@ import {
   LayoutDashboard, 
   ListOrdered, 
   CalendarDays, 
+  Calendar,
   Clock, 
   Users, 
   BarChart3, 
@@ -22,18 +23,20 @@ import { useApp } from '../../context/AppContext';
 import CreateTicketModal from './CreateTicketModal';
 
 export default function AdminLayout({ activeAdminPage, setActiveAdminPage, children }) {
-  const { logoutAdmin, availability, updateAvailabilityStatus, toastNotification, announcements, documents = [], tickets = [], theme, toggleTheme } = useApp();
+  const { logoutAdmin, availability, updateAvailabilityStatus, toastNotification, announcements, appointments = [], documents = [], tickets = [], theme, toggleTheme } = useApp();
 
   const [isTicketModalOpen, setIsTicketModalOpen] = React.useState(false);
 
   const pendingDocsCount = documents.filter(d => d.status === 'Under Review' || d.status === 'Uploaded' || d.status === 'Replacement Required').length;
   const openTicketsCount = tickets.filter(t => t.status === 'OPEN' || t.status === 'IN_REVIEW' || t.status === 'IN_PROGRESS').length;
+  const pendingApprovalsCount = appointments.filter(a => a.status === 'PENDING_APPROVAL').length;
 
   const navItems = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
     { id: 'live-queue', label: 'Live Queue', icon: ListOrdered, badge: 'Live' },
+    { id: 'calendar', label: 'Calendar View', icon: Calendar, badge: pendingApprovalsCount > 0 ? `${pendingApprovalsCount} Action` : null },
+    { id: 'appointments', label: 'Appointments Log', icon: CalendarDays },
     { id: 'announcements', label: 'Updates & Notices', icon: Megaphone, badge: announcements?.filter(a => a.isActive !== false).length ? `${announcements.filter(a => a.isActive !== false).length}` : null },
-    { id: 'appointments', label: 'Appointments', icon: CalendarDays },
     { id: 'availability', label: 'Availability', icon: Clock },
     { id: 'students', label: 'Students Directory', icon: Users },
     { id: 'documents', label: 'Document Vault', icon: FolderGit2, badge: pendingDocsCount > 0 ? `${pendingDocsCount} Review` : null },

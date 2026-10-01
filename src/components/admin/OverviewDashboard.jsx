@@ -13,7 +13,10 @@ import {
   ArrowRight,
   TrendingUp,
   Sparkles,
-  FolderGit2
+  FolderGit2,
+  AlertTriangle,
+  Check,
+  X
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import TokenBadge from '../common/TokenBadge';
@@ -34,10 +37,13 @@ export default function OverviewDashboard({ setActiveAdminPage }) {
     endMeeting, 
     markNoShow,
     updateAvailabilityStatus,
-    resetAllTokens
+    resetAllTokens,
+    approveAppointment,
+    denyAppointment
   } = useApp();
 
   const metrics = calculateQueueMetrics(appointments);
+  const pendingApprovals = appointments.filter(a => a.status === 'PENDING_APPROVAL');
 
   // Documentation vault metrics
   const pendingDocsReview = documents.filter(d => d.status === 'Under Review' || d.status === 'Uploaded' || d.status === 'Replacement Required').length;
@@ -140,6 +146,84 @@ export default function OverviewDashboard({ setActiveAdminPage }) {
           </button>
         </div>
       </div>
+
+      {/* PENDING EMERGENCY APPROVALS CALLOUT */}
+      {pendingApprovals.length > 0 && (
+        <div className="bg-gradient-to-r from-amber-500/10 via-rose-500/5 to-transparent dark:from-amber-950/40 dark:via-rose-950/20 dark:to-transparent border-2 border-amber-300 dark:border-amber-700/80 p-5 rounded-2xl shadow-sm space-y-3 animate-fadeIn">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-amber-500 text-white shadow-xs shrink-0">
+                <AlertTriangle className="w-5 h-5 animate-pulse" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                    Emergency Consultation Requests Awaiting Your Approval ({pendingApprovals.length})
+                  </h3>
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-rose-600 text-white uppercase tracking-wider animate-pulse">
+                    Action Required
+                  </span>
+                </div>
+                <p className="text-xs text-amber-800 dark:text-amber-300 mt-0.5">
+                  Pre-3:00 PM slots require coordinator justification validation before joining the active queue.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setActiveAdminPage('appointments')}
+              className="px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold transition-all shadow-2xs self-start sm:self-auto cursor-pointer"
+            >
+              Open Appointments Table →
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+            {pendingApprovals.map((apt) => (
+              <div
+                key={apt.id}
+                className="p-3.5 bg-white dark:bg-slate-900 rounded-xl border border-amber-200/90 dark:border-amber-800/70 flex flex-col justify-between gap-2.5 shadow-2xs"
+              >
+                <div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-bold text-slate-900 dark:text-white text-xs">
+                      {apt.studentName}
+                    </span>
+                    <span className="font-mono font-bold text-blue-700 dark:text-blue-400 text-xs">
+                      {apt.appointmentDate} @ {apt.appointmentTime}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 font-mono">
+                    Reg: {apt.registerNumber || 'N/A'} • {apt.department}
+                  </p>
+                  {apt.emergencyJustification && (
+                    <div className="mt-2 p-2 rounded-lg bg-rose-50/70 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 text-[11px] text-rose-900 dark:text-rose-200 italic">
+                      <strong className="not-italic text-rose-700 dark:text-rose-400 block font-bold text-[10px] uppercase">Reason:</strong>
+                      "{apt.emergencyJustification}"
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                  <button
+                    onClick={() => approveAppointment(apt.id)}
+                    className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1 shadow-2xs transition-colors cursor-pointer"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Approve</span>
+                  </button>
+                  <button
+                    onClick={() => denyAppointment(apt.id)}
+                    className="px-3 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-600 hover:text-white text-rose-700 dark:text-rose-300 font-bold text-xs border border-rose-200 dark:border-rose-800 transition-colors cursor-pointer flex items-center gap-1"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    <span>Deny</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* TOP 4 KPI CARDS */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">

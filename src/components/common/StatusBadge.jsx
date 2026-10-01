@@ -9,6 +9,8 @@ export default function StatusBadge({ status, size = 'normal' }) {
         return { label: 'ON BREAK', bg: 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800', dot: 'bg-amber-500' };
       case 'UNAVAILABLE':
         return { label: 'UNAVAILABLE', bg: 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800', dot: 'bg-rose-500' };
+      case 'PENDING_APPROVAL':
+        return { label: 'PENDING APPROVAL', bg: 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800', dot: 'bg-amber-500' };
       case 'BOOKED':
       case 'WAITING':
         return { label: 'WAITING', bg: 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800', dot: 'bg-amber-500' };

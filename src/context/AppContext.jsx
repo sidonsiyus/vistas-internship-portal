@@ -484,6 +484,7 @@ export function AppProvider({ children }) {
             let postponedReason = cached.postponedReason;
             let rescheduledFromDate = cached.rescheduledFromDate;
             let rescheduledReason = cached.rescheduledReason;
+            let emergencyJustification = cached.emergencyJustification;
 
             if (a.notes) {
               const postMatch = a.notes.match(/\[Postponed from ([\d-]+)(?: to [\d-]+)?(?: at [^:]+)?: (.*?)\]/i);
@@ -496,7 +497,18 @@ export function AppProvider({ children }) {
                 if (!rescheduledFromDate) rescheduledFromDate = reschedMatch[1];
                 if (!rescheduledReason) rescheduledReason = reschedMatch[3];
               }
+              if (!emergencyJustification) {
+                const emMatch = a.notes.match(/\[Emergency Justification:\s*([^\]]+)\]/i);
+                if (emMatch) emergencyJustification = emMatch[1].trim();
+              }
             }
+
+            if (!emergencyJustification && a.description) {
+              const emMatch = a.description.match(/\[Emergency Justification:\s*([^\]]+)\]/i);
+              if (emMatch) emergencyJustification = emMatch[1].trim();
+            }
+
+            const isEmergencyTime = (a.appointment_time && timeToMinutes(a.appointment_time) < 900) || !!emergencyJustification;
 
             return {
               id: a.id,
@@ -521,6 +533,8 @@ export function AppProvider({ children }) {
               isWalkIn: a.is_walk_in,
               durationMinutes: a.duration_minutes,
               notes: a.notes,
+              isEmergency: isEmergencyTime,
+              emergencyJustification: emergencyJustification || '',
               isPriority: !!cached.isPriority || (a.notes && (a.notes.includes('[Postponed') || a.notes.includes('(Priority #1)'))),
               priorityRank: cached.priorityRank || (cached.isPriority ? 1 : 999),
               postponedFromDate,
@@ -838,6 +852,10 @@ export function AppProvider({ children }) {
     const queuePosition = activeWaiting.length + 1;
     const nowIso = new Date().toISOString();
 
+    const isPre3Pm = bookingData.timeSlot ? timeToMinutes(bookingData.timeSlot) < 900 : false;
+    const initialStatus = isPre3Pm ? 'PENDING_APPROVAL' : 'WAITING';
+    const emergencyJustification = (bookingData.emergencyJustification || '').trim();
+
     const isBulk = !!bookingData.isBulk;
     const allStudents = isBulk && Array.isArray(bookingData.students) && bookingData.students.length > 0
       ? bookingData.students
@@ -855,6 +873,10 @@ export function AppProvider({ children }) {
       ? allStudents.map(s => s.name).join(', ')
       : bookingData.name;
 
+    const notesInit = isPre3Pm
+      ? `[Awaiting Coordinator Approval: Emergency slot before 3:00 PM${emergencyJustification ? ` - Justification: ${emergencyJustification}` : ''}]`
+      : null;
+
     const newApt = {
       id: `apt-${Date.now()}`,
       tokenNumber,
@@ -871,10 +893,13 @@ export function AppProvider({ children }) {
       isBulk,
       studentCount,
       students: allStudents,
-      status: 'WAITING',
-      queuePosition,
+      status: initialStatus,
+      queuePosition: isPre3Pm ? 0 : queuePosition,
       appointmentDate: bookingData.date,
       appointmentTime: bookingData.timeSlot,
+      isEmergency: isPre3Pm,
+      emergencyJustification,
+      notes: notesInit,
       isWalkIn: false,
       createdAt: nowIso
     };
@@ -900,6 +925,10 @@ export function AppProvider({ children }) {
           descToSave = `[Group Consultation: ${studentCount} Students${bookingData.companyName ? ` • ${bookingData.companyName}` : ''}]\nMembers: ${membersList}\n\n${descToSave}`.trim();
         }
 
+        if (isPre3Pm && emergencyJustification) {
+          descToSave = `[Emergency Justification: ${emergencyJustification}]\n\n${descToSave}`.trim();
+        }
+
         const { data, error } = await supabase.from('appointments').insert([{
           token_number: tokenNumber,
           student_name: studentDisplayName,
@@ -910,10 +939,11 @@ export function AppProvider({ children }) {
           email: bookingData.email,
           category: bookingData.category,
           description: descToSave,
-          status: 'WAITING',
-          queue_position: queuePosition,
+          status: initialStatus,
+          queue_position: isPre3Pm ? 0 : queuePosition,
           appointment_date: bookingData.date,
           appointment_time: bookingData.timeSlot,
+          notes: notesInit,
           is_walk_in: false
         }]).select('*').single();
 
@@ -930,12 +960,17 @@ export function AppProvider({ children }) {
     }
 
     setTrackedToken(tokenNumber);
-    showToast(
-      isBulk && studentCount > 1
-        ? `Confirmed! Group Token is ${tokenNumber} (${studentCount} students)`
-        : `Confirmed! Your Token is ${tokenNumber}`,
-      'success'
-    );
+
+    if (isPre3Pm) {
+      showToast(`Emergency slot request submitted (Token ${tokenNumber})! Awaiting coordinator approval.`, 'warning');
+    } else {
+      showToast(
+        isBulk && studentCount > 1
+          ? `Confirmed! Group Token is ${tokenNumber} (${studentCount} students)`
+          : `Confirmed! Your Token is ${tokenNumber}`,
+        'success'
+      );
+    }
     return newApt;
   };
 
@@ -1291,6 +1326,110 @@ export function AppProvider({ children }) {
     }
 
     showToast(`Appointment slot updated for ${apt.studentName} to ${targetDate} at ${targetTime}`, 'success');
+    return true;
+  };
+
+  const approveAppointment = async (appointmentId) => {
+    const apt = appointments.find(a => (
+      a.id === appointmentId || 
+      a.tokenNumber === appointmentId ||
+      String(a.id) === String(appointmentId) ||
+      String(a.tokenNumber) === String(appointmentId)
+    ));
+    if (!apt) return false;
+
+    const activeWaiting = appointments.filter(a => a.status === 'WAITING' || a.status === 'CALLED');
+    const queuePosition = activeWaiting.length + 1;
+    const approvalNote = `[Approved by Coordinator: Emergency slot validated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}]`;
+
+    const updatedApt = {
+      ...apt,
+      status: 'WAITING',
+      queuePosition,
+      notes: (apt.notes ? apt.notes + '\n' : '') + approvalNote
+    };
+
+    const remaining = appointments.filter(a => a.id !== apt.id && a.tokenNumber !== apt.tokenNumber);
+    const updatedList = sortAppointmentsByPriorityAndDate([...remaining, updatedApt]);
+
+    setAppointments(updatedList);
+    try {
+      localStorage.setItem('vistas_appointments', JSON.stringify(updatedList));
+    } catch (e) {}
+
+    broadcastChange('SYNC', { appointments: updatedList });
+
+    if (isSupabaseConfigured()) {
+      try {
+        let q = supabase.from('appointments').update({
+          status: 'WAITING',
+          queue_position: queuePosition,
+          notes: updatedApt.notes
+        });
+        if (apt.tokenNumber && apt.id) {
+          q = q.or(`id.eq.${apt.id},token_number.eq.${apt.tokenNumber}`);
+        } else if (apt.id) {
+          q = q.eq('id', apt.id);
+        } else {
+          q = q.eq('token_number', apt.tokenNumber);
+        }
+        await q;
+      } catch (err) {
+        console.warn('Supabase approve appointment error:', err);
+      }
+    }
+
+    showToast(`✓ Approved emergency slot for ${apt.studentName} (Token ${apt.tokenNumber})`, 'success');
+    return true;
+  };
+
+  const denyAppointment = async (appointmentId, reason = 'Emergency justification not approved') => {
+    const apt = appointments.find(a => (
+      a.id === appointmentId || 
+      a.tokenNumber === appointmentId ||
+      String(a.id) === String(appointmentId) ||
+      String(a.tokenNumber) === String(appointmentId)
+    ));
+    if (!apt) return false;
+
+    const denialNote = `[Denied by Coordinator: ${reason}]`;
+    const updatedApt = {
+      ...apt,
+      status: 'CANCELLED',
+      denialReason: reason,
+      notes: (apt.notes ? apt.notes + '\n' : '') + denialNote
+    };
+
+    const remaining = appointments.filter(a => a.id !== apt.id && a.tokenNumber !== apt.tokenNumber);
+    const updatedList = sortAppointmentsByPriorityAndDate([...remaining, updatedApt]);
+
+    setAppointments(updatedList);
+    try {
+      localStorage.setItem('vistas_appointments', JSON.stringify(updatedList));
+    } catch (e) {}
+
+    broadcastChange('SYNC', { appointments: updatedList });
+
+    if (isSupabaseConfigured()) {
+      try {
+        let q = supabase.from('appointments').update({
+          status: 'CANCELLED',
+          notes: updatedApt.notes
+        });
+        if (apt.tokenNumber && apt.id) {
+          q = q.or(`id.eq.${apt.id},token_number.eq.${apt.tokenNumber}`);
+        } else if (apt.id) {
+          q = q.eq('id', apt.id);
+        } else {
+          q = q.eq('token_number', apt.tokenNumber);
+        }
+        await q;
+      } catch (err) {
+        console.warn('Supabase deny appointment error:', err);
+      }
+    }
+
+    showToast(`✕ Denied emergency appointment request for ${apt.studentName}`, 'warning');
     return true;
   };
 
@@ -1997,6 +2136,8 @@ export function AppProvider({ children }) {
         cancelAppointment,
         postponeAppointment,
         rescheduleAppointment,
+        approveAppointment,
+        denyAppointment,
         updateAvailabilityStatus,
         updateAvailabilityConfig,
         createAnnouncement,
