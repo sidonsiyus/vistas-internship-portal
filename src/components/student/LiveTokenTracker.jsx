@@ -86,63 +86,67 @@ export default function LiveTokenTracker({ setActiveTab }) {
         </form>
       </div>
 
-      {/* POSTPONED APPOINTMENT PRIORITY NOTICE BANNER */}
-      {myAppointment && (myAppointment.postponedFromDate || myAppointment.isPriority) && (
-        <div className="bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-transparent p-5 rounded-2xl border-2 border-amber-400/60 dark:border-amber-500/40 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      {/* POSTPONED / RESCHEDULED APPOINTMENT BANNER */}
+      {myAppointment && (myAppointment.postponedFromDate || myAppointment.rescheduledFromDate || myAppointment.isPriority || (myAppointment.notes && (myAppointment.notes.includes('[Postponed') || myAppointment.notes.includes('[Rescheduled')))) && (
+        <div className={`p-5 rounded-2xl border-2 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-all ${
+          myAppointment.isPriority
+            ? 'bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-transparent border-amber-400/70 dark:border-amber-500/50'
+            : 'bg-blue-50/80 dark:bg-blue-950/40 border-blue-300 dark:border-blue-800'
+        }`}>
           <div className="flex items-start gap-3.5">
-            <div className="p-2.5 bg-amber-500 text-white rounded-xl shadow-sm shrink-0">
-              <Sparkles className="w-6 h-6 animate-spin-slow" />
+            <div className={`p-2.5 rounded-xl shadow-sm shrink-0 ${
+              myAppointment.isPriority ? 'bg-amber-500 text-white' : 'bg-blue-600 text-white'
+            }`}>
+              {myAppointment.isPriority ? (
+                <Sparkles className="w-6 h-6 animate-spin-slow" />
+              ) : (
+                <Calendar className="w-6 h-6" />
+              )}
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-500 text-white uppercase tracking-wider">
-                  #1 Priority Placement Guaranteed
+                <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
+                  myAppointment.isPriority 
+                    ? 'bg-amber-500 text-white' 
+                    : 'bg-blue-600 text-white'
+                }`}>
+                  {myAppointment.isPriority ? '🗓️ APPOINTMENT POSTPONED — #1 PRIORITY' : '🗓️ APPOINTMENT RESCHEDULED'}
                 </span>
-                {myAppointment.postponedFromDate && (
-                  <span className="text-xs font-semibold text-amber-900 dark:text-amber-200">
-                    Postponed from {myAppointment.postponedFromDate}
+                {(myAppointment.postponedFromDate || myAppointment.rescheduledFromDate) && (
+                  <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                    Originally booked: {myAppointment.postponedFromDate || myAppointment.rescheduledFromDate}
+                    {(myAppointment.postponedFromTime || myAppointment.rescheduledFromTime) && ` at ${myAppointment.postponedFromTime || myAppointment.rescheduledFromTime}`}
                   </span>
                 )}
               </div>
-              <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
-                You are First in Line for Consultation on {myAppointment.appointmentDate} at {myAppointment.appointmentTime}
-              </h3>
-              <p className="text-xs text-slate-600 dark:text-slate-300">
-                {myAppointment.postponeReason 
-                  ? `Coordinator Note: "${myAppointment.postponeReason}". Because your slot was rescheduled by the coordinator, your token retains top queue priority.`
-                  : 'Your appointment was rescheduled to this active day by the coordinator and is placed at the front of the queue.'}
-              </p>
-            </div>
-          </div>
-          <div className="shrink-0 bg-white/80 dark:bg-slate-900/80 px-3.5 py-2 rounded-xl border border-amber-300 dark:border-amber-700/60 text-right">
-            <span className="text-[10px] uppercase font-bold text-amber-700 dark:text-amber-400 block">Queue Rank</span>
-            <span className="text-xl font-extrabold text-amber-600 dark:text-amber-400 font-mono">Priority #1</span>
-          </div>
-        </div>
-      )}
 
-      {/* RESCHEDULED APPOINTMENT (NON-PRIORITY) BANNER */}
-      {myAppointment && myAppointment.rescheduledFromDate && !myAppointment.isPriority && (
-        <div className="bg-blue-50/80 dark:bg-blue-950/40 p-4.5 rounded-2xl border border-blue-200 dark:border-blue-900 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <div className="p-2.5 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-xl shrink-0">
-              <Calendar className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400 block">
-                Appointment Schedule Updated
-              </span>
-              <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
-                New Consultation Time: {myAppointment.appointmentDate} at {myAppointment.appointmentTime}
+              <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+                New Consultation Schedule: {myAppointment.appointmentDate} at {myAppointment.appointmentTime}
               </h3>
-              <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
-                Previously booked for {myAppointment.rescheduledFromDate} at {myAppointment.rescheduledFromTime}.
-                {myAppointment.rescheduledReason && ` Remark: "${myAppointment.rescheduledReason}"`}
-              </p>
+
+              <div className="p-2.5 bg-white/70 dark:bg-slate-900/60 rounded-xl border border-slate-200/80 dark:border-slate-800 space-y-1 text-xs text-slate-700 dark:text-slate-300">
+                <div className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-white">
+                  <span>Reason for Change:</span>
+                  <span className="font-normal text-slate-600 dark:text-slate-300">
+                    {myAppointment.postponedReason || myAppointment.rescheduledReason || myAppointment.postponeReason || 'Coordinator updated schedule.'}
+                  </span>
+                </div>
+                {myAppointment.isPriority && (
+                  <p className="text-[11px] text-amber-800 dark:text-amber-300 font-medium">
+                    ⭐ Because your appointment was moved by the coordinator, your token is placed at the front of the queue (#1 Priority) on {myAppointment.appointmentDate}.
+                  </p>
+                )}
+              </div>
             </div>
           </div>
-          <div className="shrink-0 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-blue-200 dark:border-blue-800 text-xs font-mono font-bold text-blue-600 dark:text-blue-400">
-            {myAppointment.appointmentTime}
+
+          <div className="shrink-0 bg-white/90 dark:bg-slate-900/90 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-right">
+            <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block">Queue Status</span>
+            <span className={`text-lg font-extrabold font-mono ${
+              myAppointment.isPriority ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400'
+            }`}>
+              {myAppointment.isPriority ? 'Priority #1' : myAppointment.appointmentTime}
+            </span>
           </div>
         </div>
       )}
@@ -353,6 +357,16 @@ export default function LiveTokenTracker({ setActiveTab }) {
                 ) : myAppointment.isPriority ? (
                   <span className="text-amber-800 dark:text-amber-300 font-medium">
                     ⭐ Postponed slot: You will be called <strong>first</strong> for consultation on {myAppointment.appointmentDate} at {myAppointment.appointmentTime}.
+                    {(myAppointment.postponedReason || myAppointment.rescheduledReason) && (
+                      <span className="block mt-1 text-[11px] opacity-90">Reason: "{myAppointment.postponedReason || myAppointment.rescheduledReason}"</span>
+                    )}
+                  </span>
+                ) : (myAppointment.rescheduledFromDate || (myAppointment.notes && myAppointment.notes.includes('[Rescheduled'))) ? (
+                  <span className="text-blue-800 dark:text-blue-300 font-medium">
+                    🗓️ Slot updated to {myAppointment.appointmentDate} at {myAppointment.appointmentTime}.
+                    {(myAppointment.rescheduledReason || myAppointment.postponedReason) && (
+                      <span className="block mt-1 text-[11px] opacity-90">Reason: "{myAppointment.rescheduledReason || myAppointment.postponedReason}"</span>
+                    )}
                   </span>
                 ) : (
                   <span>Please wait in the lounge. There are {studentsAhead} students ahead of you.</span>

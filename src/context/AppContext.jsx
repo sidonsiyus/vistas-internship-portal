@@ -479,6 +479,25 @@ export function AppProvider({ children }) {
               displayName = students.map(s => s.name).join(', ');
             }
 
+            // Extract postponed/rescheduled details from notes if cached is missing or cleared
+            let postponedFromDate = cached.postponedFromDate;
+            let postponedReason = cached.postponedReason;
+            let rescheduledFromDate = cached.rescheduledFromDate;
+            let rescheduledReason = cached.rescheduledReason;
+
+            if (a.notes) {
+              const postMatch = a.notes.match(/\[Postponed from ([\d-]+)(?: to [\d-]+)?(?: at [^:]+)?: (.*?)\]/i);
+              if (postMatch) {
+                if (!postponedFromDate) postponedFromDate = postMatch[1];
+                if (!postponedReason) postponedReason = postMatch[2];
+              }
+              const reschedMatch = a.notes.match(/\[Rescheduled from ([\d-]+) ([\d:APMapm ]+)(?: to [^:]+)?: (.*?)\]/i);
+              if (reschedMatch) {
+                if (!rescheduledFromDate) rescheduledFromDate = reschedMatch[1];
+                if (!rescheduledReason) rescheduledReason = reschedMatch[3];
+              }
+            }
+
             return {
               id: a.id,
               tokenNumber: a.token_number,
@@ -502,15 +521,15 @@ export function AppProvider({ children }) {
               isWalkIn: a.is_walk_in,
               durationMinutes: a.duration_minutes,
               notes: a.notes,
-              isPriority: !!cached.isPriority || (a.notes && a.notes.includes('[Postponed')) || (a.notes && a.notes.includes('(Priority #1)')),
+              isPriority: !!cached.isPriority || (a.notes && (a.notes.includes('[Postponed') || a.notes.includes('(Priority #1)'))),
               priorityRank: cached.priorityRank || (cached.isPriority ? 1 : 999),
-              postponedFromDate: cached.postponedFromDate,
+              postponedFromDate,
               postponedFromTime: cached.postponedFromTime,
-              postponedReason: cached.postponedReason,
+              postponedReason,
               postponedAt: cached.postponedAt,
-              rescheduledFromDate: cached.rescheduledFromDate,
+              rescheduledFromDate,
               rescheduledFromTime: cached.rescheduledFromTime,
-              rescheduledReason: cached.rescheduledReason,
+              rescheduledReason,
               rescheduledAt: cached.rescheduledAt,
               startedAt: a.started_at,
               completedAt: a.completed_at,
