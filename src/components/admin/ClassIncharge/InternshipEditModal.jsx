@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import Modal from '../../common/Modal';
 import { useApp } from '../../../context/AppContext';
+import { formatAttendance } from '../../../utils/internshipExcelSync';
 
 export default function InternshipEditModal({ isOpen, onClose, record }) {
   const { updateInternshipRecord, uploadInternshipDocument, deleteInternshipDocument, showToast } = useApp();
@@ -67,7 +68,11 @@ export default function InternshipEditModal({ isOpen, onClose, record }) {
 
   const handleSaveDetails = async (e) => {
     e.preventDefault();
-    await updateInternshipRecord(record.id, formData);
+    const cleanedAttendance = formatAttendance(formData.attendance);
+    await updateInternshipRecord(record.id, {
+      ...formData,
+      attendance: cleanedAttendance || formData.attendance
+    });
     onClose();
   };
 
@@ -244,7 +249,7 @@ export default function InternshipEditModal({ isOpen, onClose, record }) {
                   type="text"
                   value={formData.attendance}
                   onChange={(e) => handleInputChange('attendance', e.target.value)}
-                  placeholder="e.g. No leaves taken"
+                  placeholder="e.g. 85%, No leaves taken, 30 days"
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                 />
               </div>

@@ -17,13 +17,15 @@ import {
   Settings2,
   ChevronDown,
   Layers,
-  FileCheck
+  FileCheck,
+  UserPlus
 } from 'lucide-react';
 import { useApp } from '../../../context/AppContext';
 import ClassSelectionModal from './ClassSelectionModal';
 import InternshipEditModal from './InternshipEditModal';
 import GoogleSheetConfigModal from './GoogleSheetConfigModal';
-import { exportInternshipWorkbook } from '../../../utils/internshipExcelSync';
+import AddStudentToClassModal from './AddStudentToClassModal';
+import { exportInternshipWorkbook, formatAttendance } from '../../../utils/internshipExcelSync';
 
 export default function ClassInchargeDashboard() {
   const { 
@@ -39,6 +41,7 @@ export default function ClassInchargeDashboard() {
   const [editingRecord, setEditingRecord] = useState(null);
   const [isGSheetModalOpen, setIsGSheetModalOpen] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false);
 
   // Filters & Search
   const [searchTerm, setSearchTerm] = useState('');
@@ -128,6 +131,20 @@ export default function ClassInchargeDashboard() {
 
           {/* Action Buttons */}
           <div className="flex flex-wrap items-center gap-2">
+            
+            {/* Add Student Button */}
+            {selectedClassIncharge && (
+              <button
+                type="button"
+                onClick={() => setIsAddStudentModalOpen(true)}
+                className="px-3.5 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                title="Add student missing from this class section"
+              >
+                <UserPlus className="w-3.5 h-3.5" />
+                <span>+ Add Student</span>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={() => setIsClassModalOpen(true)}
@@ -354,7 +371,7 @@ export default function ClassInchargeDashboard() {
 
                         {/* Attendance */}
                         <td className="py-3 px-4 text-slate-600 dark:text-slate-400">
-                          {r.attendance || '—'}
+                          {formatAttendance(r.attendance) || '—'}
                         </td>
 
                         {/* Status */}
@@ -408,7 +425,7 @@ export default function ClassInchargeDashboard() {
                           <button
                             type="button"
                             onClick={() => setEditingRecord(r)}
-                            className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-blue-50 dark:bg-slate-800 dark:hover:bg-blue-950/60 text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 border border-slate-200 dark:border-slate-700 hover:border-blue-200 dark:hover:border-blue-800 transition-all flex items-center gap-1 ml-auto shadow-2xs"
+                            className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-blue-50 dark:bg-slate-800 dark:hover:bg-blue-950/60 text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 border border-slate-200 dark:border-slate-700 hover:border-blue-200 dark:hover:border-blue-800 transition-all flex items-center gap-1 ml-auto shadow-2xs cursor-pointer"
                           >
                             <Edit3 className="w-3.5 h-3.5" />
                             <span>Edit / Docs</span>
@@ -455,6 +472,13 @@ export default function ClassInchargeDashboard() {
           showToast(`Switched to class ${cls}`, 'info');
         }}
         records={internshipRecords}
+      />
+
+      {/* Add Student to Class Modal */}
+      <AddStudentToClassModal
+        isOpen={isAddStudentModalOpen}
+        onClose={() => setIsAddStudentModalOpen(false)}
+        targetClass={selectedClassIncharge}
       />
 
       {/* Internship Record Edit & Document Upload Modal */}

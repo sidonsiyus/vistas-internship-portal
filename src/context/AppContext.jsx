@@ -2260,6 +2260,60 @@ export function AppProvider({ children }) {
     showToast('Document removed', 'info');
   };
 
+  const addStudentToClass = (student, targetClass) => {
+    if (!student || !targetClass) return;
+    const cleanReg = String(student.registerNumber || '').trim();
+
+    let recordFound = false;
+    let nextList = internshipRecords.map(rec => {
+      if (String(rec.regNo).trim() === cleanReg) {
+        recordFound = true;
+        return {
+          ...rec,
+          className: targetClass,
+          department: student.department || rec.department,
+          year: student.year || rec.year,
+          section: student.section || rec.section,
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return rec;
+    });
+
+    if (!recordFound) {
+      const newRec = {
+        id: `int-${cleanReg}`,
+        regNo: cleanReg,
+        studentName: student.name || 'Student',
+        department: student.department || '',
+        year: student.year || '',
+        section: student.section || '',
+        className: targetClass,
+        email: student.email || `${cleanReg}@velshitech.edu.in`,
+        phone: student.phone || '',
+        companyName: '',
+        location: '',
+        startDate: '',
+        endDate: '',
+        duration: '',
+        attendance: '',
+        status: 'Not Started',
+        certificateCollected: 'No',
+        remarks: '',
+        documents: [],
+        updatedAt: new Date().toISOString()
+      };
+      nextList = [newRec, ...nextList];
+    }
+
+    setInternshipRecords(nextList);
+    try {
+      localStorage.setItem('vistas_internship_records', JSON.stringify(nextList));
+    } catch (e) {}
+
+    showToast(`Added ${student.name} to class ${targetClass}`, 'success');
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -2277,6 +2331,7 @@ export function AppProvider({ children }) {
         updateInternshipRecord,
         uploadInternshipDocument,
         deleteInternshipDocument,
+        addStudentToClass,
         theme,
         toggleTheme,
         unreadCount,

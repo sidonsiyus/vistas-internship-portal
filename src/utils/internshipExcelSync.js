@@ -41,6 +41,25 @@ export const EXCEL_HEADERS = [
 ];
 
 /**
+ * Format attendance cleanly:
+ * Converts decimals like 0.8, 0.85 to 80%, 85%
+ */
+export function formatAttendance(val) {
+  if (val === null || val === undefined) return '';
+  const str = String(val).trim();
+  if (!str || str === '-') return str;
+
+  const num = parseFloat(str);
+  if (!isNaN(num) && /^-?\d+(\.\d+)?$/.test(str)) {
+    if (num > 0 && num <= 1.0) {
+      const pct = num * 100;
+      return Number.isInteger(pct) ? `${pct}%` : `${pct.toFixed(1)}%`;
+    }
+  }
+  return str;
+}
+
+/**
  * Convert internship records to workbook sheet rows
  */
 function recordToRow(r) {
@@ -52,7 +71,7 @@ function recordToRow(r) {
     r.startDate || '',
     r.endDate || '',
     r.duration || '',
-    r.attendance || '',
+    formatAttendance(r.attendance) || '',
     r.status || 'Not Started',
     r.certificateCollected || 'No',
     r.remarks || ''
