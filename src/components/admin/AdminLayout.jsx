@@ -23,7 +23,19 @@ import { useApp } from '../../context/AppContext';
 import CreateTicketModal from './CreateTicketModal';
 
 export default function AdminLayout({ activeAdminPage, setActiveAdminPage, children }) {
-  const { logoutAdmin, availability, updateAvailabilityStatus, toastNotification, announcements, appointments = [], documents = [], tickets = [], theme, toggleTheme } = useApp();
+  const { 
+    logoutAdmin, 
+    availability, 
+    updateAvailabilityStatus, 
+    toastNotification, 
+    announcements, 
+    appointments = [], 
+    documents = [], 
+    tickets = [], 
+    theme, 
+    toggleTheme,
+    selectedClassIncharge
+  } = useApp();
 
   const [isTicketModalOpen, setIsTicketModalOpen] = React.useState(false);
 
@@ -36,6 +48,7 @@ export default function AdminLayout({ activeAdminPage, setActiveAdminPage, child
     { id: 'live-queue', label: 'Live Queue', icon: ListOrdered, badge: 'Live' },
     { id: 'calendar', label: 'Calendar View', icon: Calendar, badge: pendingApprovalsCount > 0 ? `${pendingApprovalsCount} Action` : null },
     { id: 'appointments', label: 'Appointments Log', icon: CalendarDays },
+    { id: 'class-incharge', label: 'Class Incharge', icon: GraduationCap, badge: selectedClassIncharge || null },
     { id: 'announcements', label: 'Updates & Notices', icon: Megaphone, badge: announcements?.filter(a => a.isActive !== false).length ? `${announcements.filter(a => a.isActive !== false).length}` : null },
     { id: 'availability', label: 'Availability', icon: Clock },
     { id: 'students', label: 'Students Directory', icon: Users },

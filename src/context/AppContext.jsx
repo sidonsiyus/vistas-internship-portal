@@ -4,6 +4,8 @@ import { INITIAL_APPOINTMENTS, INITIAL_AVAILABILITY, MOCK_STUDENTS, INITIAL_ANNO
 import { generateNextTokenNumber } from '../utils/tokenGenerator';
 import { sendTicketEmailAlert } from '../utils/emailNotifier';
 import { timeToMinutes, formatTimeDisplay } from '../utils/slotGenerator';
+import internshipRecordsDatabase from '../data/internshipRecordsDatabase.json';
+import { syncRecordToGoogleSheetWebhook } from '../utils/internshipExcelSync';
 
 const AppContext = createContext();
 const CHANNEL_NAME = 'VISTAS_REALTIME_QUEUE';
@@ -207,6 +209,55 @@ export function AppProvider({ children }) {
 
   const [toastNotification, setToastNotification] = useState(null);
   const [usingSupabase, setUsingSupabase] = useState(false);
+
+  // Class Incharge & Student Internship Records State
+  const [internshipRecords, setInternshipRecords] = useState(() => {
+    try {
+      const saved = localStorage.getItem('vistas_internship_records');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return Array.isArray(internshipRecordsDatabase) ? internshipRecordsDatabase : [];
+  });
+
+  const [selectedClassIncharge, setSelectedClassInchargeState] = useState(() => {
+    try {
+      return localStorage.getItem('vistas_selected_class_incharge') || '';
+    } catch (e) {
+      return '';
+    }
+  });
+
+  const setSelectedClassIncharge = (className) => {
+    setSelectedClassInchargeState(className);
+    try {
+      localStorage.setItem('vistas_selected_class_incharge', className);
+    } catch (e) {}
+  };
+
+  const [googleSheetWebhookUrl, setGoogleSheetWebhookUrlState] = useState(() => {
+    try {
+      return localStorage.getItem('vistas_gsheet_webhook_url') || '';
+    } catch (e) {
+      return '';
+    }
+  });
+
+  const setGoogleSheetWebhookUrl = (url) => {
+    setGoogleSheetWebhookUrlState(url);
+    try {
+      localStorage.setItem('vistas_gsheet_webhook_url', url);
+    } catch (e) {}
+  };
+
+  // Sync internshipRecords changes to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('vistas_internship_records', JSON.stringify(internshipRecords));
+    } catch (e) {}
+  }, [internshipRecords]);
 
   const playAlertSound = () => {
     try {
@@ -2107,6 +2158,108 @@ export function AppProvider({ children }) {
     showToast(`Ticket ${ticketId} deleted`, 'info');
   };
 
+  // --- CLASS INCHARGE & INTERNSHIP RECORD ACTIONS ---
+
+  const updateInternshipRecord = async (recordId, updatedFields) => {
+    let updatedRecord = null;
+    const nextList = internshipRecords.map(rec => {
+      if (rec.id === recordId || rec.regNo === recordId) {
+        updatedRecord = {
+          ...rec,
+          ...updatedFields,
+          updatedAt: new Date().toISOString()
+        };
+        return updatedRecord;
+      }
+      return rec;
+    });
+
+    setInternshipRecords(nextList);
+    try {
+      localStorage.setItem('vistas_internship_records', JSON.stringify(nextList));
+    } catch (e) {}
+
+    // Non-blocking Google Sheets sync if webhook URL is configured
+    if (googleSheetWebhookUrl && updatedRecord) {
+      syncRecordToGoogleSheetWebhook(googleSheetWebhookUrl, updatedRecord).catch(err => {
+        console.warn('Google Sheet background sync notice:', err);
+      });
+    }
+
+    showToast(`Updated internship record for ${updatedRecord?.studentName || 'student'}`, 'success');
+    return updatedRecord;
+  };
+
+  const uploadInternshipDocument = async (recordId, { file, docType, title }) => {
+    let localPreviewUrl = '';
+    try {
+      localPreviewUrl = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = () => resolve('');
+        reader.readAsDataURL(file);
+      });
+    } catch (e) {}
+
+    const newDoc = {
+      id: `doc-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      title: title || file.name,
+      docType: docType || 'OTHER',
+      fileName: file.name,
+      fileSize: file.size,
+      mimeType: file.type || 'application/pdf',
+      fileUrl: localPreviewUrl,
+      uploadedAt: new Date().toISOString()
+    };
+
+    let updatedRecord = null;
+    const nextList = internshipRecords.map(rec => {
+      if (rec.id === recordId || rec.regNo === recordId) {
+        const docs = Array.isArray(rec.documents) ? [...rec.documents, newDoc] : [newDoc];
+        let certCollected = rec.certificateCollected;
+        if (docType === 'COMPLETION_CERTIFICATE' || docType === 'CERTIFICATE') {
+          certCollected = 'Yes';
+        }
+        updatedRecord = {
+          ...rec,
+          certificateCollected: certCollected,
+          documents: docs,
+          updatedAt: new Date().toISOString()
+        };
+        return updatedRecord;
+      }
+      return rec;
+    });
+
+    setInternshipRecords(nextList);
+    try {
+      localStorage.setItem('vistas_internship_records', JSON.stringify(nextList));
+    } catch (e) {}
+
+    showToast(`Uploaded ${newDoc.title} successfully`, 'success');
+    return newDoc;
+  };
+
+  const deleteInternshipDocument = (recordId, docId) => {
+    const nextList = internshipRecords.map(rec => {
+      if (rec.id === recordId || rec.regNo === recordId) {
+        return {
+          ...rec,
+          documents: (rec.documents || []).filter(d => d.id !== docId),
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return rec;
+    });
+
+    setInternshipRecords(nextList);
+    try {
+      localStorage.setItem('vistas_internship_records', JSON.stringify(nextList));
+    } catch (e) {}
+
+    showToast('Document removed', 'info');
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -2116,6 +2269,14 @@ export function AppProvider({ children }) {
         announcements,
         documents,
         tickets,
+        internshipRecords,
+        selectedClassIncharge,
+        setSelectedClassIncharge,
+        googleSheetWebhookUrl,
+        setGoogleSheetWebhookUrl,
+        updateInternshipRecord,
+        uploadInternshipDocument,
+        deleteInternshipDocument,
         theme,
         toggleTheme,
         unreadCount,

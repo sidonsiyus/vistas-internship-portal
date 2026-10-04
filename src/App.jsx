@@ -32,6 +32,7 @@ import AnnouncementsManager from './components/admin/AnnouncementsManager';
 import GlobalDocumentManagement from './components/admin/GlobalDocumentManagement';
 import AdminTicketDesk from './components/admin/AdminTicketDesk';
 import CalendarView from './components/admin/CalendarView';
+import ClassInchargeDashboard from './components/admin/ClassIncharge/ClassInchargeDashboard';
 
 function AppContent() {
   const { adminAuth, toastNotification } = useApp();
@@ -78,6 +79,7 @@ function AppContent() {
         {activeAdminPage === 'calendar' && <CalendarView />}
         {activeAdminPage === 'announcements' && <AnnouncementsManager />}
         {activeAdminPage === 'appointments' && <AppointmentsTable />}
+        {activeAdminPage === 'class-incharge' && <ClassInchargeDashboard />}
         {activeAdminPage === 'availability' && <AvailabilityConfig />}
         {activeAdminPage === 'students' && <StudentDirectory />}
         {activeAdminPage === 'documents' && <GlobalDocumentManagement />}
