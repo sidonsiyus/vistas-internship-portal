@@ -114,27 +114,15 @@ function doPost(e) {
     }
     
     var sheet = findSheet(ss, data.sheetName);
+    var colMap = getColumnMapping(sheet);
     
     // Batch Update Mode
     if (data.action === "BATCH_UPDATE_CLASS" && Array.isArray(data.records)) {
       var updatedCount = 0;
       for (var k = 0; k < data.records.length; k++) {
         var rec = data.records[k];
-        var rowArr = [
-          String(rec.regNo || '').replace('.0','').trim(),
-          rec.studentName || '',
-          rec.companyName || '',
-          rec.location || '',
-          rec.startDate || '',
-          rec.endDate || '',
-          rec.duration || '',
-          rec.attendance || '',
-          rec.status || 'Not Started',
-          rec.certificateCollected || 'No',
-          rec.remarks || ''
-        ];
-        var rIdx = findRowIndex(sheet, rec.regNo, rec.studentName);
-        writeRowData(sheet, rIdx, rowArr);
+        var rIdx = findRowIndex(sheet, rec.regNo, rec.studentName, colMap);
+        writeRowWithColMap(sheet, rIdx, colMap, rec);
         updatedCount++;
       }
       return ContentService.createTextOutput(JSON.stringify({ 
@@ -145,22 +133,8 @@ function doPost(e) {
     }
     
     // Single Student Update Mode
-    var rowData = [
-      String(data.regNo || '').replace('.0','').trim(),
-      data.studentName || '',
-      data.companyName || '',
-      data.location || '',
-      data.startDate || '',
-      data.endDate || '',
-      data.duration || '',
-      data.attendance || '',
-      data.status || 'Not Started',
-      data.certificateCollected || 'No',
-      data.remarks || ''
-    ];
-    
-    var rowIndex = findRowIndex(sheet, data.regNo, data.studentName);
-    writeRowData(sheet, rowIndex, rowData);
+    var rowIndex = findRowIndex(sheet, data.regNo, data.studentName, colMap);
+    writeRowWithColMap(sheet, rowIndex, colMap, data);
     
     return ContentService.createTextOutput(JSON.stringify({ 
       status: "success", 
@@ -198,34 +172,125 @@ function findSheet(ss, sheetName) {
     }
   }
   
-  // If tab doesn't exist, create it with standard columns
+  // If tab doesn't exist, create it matching that specific class format
   var newSheet = ss.insertSheet(sheetName);
-  newSheet.appendRow(["REG NO", "NAME", "COMPANY NAME", "LOCATION", "START DATE", "END DATE", "DURATION", "ATTENDANCE", "STATUS", "CERTIFICATE COLLECTED", "REMARKS"]);
+  if (cleanTarget.indexOf('2c') !== -1) {
+    newSheet.appendRow(["SNO", "REG NO", "NAME", "COMPANY NAME", "LOCATION", "START DATE", "END DATE", "DURATION", "ATTENDANCE", "STATUS", "CERTIFICATE COLLECTED", "REMARKS"]);
+  } else {
+    newSheet.appendRow(["REG NO", "NAME", "COMPANY NAME", "LOCATION", "START DATE", "END DATE", "DURATION", "ATTENDANCE", "STATUS", "CERTIFICATE COLLECTED", "REMARKS"]);
+  }
   return newSheet;
 }
 
-// Resilient Row Finder: Searches column A and B for register number or name
-function findRowIndex(sheet, regNo, studentName) {
+// Dynamic Header Column Mapping: Detects exact column structure for any class (e.g. AERO 2A vs BBA 2C with SNO)
+function getColumnMapping(sheet) {
+  var data = sheet.getDataRange().getValues();
+  if (data.length === 0) return null;
+  
+  var headerRowIdx = 0;
+  for (var r = 0; r < Math.min(4, data.length); r++) {
+    var rowText = data[r].join(' ').toUpperCase();
+    if (rowText.includes('REG') || rowText.includes('NAME') || rowText.includes('COMPANY')) {
+      headerRowIdx = r;
+      break;
+    }
+  }
+
+  var headers = data[headerRowIdx];
+  var map = {
+    headerRowIdx: headerRowIdx,
+    sno: -1,
+    regNo: -1,
+    studentName: -1,
+    companyName: -1,
+    location: -1,
+    startDate: -1,
+    endDate: -1,
+    duration: -1,
+    attendance: -1,
+    status: -1,
+    certificateCollected: -1,
+    remarks: -1,
+    totalCols: headers.length
+  };
+
+  for (var c = 0; c < headers.length; c++) {
+    var h = String(headers[c] || '').toUpperCase().trim();
+    if (!h) continue;
+
+    if (h === 'SNO' || h === 'S.NO' || h === 'SL' || h === 'SL NO' || h === 'SI.NO' || h === 'S NO' || h === 'S. NO') {
+      map.sno = c;
+    } else if (h.includes('REG') || h.includes('ROLL') || h.includes('REGISTER')) {
+      map.regNo = c;
+    } else if (h.includes('ATTEND')) {
+      map.attendance = c;
+    } else if (h.includes('STUDENT') || h === 'NAME' || h.includes('NAME OF')) {
+      map.studentName = c;
+    } else if (h.includes('COMP') || h.includes('ORGAN') || h.includes('FIRM') || h.includes('INDUSTRY')) {
+      map.companyName = c;
+    } else if (h.includes('LOC') || h.includes('CITY') || h.includes('PLACE')) {
+      map.location = c;
+    } else if (h.includes('START') || h.includes('FROM')) {
+      map.startDate = c;
+    } else if ((h.includes('END') && !h.includes('ATTEND')) || h.includes('TO DATE')) {
+      map.endDate = c;
+    } else if (h.includes('DUR') || h.includes('PERIOD') || h.includes('DAYS')) {
+      map.duration = c;
+    } else if (h.includes('STATUS')) {
+      map.status = c;
+    } else if (h.includes('CERT')) {
+      map.certificateCollected = c;
+    } else if (h.includes('REMARK') || h.includes('NOTE') || h.includes('COMMENT')) {
+      map.remarks = c;
+    }
+  }
+
+  // Fallbacks if not found by header text
+  if (map.regNo === -1) map.regNo = (map.sno === 0) ? 1 : 0;
+  if (map.studentName === -1) map.studentName = (map.regNo === 1) ? 2 : 1;
+  if (map.companyName === -1) map.companyName = map.studentName + 1;
+  if (map.location === -1) map.location = map.companyName + 1;
+  if (map.startDate === -1) map.startDate = map.location + 1;
+  if (map.endDate === -1) map.endDate = map.startDate + 1;
+  if (map.duration === -1) map.duration = map.endDate + 1;
+  if (map.attendance === -1) map.attendance = map.duration + 1;
+  if (map.status === -1) map.status = map.attendance + 1;
+  if (map.certificateCollected === -1) map.certificateCollected = map.status + 1;
+  if (map.remarks === -1) map.remarks = map.certificateCollected + 1;
+
+  return map;
+}
+
+// Resilient Row Finder: searches designated regNo column and studentName column
+function findRowIndex(sheet, regNo, studentName, colMap) {
   var values = sheet.getDataRange().getValues();
-  if (values.length <= 1) return -1;
+  var startRow = (colMap && colMap.headerRowIdx !== undefined) ? colMap.headerRowIdx + 1 : 1;
+  if (values.length <= startRow) return -1;
   
   var cleanReg = String(regNo || '').replace('.0', '').replace(/[^0-9]/g, '').trim();
   var cleanName = String(studentName || '').toLowerCase().trim();
-  
+  var regCol = (colMap && colMap.regNo >= 0) ? colMap.regNo : 0;
+  var nameCol = (colMap && colMap.studentName >= 0) ? colMap.studentName : 1;
+
   if (cleanReg) {
-    for (var r = 1; r < values.length; r++) {
-      var col0 = String(values[r][0] || '').replace('.0', '').replace(/[^0-9]/g, '').trim();
-      var col1 = String(values[r][1] || '').replace('.0', '').replace(/[^0-9]/g, '').trim();
-      if (col0 === cleanReg || col1 === cleanReg) {
+    for (var r = startRow; r < values.length; r++) {
+      var cellReg = String(values[r][regCol] || '').replace('.0', '').replace(/[^0-9]/g, '').trim();
+      if (cellReg && cellReg === cleanReg) {
         return r + 1;
+      }
+    }
+    if (regCol !== 0) {
+      for (var r1 = startRow; r1 < values.length; r1++) {
+        var cell0 = String(values[r1][0] || '').replace('.0', '').replace(/[^0-9]/g, '').trim();
+        if (cell0 && cell0 === cleanReg) return r1 + 1;
       }
     }
   }
   
   if (cleanName && cleanName.length > 2) {
-    for (var k = 1; k < values.length; k++) {
-      var rowName = String(values[k][1] || values[k][0] || '').toLowerCase().trim();
-      if (rowName === cleanName || (rowName.length > 3 && cleanName.includes(rowName))) {
+    for (var k = startRow; k < values.length; k++) {
+      var rowName = String(values[k][nameCol] || values[k][1] || values[k][0] || '').toLowerCase().trim();
+      if (rowName === cleanName || (rowName.length > 4 && (cleanName.includes(rowName) || rowName.includes(cleanName)))) {
         return k + 1;
       }
     }
@@ -234,44 +299,84 @@ function findRowIndex(sheet, regNo, studentName) {
   return -1;
 }
 
-// Write row with auto column expansion
-function writeRowData(sheet, rowIndex, rowData) {
-  if (sheet.getMaxColumns() < 11) {
-    sheet.insertColumnsAfter(sheet.getMaxColumns(), 11 - sheet.getMaxColumns());
+// Write row matching that specific class tab's exact column layout
+function writeRowWithColMap(sheet, rowIndex, colMap, rec) {
+  var numCols = Math.max(sheet.getLastColumn(), colMap.totalCols, 11);
+  if (colMap.sno >= 0 && numCols < 12) numCols = 12;
+
+  if (sheet.getMaxColumns() < numCols) {
+    sheet.insertColumnsAfter(sheet.getMaxColumns(), numCols - sheet.getMaxColumns());
   }
-  
+
   if (rowIndex > 0) {
-    sheet.getRange(rowIndex, 1, 1, 11).setValues([rowData]);
+    var rowRange = sheet.getRange(rowIndex, 1, 1, numCols);
+    var rowVals = rowRange.getValues()[0];
+
+    if (colMap.regNo >= 0) rowVals[colMap.regNo] = String(rec.regNo || '').replace('.0','').trim();
+    if (colMap.studentName >= 0) rowVals[colMap.studentName] = rec.studentName || '';
+    if (colMap.companyName >= 0) rowVals[colMap.companyName] = rec.companyName || '';
+    if (colMap.location >= 0) rowVals[colMap.location] = rec.location || '';
+    if (colMap.startDate >= 0) rowVals[colMap.startDate] = rec.startDate || '';
+    if (colMap.endDate >= 0) rowVals[colMap.endDate] = rec.endDate || '';
+    if (colMap.duration >= 0) rowVals[colMap.duration] = rec.duration || '';
+    if (colMap.attendance >= 0) rowVals[colMap.attendance] = rec.attendance || '';
+    if (colMap.status >= 0) rowVals[colMap.status] = rec.status || 'Not Started';
+    if (colMap.certificateCollected >= 0) rowVals[colMap.certificateCollected] = rec.certificateCollected || 'No';
+    if (colMap.remarks >= 0) rowVals[colMap.remarks] = rec.remarks || '';
+
+    rowRange.setValues([rowVals]);
   } else {
-    sheet.appendRow(rowData);
+    var newRow = new Array(numCols).fill('');
+    if (colMap.sno >= 0) {
+      newRow[colMap.sno] = Math.max(1, sheet.getLastRow() - colMap.headerRowIdx);
+    }
+    if (colMap.regNo >= 0) newRow[colMap.regNo] = String(rec.regNo || '').replace('.0','').trim();
+    if (colMap.studentName >= 0) newRow[colMap.studentName] = rec.studentName || '';
+    if (colMap.companyName >= 0) newRow[colMap.companyName] = rec.companyName || '';
+    if (colMap.location >= 0) newRow[colMap.location] = rec.location || '';
+    if (colMap.startDate >= 0) newRow[colMap.startDate] = rec.startDate || '';
+    if (colMap.endDate >= 0) newRow[colMap.endDate] = rec.endDate || '';
+    if (colMap.duration >= 0) newRow[colMap.duration] = rec.duration || '';
+    if (colMap.attendance >= 0) newRow[colMap.attendance] = rec.attendance || '';
+    if (colMap.status >= 0) newRow[colMap.status] = rec.status || 'Not Started';
+    if (colMap.certificateCollected >= 0) newRow[colMap.certificateCollected] = rec.certificateCollected || 'No';
+    if (colMap.remarks >= 0) newRow[colMap.remarks] = rec.remarks || '';
+
+    sheet.appendRow(newRow);
   }
 }
 
-// Get rows from sheet tab
+// Get rows from sheet tab using dynamic column mapping
 function getSheetRecords(sheet) {
   var sName = sheet.getName();
+  var colMap = getColumnMapping(sheet);
   var values = sheet.getDataRange().getValues();
-  if (values.length <= 1) return [];
+  var startRow = (colMap && colMap.headerRowIdx !== undefined) ? colMap.headerRowIdx + 1 : 1;
+  if (values.length <= startRow) return [];
   
   var records = [];
-  for (var i = 1; i < values.length; i++) {
+  for (var i = startRow; i < values.length; i++) {
     var row = values[i];
-    var regNo = String(row[0] || '').replace('.0','').trim();
-    if (!regNo && !row[1]) continue;
+    var regNo = (colMap.regNo >= 0 && row[colMap.regNo] !== undefined) ? String(row[colMap.regNo] || '').replace('.0','').trim() : '';
+    var studentName = (colMap.studentName >= 0 && row[colMap.studentName] !== undefined) ? String(row[colMap.studentName] || '').trim() : '';
+    
+    // Skip empty rows or section divider rows (e.g. 'AUGUST', 'MAY (1)')
+    if (!regNo && !studentName) continue;
+    if (regNo && !/\d/.test(regNo) && !studentName) continue;
     
     records.push({
       className: sName,
       regNo: regNo,
-      studentName: String(row[1] || '').trim(),
-      companyName: String(row[2] || '').trim(),
-      location: String(row[3] || '').trim(),
-      startDate: String(row[4] || '').trim(),
-      endDate: String(row[5] || '').trim(),
-      duration: String(row[6] || '').trim(),
-      attendance: String(row[7] || '').trim(),
-      status: String(row[8] || 'Not Started').trim(),
-      certificateCollected: String(row[9] || 'No').trim(),
-      remarks: String(row[10] || '').trim()
+      studentName: studentName,
+      companyName: (colMap.companyName >= 0 && row[colMap.companyName] !== undefined) ? String(row[colMap.companyName] || '').trim() : '',
+      location: (colMap.location >= 0 && row[colMap.location] !== undefined) ? String(row[colMap.location] || '').trim() : '',
+      startDate: (colMap.startDate >= 0 && row[colMap.startDate] !== undefined) ? String(row[colMap.startDate] || '').trim() : '',
+      endDate: (colMap.endDate >= 0 && row[colMap.endDate] !== undefined) ? String(row[colMap.endDate] || '').trim() : '',
+      duration: (colMap.duration >= 0 && row[colMap.duration] !== undefined) ? String(row[colMap.duration] || '').trim() : '',
+      attendance: (colMap.attendance >= 0 && row[colMap.attendance] !== undefined) ? String(row[colMap.attendance] || '').trim() : '',
+      status: (colMap.status >= 0 && row[colMap.status] !== undefined) ? String(row[colMap.status] || 'Not Started').trim() : 'Not Started',
+      certificateCollected: (colMap.certificateCollected >= 0 && row[colMap.certificateCollected] !== undefined) ? String(row[colMap.certificateCollected] || 'No').trim() : 'No',
+      remarks: (colMap.remarks >= 0 && row[colMap.remarks] !== undefined) ? String(row[colMap.remarks] || '').trim() : ''
     });
   }
   return records;

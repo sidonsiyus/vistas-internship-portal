@@ -79,7 +79,72 @@ function recordToRow(r) {
 }
 
 /**
+ * Detect column mapping dynamically from header row
+ */
+export function detectColumnMapping(headers) {
+  const map = {
+    sno: -1,
+    regNo: -1,
+    studentName: -1,
+    companyName: -1,
+    location: -1,
+    startDate: -1,
+    endDate: -1,
+    duration: -1,
+    attendance: -1,
+    status: -1,
+    certificateCollected: -1,
+    remarks: -1
+  };
+
+  headers.forEach((val, c) => {
+    const h = String(val || '').toUpperCase().trim();
+    if (!h) return;
+    if (h === 'SNO' || h === 'S.NO' || h === 'SL' || h === 'SL NO' || h === 'SI.NO' || h === 'S NO' || h === 'S. NO') {
+      map.sno = c;
+    } else if (h.includes('REG') || h.includes('ROLL') || h.includes('REGISTER')) {
+      map.regNo = c;
+    } else if (h.includes('ATTEND')) {
+      map.attendance = c;
+    } else if (h.includes('STUDENT') || h === 'NAME' || h.includes('NAME OF')) {
+      map.studentName = c;
+    } else if (h.includes('COMP') || h.includes('ORGAN') || h.includes('FIRM') || h.includes('INDUSTRY')) {
+      map.companyName = c;
+    } else if (h.includes('LOC') || h.includes('CITY') || h.includes('PLACE')) {
+      map.location = c;
+    } else if (h.includes('START') || h.includes('FROM')) {
+      map.startDate = c;
+    } else if ((h.includes('END') && !h.includes('ATTEND')) || h.includes('TO DATE')) {
+      map.endDate = c;
+    } else if (h.includes('DUR') || h.includes('PERIOD') || h.includes('DAYS')) {
+      map.duration = c;
+    } else if (h.includes('STATUS')) {
+      map.status = c;
+    } else if (h.includes('CERT')) {
+      map.certificateCollected = c;
+    } else if (h.includes('REMARK') || h.includes('NOTE') || h.includes('COMMENT')) {
+      map.remarks = c;
+    }
+  });
+
+  if (map.regNo === -1) map.regNo = (map.sno === 0) ? 1 : 0;
+  if (map.studentName === -1) map.studentName = (map.regNo === 1) ? 2 : 1;
+  if (map.companyName === -1) map.companyName = map.studentName + 1;
+  if (map.location === -1) map.location = map.companyName + 1;
+  if (map.startDate === -1) map.startDate = map.location + 1;
+  if (map.endDate === -1) map.endDate = map.startDate + 1;
+  if (map.duration === -1) map.duration = map.endDate + 1;
+  if (map.attendance === -1) map.attendance = map.duration + 1;
+  if (map.status === -1) map.status = map.attendance + 1;
+  if (map.certificateCollected === -1) map.certificateCollected = map.status + 1;
+  if (map.remarks === -1) map.remarks = map.certificateCollected + 1;
+
+  return map;
+}
+
+/**
  * Export all 13 class tabs or a single class into an Excel (.xlsx) file
+ * Matches exact format of each class (including SNO column for BBA 2C)
  */
 export function exportInternshipWorkbook(records, specificClass = null) {
   const wb = XLSX.utils.book_new();
@@ -92,15 +157,23 @@ export function exportInternshipWorkbook(records, specificClass = null) {
     // Sort by register number
     classRecords.sort((a, b) => (a.regNo || '').localeCompare(b.regNo || ''));
 
+    const isBba2C = className.trim().toUpperCase() === 'BBA 2C';
+    const headers = isBba2C 
+      ? ['SNO', ...EXCEL_HEADERS]
+      : EXCEL_HEADERS;
+
     const sheetData = [
-      EXCEL_HEADERS,
-      ...classRecords.map(recordToRow)
+      headers,
+      ...classRecords.map((r, idx) => {
+        const row = recordToRow(r);
+        return isBba2C ? [idx + 1, ...row] : row;
+      })
     ];
 
     const ws = XLSX.utils.aoa_to_sheet(sheetData);
 
     // Format column widths for readability
-    ws['!cols'] = [
+    const standardCols = [
       { wch: 14 }, // REG NO
       { wch: 28 }, // NAME
       { wch: 32 }, // COMPANY NAME
@@ -113,6 +186,8 @@ export function exportInternshipWorkbook(records, specificClass = null) {
       { wch: 22 }, // CERTIFICATE COLLECTED
       { wch: 35 }  // REMARKS
     ];
+
+    ws['!cols'] = isBba2C ? [{ wch: 8 }, ...standardCols] : standardCols;
 
     XLSX.utils.book_append_sheet(wb, ws, className);
   });
@@ -341,23 +416,29 @@ export async function pullRecordsFromGoogleSheet(webhookUrl, sheetName = null) {
 
         if (rows.length <= 1) return { success: true, records: [] };
 
+        const colMap = detectColumnMapping(rows[0] || []);
         const records = [];
         for (let i = 1; i < rows.length; i++) {
           const row = rows[i];
-          if (!row || (!row[0] && !row[1])) continue;
+          if (!row) continue;
+          const regNo = colMap.regNo >= 0 ? String(row[colMap.regNo] || '').replace('.0', '').trim() : '';
+          const studentName = colMap.studentName >= 0 ? String(row[colMap.studentName] || '').trim() : '';
+          if (!regNo && !studentName) continue;
+          if (regNo && !/\d/.test(regNo) && !studentName) continue; // skip month divider rows like 'AUGUST'
+
           records.push({
             className: sheetName || '',
-            regNo: String(row[0] || '').replace('.0', '').trim(),
-            studentName: String(row[1] || '').trim(),
-            companyName: String(row[2] || '').trim(),
-            location: String(row[3] || '').trim(),
-            startDate: String(row[4] || '').trim(),
-            endDate: String(row[5] || '').trim(),
-            duration: String(row[6] || '').trim(),
-            attendance: formatAttendance(row[7]),
-            status: String(row[8] || 'Not Started').trim(),
-            certificateCollected: String(row[9] || 'No').trim(),
-            remarks: String(row[10] || '').trim()
+            regNo: regNo,
+            studentName: studentName,
+            companyName: colMap.companyName >= 0 ? String(row[colMap.companyName] || '').trim() : '',
+            location: colMap.location >= 0 ? String(row[colMap.location] || '').trim() : '',
+            startDate: colMap.startDate >= 0 ? String(row[colMap.startDate] || '').trim() : '',
+            endDate: colMap.endDate >= 0 ? String(row[colMap.endDate] || '').trim() : '',
+            duration: colMap.duration >= 0 ? String(row[colMap.duration] || '').trim() : '',
+            attendance: colMap.attendance >= 0 ? formatAttendance(row[colMap.attendance]) : '',
+            status: colMap.status >= 0 ? String(row[colMap.status] || 'Not Started').trim() : 'Not Started',
+            certificateCollected: colMap.certificateCollected >= 0 ? String(row[colMap.certificateCollected] || 'No').trim() : 'No',
+            remarks: colMap.remarks >= 0 ? String(row[colMap.remarks] || '').trim() : ''
           });
         }
         return { success: true, records };
