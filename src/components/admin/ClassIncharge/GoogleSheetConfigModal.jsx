@@ -452,8 +452,8 @@ function getSheetRecords(sheet) {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Google Sheets Two-Way Auto-Sync"
-      subtitle="Full bidirectional sync: Updates in website sync to sheet, and edits in sheet sync back to website"
+      title="Google Sheets Two-Way Manual Sync"
+      subtitle="Manual bidirectional sync: Push class roster updates to Google Sheets or pull spreadsheet edits into the portal on demand"
       maxWidth="max-w-2xl"
     >
       <div className="space-y-4 text-xs font-sans">
@@ -466,16 +466,16 @@ function getSheetRecords(sheet) {
         }`}>
           <div className="flex items-center gap-2.5">
             <div className={`w-3 h-3 rounded-full shrink-0 ${
-              googleSheetWebhookUrl ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
+              googleSheetWebhookUrl ? 'bg-emerald-500' : 'bg-amber-500'
             }`} />
             <div>
               <div className="font-bold text-slate-900 dark:text-white">
-                {googleSheetWebhookUrl ? 'Two-Way Sync Configured' : 'Sync Not Configured'}
+                {googleSheetWebhookUrl ? 'Manual Two-Way Sync Ready' : 'Sync Not Configured'}
               </div>
               <div className="text-[11px] text-slate-500 dark:text-slate-400">
                 {lastGSheetSyncTime 
                   ? `Last synchronized: ${new Date(lastGSheetSyncTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-                  : 'Changes made in the portal will sync automatically once connected'}
+                  : 'Manual sync mode: Click "Push to Sheet" or "Pull from Sheet" whenever you want to update'}
               </div>
             </div>
           </div>

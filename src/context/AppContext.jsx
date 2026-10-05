@@ -2191,13 +2191,6 @@ export function AppProvider({ children }) {
       localStorage.setItem('vistas_internship_records', JSON.stringify(nextList));
     } catch (e) {}
 
-    // Non-blocking Google Sheets sync if webhook URL is configured
-    if (googleSheetWebhookUrl && updatedRecord) {
-      syncRecordToGoogleSheetWebhook(googleSheetWebhookUrl, updatedRecord).catch(err => {
-        console.warn('Google Sheet background sync notice:', err);
-      });
-    }
-
     showToast(`Updated internship record for ${updatedRecord?.studentName || 'student'}`, 'success');
     return updatedRecord;
   };
@@ -2249,13 +2242,6 @@ export function AppProvider({ children }) {
     } catch (e) {}
 
     showToast(`Uploaded ${newDoc.title} successfully`, 'success');
-
-    if (googleSheetWebhookUrl && updatedRecord) {
-      syncRecordToGoogleSheetWebhook(googleSheetWebhookUrl, updatedRecord).catch(err => {
-        console.warn('Google Sheet background sync notice:', err);
-      });
-    }
-
     return newDoc;
   };
 
@@ -2329,13 +2315,6 @@ export function AppProvider({ children }) {
     try {
       localStorage.setItem('vistas_internship_records', JSON.stringify(nextList));
     } catch (e) {}
-
-    const targetRecord = nextList.find(r => String(r.regNo).trim() === cleanReg);
-    if (googleSheetWebhookUrl && targetRecord) {
-      syncRecordToGoogleSheetWebhook(googleSheetWebhookUrl, targetRecord).catch(err => {
-        console.warn('Google Sheet background sync notice:', err);
-      });
-    }
 
     showToast(`Added ${student.name} to class ${targetClass}`, 'success');
   };
