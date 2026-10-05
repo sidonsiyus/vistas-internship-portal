@@ -138,20 +138,20 @@ export async function syncRecordToGoogleSheetWebhook(webhookUrl, record) {
     sheetName: record.className,
     regNo: record.regNo,
     studentName: record.studentName,
-    companyName: record.companyName,
-    location: record.location,
-    startDate: record.startDate,
-    endDate: record.endDate,
-    duration: record.duration,
-    attendance: record.attendance,
-    status: record.status,
-    certificateCollected: record.certificateCollected,
-    remarks: record.remarks,
+    companyName: record.companyName || '',
+    location: record.location || '',
+    startDate: record.startDate || '',
+    endDate: record.endDate || '',
+    duration: record.duration || '',
+    attendance: formatAttendance(record.attendance) || '',
+    status: record.status || 'Not Started',
+    certificateCollected: record.certificateCollected || 'No',
+    remarks: record.remarks || '',
     updatedAt: new Date().toISOString()
   };
 
   try {
-    const response = await fetch(webhookUrl, {
+    await fetch(webhookUrl, {
       method: 'POST',
       mode: 'no-cors', // Standard for Apps Script Webhooks
       headers: {
@@ -163,6 +163,132 @@ export async function syncRecordToGoogleSheetWebhook(webhookUrl, record) {
     return { success: true };
   } catch (err) {
     console.error('Google Sheets Webhook Sync failed:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Batch push an entire class roster to the Google Sheet
+ */
+export async function pushAllClassRecordsToGoogleSheet(webhookUrl, classRecords, className) {
+  if (!webhookUrl || !webhookUrl.startsWith('http')) {
+    return { success: false, error: 'No valid Webhook URL configured' };
+  }
+
+  const payload = {
+    action: 'BATCH_UPDATE_CLASS',
+    sheetName: className,
+    records: classRecords.map(r => ({
+      regNo: r.regNo,
+      studentName: r.studentName,
+      companyName: r.companyName || '',
+      location: r.location || '',
+      startDate: r.startDate || '',
+      endDate: r.endDate || '',
+      duration: r.duration || '',
+      attendance: formatAttendance(r.attendance) || '',
+      status: r.status || 'Not Started',
+      certificateCollected: r.certificateCollected || 'No',
+      remarks: r.remarks || ''
+    })),
+    updatedAt: new Date().toISOString()
+  };
+
+  try {
+    await fetch(webhookUrl, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    return { success: true };
+  } catch (err) {
+    console.error('Batch push to Google Sheet failed:', err);
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Pull records from Google Sheet via Apps Script GET or Google Sheet CSV export
+ */
+export async function pullRecordsFromGoogleSheet(webhookUrl, sheetName = null) {
+  if (!webhookUrl || !webhookUrl.startsWith('http')) {
+    return { success: false, error: 'No valid Google Sheet Webhook URL configured' };
+  }
+
+  try {
+    // 1. Google Apps Script Web App (JSON Endpoint)
+    if (webhookUrl.includes('script.google.com')) {
+      const url = new URL(webhookUrl);
+      if (sheetName) {
+        url.searchParams.set('sheetName', sheetName);
+      }
+      url.searchParams.set('_t', Date.now().toString()); // Cache buster
+
+      const response = await fetch(url.toString(), {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' },
+        redirect: 'follow'
+      });
+
+      if (!response.ok) {
+        throw new Error(`Google Apps Script responded with HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data.status === 'success' && Array.isArray(data.records)) {
+        return { success: true, records: data.records };
+      } else {
+        return { success: false, error: data.message || 'No records returned from Google Sheet' };
+      }
+    }
+
+    // 2. Direct Google Sheet Public CSV Link
+    if (webhookUrl.includes('docs.google.com/spreadsheets')) {
+      const match = webhookUrl.match(/\/d\/([a-zA-Z0-9-_]+)/);
+      if (match && match[1]) {
+        const sheetId = match[1];
+        const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv${sheetName ? '&sheet=' + encodeURIComponent(sheetName) : ''}&_t=${Date.now()}`;
+        const response = await fetch(csvUrl);
+        if (!response.ok) throw new Error('Could not fetch Google Sheet CSV export');
+        const csvText = await response.text();
+
+        const workbook = XLSX.read(csvText, { type: 'string' });
+        const firstSheet = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[firstSheet];
+        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+        if (rows.length <= 1) return { success: true, records: [] };
+
+        const records = [];
+        for (let i = 1; i < rows.length; i++) {
+          const row = rows[i];
+          if (!row || (!row[0] && !row[1])) continue;
+          records.push({
+            className: sheetName || '',
+            regNo: String(row[0] || '').replace('.0', '').trim(),
+            studentName: String(row[1] || '').trim(),
+            companyName: String(row[2] || '').trim(),
+            location: String(row[3] || '').trim(),
+            startDate: String(row[4] || '').trim(),
+            endDate: String(row[5] || '').trim(),
+            duration: String(row[6] || '').trim(),
+            attendance: formatAttendance(row[7]),
+            status: String(row[8] || 'Not Started').trim(),
+            certificateCollected: String(row[9] || 'No').trim(),
+            remarks: String(row[10] || '').trim()
+          });
+        }
+        return { success: true, records };
+      }
+    }
+
+    return { success: false, error: 'Unrecognized URL. Please provide an Apps Script Web App URL or Google Sheet link.' };
+  } catch (err) {
+    console.error('Error pulling from Google Sheet:', err);
     return { success: false, error: err.message };
   }
 }

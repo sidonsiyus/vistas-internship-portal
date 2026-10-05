@@ -33,6 +33,8 @@ export default function ClassInchargeDashboard() {
     selectedClassIncharge, 
     setSelectedClassIncharge,
     googleSheetWebhookUrl,
+    lastGSheetSyncTime,
+    syncWithGoogleSheet,
     showToast 
   } = useApp();
 
@@ -42,6 +44,7 @@ export default function ClassInchargeDashboard() {
   const [isGSheetModalOpen, setIsGSheetModalOpen] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false);
+  const [isSyncingGSheet, setIsSyncingGSheet] = useState(false);
 
   // Filters & Search
   const [searchTerm, setSearchTerm] = useState('');
@@ -121,10 +124,21 @@ export default function ClassInchargeDashboard() {
                   </span>
                 )}
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                {selectedClassIncharge 
-                  ? `Active class roster: ${totalCount} students enrolled`
-                  : 'Select your class to manage student internship details and documentation'}
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex flex-wrap items-center gap-2">
+                <span>
+                  {selectedClassIncharge 
+                    ? `Active class roster: ${totalCount} students enrolled`
+                    : 'Select your class to manage student internship details and documentation'}
+                </span>
+                {lastGSheetSyncTime && (
+                  <>
+                    <span>•</span>
+                    <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                      G-Sheet synced {new Date(lastGSheetSyncTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </>
+                )}
               </p>
             </div>
           </div>
@@ -148,7 +162,7 @@ export default function ClassInchargeDashboard() {
             <button
               type="button"
               onClick={() => setIsClassModalOpen(true)}
-              className="px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-all flex items-center gap-1.5 shadow-xs"
+              className="px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
             >
               <Layers className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
               <span>{selectedClassIncharge ? 'Switch Class' : 'Choose Class'}</span>
@@ -159,7 +173,7 @@ export default function ClassInchargeDashboard() {
               <button
                 type="button"
                 onClick={() => setShowExportMenu(!showExportMenu)}
-                className="px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 transition-all flex items-center gap-1.5 shadow-xs"
+                className="px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
               >
                 <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                 <span>Export Excel</span>
@@ -171,7 +185,7 @@ export default function ClassInchargeDashboard() {
                   <button
                     type="button"
                     onClick={handleExportThisClass}
-                    className="w-full text-left px-3.5 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/80 flex items-center justify-between"
+                    className="w-full text-left px-3.5 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/80 flex items-center justify-between cursor-pointer"
                   >
                     <span>Export {selectedClassIncharge || 'Active Class'} (.xlsx)</span>
                     <Download className="w-3.5 h-3.5 text-slate-400" />
@@ -179,7 +193,7 @@ export default function ClassInchargeDashboard() {
                   <button
                     type="button"
                     onClick={handleExportAllClasses}
-                    className="w-full text-left px-3.5 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/80 flex items-center justify-between border-t border-slate-100 dark:border-slate-800"
+                    className="w-full text-left px-3.5 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/80 flex items-center justify-between border-t border-slate-100 dark:border-slate-800 cursor-pointer"
                   >
                     <span>Export All 13 Classes (.xlsx)</span>
                     <Download className="w-3.5 h-3.5 text-slate-400" />
@@ -188,15 +202,47 @@ export default function ClassInchargeDashboard() {
               )}
             </div>
 
-            {/* Google Sheets Sync Button */}
-            <button
-              type="button"
-              onClick={() => setIsGSheetModalOpen(true)}
-              className="px-3.5 py-2 rounded-xl text-xs font-bold bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-all flex items-center gap-1.5 shadow-xs"
-            >
-              <Settings2 className="w-3.5 h-3.5 text-slate-500" />
-              <span>{googleSheetWebhookUrl ? 'G-Sheet (Connected)' : 'G-Sheet Sync'}</span>
-            </button>
+            {/* Two-Way Google Sheets Sync Buttons */}
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!googleSheetWebhookUrl) {
+                    setIsGSheetModalOpen(true);
+                  } else {
+                    setIsSyncingGSheet(true);
+                    try {
+                      await syncWithGoogleSheet(selectedClassIncharge);
+                    } finally {
+                      setIsSyncingGSheet(false);
+                    }
+                  }
+                }}
+                disabled={isSyncingGSheet}
+                className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs cursor-pointer ${
+                  googleSheetWebhookUrl
+                    ? 'bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
+                    : 'bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700'
+                }`}
+                title={googleSheetWebhookUrl ? "Two-Way Sync: Pull latest changes from Google Sheet" : "Configure Google Sheet sync"}
+              >
+                <RefreshCw className={`w-3.5 h-3.5 text-blue-600 dark:text-blue-400 ${isSyncingGSheet ? 'animate-spin' : ''}`} />
+                <span>{isSyncingGSheet ? 'Syncing...' : (googleSheetWebhookUrl ? 'Sync G-Sheet' : 'Connect G-Sheet')}</span>
+                {googleSheetWebhookUrl && (
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse ml-0.5" title="Connected" />
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsGSheetModalOpen(true)}
+                className="p-2 rounded-xl bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-700 transition-all shadow-xs cursor-pointer"
+                title="Google Sheet Two-Way Sync Settings"
+              >
+                <Settings2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
           </div>
 
         </div>

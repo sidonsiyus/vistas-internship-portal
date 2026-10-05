@@ -5,7 +5,11 @@ import { generateNextTokenNumber } from '../utils/tokenGenerator';
 import { sendTicketEmailAlert } from '../utils/emailNotifier';
 import { timeToMinutes, formatTimeDisplay } from '../utils/slotGenerator';
 import internshipRecordsDatabase from '../data/internshipRecordsDatabase.json';
-import { syncRecordToGoogleSheetWebhook } from '../utils/internshipExcelSync';
+import { 
+  syncRecordToGoogleSheetWebhook, 
+  pullRecordsFromGoogleSheet, 
+  pushAllClassRecordsToGoogleSheet 
+} from '../utils/internshipExcelSync';
 
 const AppContext = createContext();
 const CHANNEL_NAME = 'VISTAS_REALTIME_QUEUE';
@@ -251,6 +255,14 @@ export function AppProvider({ children }) {
       localStorage.setItem('vistas_gsheet_webhook_url', url);
     } catch (e) {}
   };
+
+  const [lastGSheetSyncTime, setLastGSheetSyncTime] = useState(() => {
+    try {
+      return localStorage.getItem('vistas_last_gsheet_sync_time') || null;
+    } catch (e) {
+      return null;
+    }
+  });
 
   // Sync internshipRecords changes to localStorage
   useEffect(() => {
@@ -2237,6 +2249,13 @@ export function AppProvider({ children }) {
     } catch (e) {}
 
     showToast(`Uploaded ${newDoc.title} successfully`, 'success');
+
+    if (googleSheetWebhookUrl && updatedRecord) {
+      syncRecordToGoogleSheetWebhook(googleSheetWebhookUrl, updatedRecord).catch(err => {
+        console.warn('Google Sheet background sync notice:', err);
+      });
+    }
+
     return newDoc;
   };
 
@@ -2311,7 +2330,135 @@ export function AppProvider({ children }) {
       localStorage.setItem('vistas_internship_records', JSON.stringify(nextList));
     } catch (e) {}
 
+    const targetRecord = nextList.find(r => String(r.regNo).trim() === cleanReg);
+    if (googleSheetWebhookUrl && targetRecord) {
+      syncRecordToGoogleSheetWebhook(googleSheetWebhookUrl, targetRecord).catch(err => {
+        console.warn('Google Sheet background sync notice:', err);
+      });
+    }
+
     showToast(`Added ${student.name} to class ${targetClass}`, 'success');
+  };
+
+  // Two-way network: Pull latest changes from Google Sheet into portal
+  const syncWithGoogleSheet = async (targetClass = null) => {
+    if (!googleSheetWebhookUrl) {
+      showToast('Please configure your Google Sheet URL in G-Sheet Sync settings', 'warning');
+      return { success: false, error: 'No URL configured' };
+    }
+
+    const res = await pullRecordsFromGoogleSheet(googleSheetWebhookUrl, targetClass);
+    if (!res.success) {
+      showToast(`Google Sheet Sync failed: ${res.error}`, 'error');
+      return res;
+    }
+
+    const incomingRecords = res.records || [];
+    if (incomingRecords.length === 0) {
+      showToast('Google Sheet is currently empty or no rows found in sheet', 'info');
+      return { success: true, count: 0 };
+    }
+
+    let updatedCount = 0;
+    let addedCount = 0;
+
+    setInternshipRecords(prev => {
+      const recordsByReg = new Map();
+      prev.forEach(r => recordsByReg.set(String(r.regNo || '').trim(), { ...r }));
+
+      incomingRecords.forEach(inc => {
+        const reg = String(inc.regNo || '').trim();
+        if (!reg) return;
+
+        if (recordsByReg.has(reg)) {
+          const existing = recordsByReg.get(reg);
+          recordsByReg.set(reg, {
+            ...existing,
+            studentName: inc.studentName || existing.studentName,
+            companyName: inc.companyName || existing.companyName,
+            location: inc.location || existing.location,
+            startDate: inc.startDate || existing.startDate,
+            endDate: inc.endDate || existing.endDate,
+            duration: inc.duration || existing.duration,
+            attendance: inc.attendance || existing.attendance,
+            status: inc.status || existing.status,
+            certificateCollected: inc.certificateCollected || existing.certificateCollected,
+            remarks: inc.remarks || existing.remarks,
+            updatedAt: new Date().toISOString()
+          });
+          updatedCount++;
+        } else {
+          recordsByReg.set(reg, {
+            id: `int-${reg}`,
+            regNo: reg,
+            studentName: inc.studentName || 'Student',
+            department: '',
+            year: '',
+            section: '',
+            className: inc.className || targetClass || 'UNKNOWN',
+            email: `${reg}@velshitech.edu.in`,
+            phone: '',
+            companyName: inc.companyName || '',
+            location: inc.location || '',
+            startDate: inc.startDate || '',
+            endDate: inc.endDate || '',
+            duration: inc.duration || '',
+            attendance: inc.attendance || '',
+            status: inc.status || 'Not Started',
+            certificateCollected: inc.certificateCollected || 'No',
+            remarks: inc.remarks || '',
+            documents: [],
+            updatedAt: new Date().toISOString()
+          });
+          addedCount++;
+        }
+      });
+
+      const mergedList = Array.from(recordsByReg.values());
+      try {
+        localStorage.setItem('vistas_internship_records', JSON.stringify(mergedList));
+      } catch (e) {}
+      return mergedList;
+    });
+
+    const nowIso = new Date().toISOString();
+    setLastGSheetSyncTime(nowIso);
+    try {
+      localStorage.setItem('vistas_last_gsheet_sync_time', nowIso);
+    } catch (e) {}
+
+    showToast(`Successfully synced ${updatedCount + addedCount} records from Google Sheet!`, 'success');
+    return { success: true, count: updatedCount + addedCount };
+  };
+
+  // Two-way network: Push entire class roster to Google Sheet
+  const pushClassToGoogleSheet = async (targetClass) => {
+    if (!googleSheetWebhookUrl) {
+      showToast('Please configure your Google Sheet URL in G-Sheet Sync settings', 'warning');
+      return { success: false, error: 'No URL configured' };
+    }
+
+    const classList = internshipRecords.filter(r => 
+      (r.className || '').trim().toUpperCase() === (targetClass || '').trim().toUpperCase()
+    );
+
+    if (classList.length === 0) {
+      showToast(`No student records found in class ${targetClass}`, 'warning');
+      return { success: false };
+    }
+
+    const res = await pushAllClassRecordsToGoogleSheet(googleSheetWebhookUrl, classList, targetClass);
+    if (res.success) {
+      const nowIso = new Date().toISOString();
+      setLastGSheetSyncTime(nowIso);
+      try {
+        localStorage.setItem('vistas_last_gsheet_sync_time', nowIso);
+      } catch (e) {}
+      showToast(`Pushed all ${classList.length} student records of ${targetClass} to Google Sheet!`, 'success');
+    } else {
+      showToast(`Failed to push to Google Sheet: ${res.error}`, 'error');
+    }
+    return res;
   };
 
   return (
@@ -2328,6 +2475,9 @@ export function AppProvider({ children }) {
         setSelectedClassIncharge,
         googleSheetWebhookUrl,
         setGoogleSheetWebhookUrl,
+        lastGSheetSyncTime,
+        syncWithGoogleSheet,
+        pushClassToGoogleSheet,
         updateInternshipRecord,
         uploadInternshipDocument,
         deleteInternshipDocument,
