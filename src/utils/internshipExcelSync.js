@@ -151,19 +151,34 @@ export async function syncRecordToGoogleSheetWebhook(webhookUrl, record) {
   };
 
   try {
+    // 1. Primary: Use text/plain;charset=utf-8 (CORS safelisted header)
+    // This allows browser to send JSON payload directly without preflight block
     await fetch(webhookUrl, {
       method: 'POST',
-      mode: 'no-cors', // Standard for Apps Script Webhooks
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'text/plain;charset=utf-8'
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      redirect: 'follow'
     });
 
     return { success: true };
   } catch (err) {
-    console.error('Google Sheets Webhook Sync failed:', err);
-    return { success: false, error: err.message };
+    // 2. Fallback to no-cors mode with text/plain
+    try {
+      await fetch(webhookUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8'
+        },
+        body: JSON.stringify(payload)
+      });
+      return { success: true };
+    } catch (e) {
+      console.error('Google Sheets Webhook Sync failed:', e);
+      return { success: false, error: e.message };
+    }
   }
 }
 
@@ -197,17 +212,80 @@ export async function pushAllClassRecordsToGoogleSheet(webhookUrl, classRecords,
   try {
     await fetch(webhookUrl, {
       method: 'POST',
-      mode: 'no-cors',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'text/plain;charset=utf-8'
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      redirect: 'follow'
     });
 
     return { success: true };
   } catch (err) {
-    console.error('Batch push to Google Sheet failed:', err);
-    return { success: false, error: err.message };
+    try {
+      await fetch(webhookUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8'
+        },
+        body: JSON.stringify(payload)
+      });
+      return { success: true };
+    } catch (e) {
+      console.error('Batch push to Google Sheet failed:', e);
+      return { success: false, error: e.message };
+    }
+  }
+}
+
+/**
+ * Test connectivity to Google Apps Script Webhook
+ */
+export async function testGoogleSheetWebhook(webhookUrl) {
+  if (!webhookUrl || !webhookUrl.startsWith('http')) {
+    return { success: false, error: 'Please enter a valid URL starting with https://' };
+  }
+
+  // Detect if user mistakenly pasted the spreadsheet browser URL
+  if (webhookUrl.includes('docs.google.com/spreadsheets')) {
+    return {
+      success: false,
+      isDocsUrl: true,
+      error: 'You pasted a Google Spreadsheet link (docs.google.com). To write/push to Google Sheets, you need the Apps Script Web App URL (script.google.com). Follow the 2-minute steps below to deploy it!'
+    };
+  }
+
+  try {
+    const payload = { action: 'PING', timestamp: Date.now() };
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload),
+      redirect: 'follow'
+    });
+
+    const data = await response.json();
+    if (data.status === 'success') {
+      return { success: true, message: data.message, sheets: data.sheets };
+    } else {
+      return { success: false, error: data.message || 'Script returned an error' };
+    }
+  } catch (err) {
+    // Also try GET ping
+    try {
+      const getUrl = new URL(webhookUrl);
+      getUrl.searchParams.set('action', 'PING');
+      const getRes = await fetch(getUrl.toString(), { redirect: 'follow' });
+      const getData = await getRes.json();
+      if (getData.status === 'success') {
+        return { success: true, message: getData.message || 'Connected successfully', sheets: getData.sheets };
+      }
+    } catch (e) {}
+
+    return {
+      success: false,
+      error: `Could not reach Apps Script (${err.message}). In Google Apps Script, make sure you clicked 'Deploy > Manage deployments > Edit', and verified 'Who has access' is set to 'Anyone'.`
+    };
   }
 }
 
