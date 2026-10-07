@@ -41,6 +41,34 @@ export const EXCEL_HEADERS = [
 ];
 
 /**
+ * Clean & Format Date strings cleanly:
+ * Converts verbose JS timestamps (e.g. "Sun Jun 07 2026 00:00:00 GMT+0530 (India Standard Time)")
+ * into simple, readable "DD/MM/YYYY" format.
+ */
+export function cleanDisplayDate(val) {
+  if (!val) return '';
+  const str = String(val).trim();
+  if (!str || str === '-' || str === '—') return '';
+
+  // If it's already simple like "14/07/2026" or "2026-07-14", return clean
+  if (/^\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}$/.test(str)) {
+    return str;
+  }
+
+  // Detect long JS Date string: "Sun Jun 07 2026 ..." or ISO string
+  const parsed = new Date(str);
+  if (!isNaN(parsed.getTime())) {
+    const day = String(parsed.getDate()).padStart(2, '0');
+    const month = String(parsed.getMonth() + 1).padStart(2, '0');
+    const year = parsed.getFullYear();
+    // Return standard DD/MM/YYYY
+    return `${day}/${month}/${year}`;
+  }
+
+  return str;
+}
+
+/**
  * Format attendance cleanly:
  * Converts decimals like 0.8, 0.85 to 80%, 85%
  */

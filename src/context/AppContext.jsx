@@ -9,7 +9,8 @@ import {
   syncRecordToGoogleSheetWebhook, 
   pullRecordsFromGoogleSheet, 
   pushAllClassRecordsToGoogleSheet,
-  pushEntireDatabaseToGoogleSheet
+  pushEntireDatabaseToGoogleSheet,
+  cleanDisplayDate
 } from '../utils/internshipExcelSync';
 
 const AppContext = createContext();
@@ -2358,8 +2359,8 @@ export function AppProvider({ children }) {
             studentName: inc.studentName || existing.studentName,
             companyName: inc.companyName || existing.companyName,
             location: inc.location || existing.location,
-            startDate: inc.startDate || existing.startDate,
-            endDate: inc.endDate || existing.endDate,
+            startDate: cleanDisplayDate(inc.startDate) || existing.startDate,
+            endDate: cleanDisplayDate(inc.endDate) || existing.endDate,
             duration: inc.duration || existing.duration,
             attendance: inc.attendance || existing.attendance,
             status: inc.status || existing.status,
@@ -2381,8 +2382,8 @@ export function AppProvider({ children }) {
             phone: '',
             companyName: inc.companyName || '',
             location: inc.location || '',
-            startDate: inc.startDate || '',
-            endDate: inc.endDate || '',
+            startDate: cleanDisplayDate(inc.startDate) || '',
+            endDate: cleanDisplayDate(inc.endDate) || '',
             duration: inc.duration || '',
             attendance: inc.attendance || '',
             status: inc.status || 'Not Started',

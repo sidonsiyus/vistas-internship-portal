@@ -25,7 +25,7 @@ import ClassSelectionModal from './ClassSelectionModal';
 import InternshipEditModal from './InternshipEditModal';
 import GoogleSheetConfigModal from './GoogleSheetConfigModal';
 import AddStudentToClassModal from './AddStudentToClassModal';
-import { exportInternshipWorkbook, formatAttendance } from '../../../utils/internshipExcelSync';
+import { exportInternshipWorkbook, formatAttendance, cleanDisplayDate } from '../../../utils/internshipExcelSync';
 
 export default function ClassInchargeDashboard() {
   const { 
@@ -402,7 +402,7 @@ export default function ClassInchargeDashboard() {
                           {r.startDate || r.endDate ? (
                             <div>
                               <div className="font-medium text-slate-700 dark:text-slate-300">
-                                {r.startDate || '—'} → {r.endDate || '—'}
+                                {cleanDisplayDate(r.startDate) || '—'} → {cleanDisplayDate(r.endDate) || '—'}
                               </div>
                               {r.duration && (
                                 <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
