@@ -2321,13 +2321,14 @@ export function AppProvider({ children }) {
   };
 
   // Two-way network: Pull latest changes from Google Sheet into portal
-  const syncWithGoogleSheet = async (targetClass = null) => {
-    if (!googleSheetWebhookUrl) {
+  const syncWithGoogleSheet = async (targetClass = null, explicitUrl = null) => {
+    const url = explicitUrl || googleSheetWebhookUrl;
+    if (!url) {
       showToast('Please configure your Google Sheet URL in G-Sheet Sync settings', 'warning');
       return { success: false, error: 'No URL configured' };
     }
 
-    const res = await pullRecordsFromGoogleSheet(googleSheetWebhookUrl, targetClass);
+    const res = await pullRecordsFromGoogleSheet(url, targetClass);
     if (!res.success) {
       showToast(`Google Sheet Sync failed: ${res.error}`, 'error');
       return res;
@@ -2412,8 +2413,9 @@ export function AppProvider({ children }) {
   };
 
   // Two-way network: Push entire class roster to Google Sheet
-  const pushClassToGoogleSheet = async (targetClass) => {
-    if (!googleSheetWebhookUrl) {
+  const pushClassToGoogleSheet = async (targetClass, explicitUrl = null) => {
+    const url = explicitUrl || googleSheetWebhookUrl;
+    if (!url) {
       showToast('Please configure your Google Sheet URL in G-Sheet Sync settings', 'warning');
       return { success: false, error: 'No URL configured' };
     }
@@ -2427,7 +2429,7 @@ export function AppProvider({ children }) {
       return { success: false };
     }
 
-    const res = await pushAllClassRecordsToGoogleSheet(googleSheetWebhookUrl, classList, targetClass);
+    const res = await pushAllClassRecordsToGoogleSheet(url, classList, targetClass);
     if (res.success) {
       const nowIso = new Date().toISOString();
       setLastGSheetSyncTime(nowIso);
@@ -2442,13 +2444,14 @@ export function AppProvider({ children }) {
   };
 
   // Two-way network: Push all 14 classes to Google Sheet (Fresh Setup)
-  const pushAllClassesToGoogleSheet = async () => {
-    if (!googleSheetWebhookUrl) {
+  const pushAllClassesToGoogleSheet = async (explicitUrl = null) => {
+    const url = explicitUrl || googleSheetWebhookUrl;
+    if (!url) {
       showToast('Please configure your Google Sheet URL in G-Sheet Sync settings', 'warning');
       return { success: false, error: 'No URL configured' };
     }
 
-    const res = await pushEntireDatabaseToGoogleSheet(googleSheetWebhookUrl, internshipRecords);
+    const res = await pushEntireDatabaseToGoogleSheet(url, internshipRecords);
     if (res.success) {
       const nowIso = new Date().toISOString();
       setLastGSheetSyncTime(nowIso);
