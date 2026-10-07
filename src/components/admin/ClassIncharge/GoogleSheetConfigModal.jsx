@@ -741,69 +741,45 @@ function getSheetRecords(sheet) {
       onClose={onClose}
       title="Google Sheets Two-Way Manual Sync"
       subtitle="Manual bidirectional sync: Push class roster updates to Google Sheets or pull spreadsheet edits into the portal on demand"
-      maxWidth="max-w-2xl"
+      maxWidth="max-w-3xl"
     >
       <div className="space-y-4 text-xs font-sans">
         
-        {/* Status Indicator */}
-        <div className={`p-3.5 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
-          (googleSheetWebhookUrl || urlInput.trim()) 
-            ? 'bg-emerald-50/70 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800'
-            : 'bg-amber-50/70 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800'
-        }`}>
-          <div className="flex items-center gap-2.5">
-            <div className={`w-3 h-3 rounded-full shrink-0 ${
-              (googleSheetWebhookUrl || urlInput.trim()) ? 'bg-emerald-500' : 'bg-amber-500'
-            }`} />
-            <div>
-              <div className="font-bold text-slate-900 dark:text-white">
-                {(googleSheetWebhookUrl || urlInput.trim()) ? 'Manual Two-Way Sync Ready' : 'Sync Not Configured'}
-              </div>
-              <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                {lastGSheetSyncTime 
-                  ? `Last synchronized: ${new Date(lastGSheetSyncTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-                  : 'Manual sync mode: Click "Push All 14 Classes" or "Pull Sheet" whenever you want to update'}
+        {/* Status Card & Quick Actions */}
+        <div className="p-4 rounded-xl border bg-slate-50/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className={`w-3 h-3 rounded-full shrink-0 ${
+                (googleSheetWebhookUrl || urlInput.trim()) ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
+              }`} />
+              <div>
+                <div className="font-bold text-slate-900 dark:text-white">
+                  {(googleSheetWebhookUrl || urlInput.trim()) ? 'Manual Two-Way Sync Ready' : 'Sync Not Configured'}
+                </div>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                  {lastGSheetSyncTime 
+                    ? `Last synchronized: ${new Date(lastGSheetSyncTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                    : 'Manual sync mode: Click "Push All 14 Classes" or "Pull Sheet" whenever you want to update'}
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Quick Action Triggers */}
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
             {googleSheetBrowserUrl && (
               <a
                 href={googleSheetBrowserUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-2.5 py-1.5 rounded-lg font-bold text-[11px] bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-900/60 dark:hover:bg-emerald-800/60 text-emerald-900 dark:text-emerald-100 border border-emerald-300 dark:border-emerald-700 shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer"
+                className="px-3 py-1.5 rounded-lg font-bold text-[11px] bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0 self-start sm:self-auto"
                 title="Open Google Sheet directly in a new browser tab"
               >
-                <ExternalLink className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-300" />
+                <ExternalLink className="w-3.5 h-3.5" />
                 <span>Open Google Sheet ↗</span>
               </a>
             )}
+          </div>
 
-            <button
-              type="button"
-              onClick={handleManualPull}
-              disabled={isPulling}
-              className="px-2.5 py-1.5 rounded-lg font-bold text-[11px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 text-slate-800 dark:text-slate-200 shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
-              title="Fetch any direct changes made in Google Sheet"
-            >
-              <DownloadCloud className={`w-3.5 h-3.5 text-blue-600 ${isPulling ? 'animate-bounce' : ''}`} />
-              <span>{isPulling ? 'Pulling...' : 'Pull Sheet'}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleManualPush}
-              disabled={isPushing}
-              className="px-2.5 py-1.5 rounded-lg font-bold text-[11px] bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
-              title={`Push ${selectedClassIncharge || 'current'} class roster to Google Sheet`}
-            >
-              <UploadCloud className={`w-3.5 h-3.5 text-emerald-600 ${isPushing ? 'animate-bounce' : ''}`} />
-              <span>{isPushing ? 'Pushing...' : `Push ${selectedClassIncharge || 'Class'}`}</span>
-            </button>
-
+          {/* Action Triggers Bar */}
+          <div className="pt-2 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={handlePushAllClasses}
@@ -817,8 +793,30 @@ function getSheetRecords(sheet) {
 
             <button
               type="button"
+              onClick={handleManualPull}
+              disabled={isPulling}
+              className="px-2.5 py-1.5 rounded-lg font-bold text-[11px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 text-slate-800 dark:text-slate-200 shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+              title="Fetch any direct changes made in Google Sheet"
+            >
+              <DownloadCloud className={`w-3.5 h-3.5 text-blue-600 ${isPulling ? 'animate-bounce' : ''}`} />
+              <span>{isPulling ? 'Pulling...' : 'Pull Sheet'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleManualPush}
+              disabled={isPushing}
+              className="px-2.5 py-1.5 rounded-lg font-bold text-[11px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 text-slate-800 dark:text-slate-200 shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+              title={`Push ${selectedClassIncharge || 'current'} class roster to Google Sheet`}
+            >
+              <UploadCloud className={`w-3.5 h-3.5 text-emerald-600 ${isPushing ? 'animate-bounce' : ''}`} />
+              <span>{isPushing ? 'Pushing...' : `Push ${selectedClassIncharge || 'Class'}`}</span>
+            </button>
+
+            <button
+              type="button"
               onClick={handleDownloadMasterTemplate}
-              className="px-2.5 py-1.5 rounded-lg font-bold text-[11px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 text-slate-700 dark:text-slate-300 shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer"
+              className="px-2.5 py-1.5 rounded-lg font-bold text-[11px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 text-slate-700 dark:text-slate-300 shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer ml-auto"
               title="Download pre-formatted .xlsx file with all 14 class tabs ready to import into Google Sheets"
             >
               <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
