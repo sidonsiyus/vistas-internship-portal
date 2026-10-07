@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import Modal from '../../common/Modal';
 import { useApp } from '../../../context/AppContext';
-import { testGoogleSheetWebhook, exportInternshipWorkbook } from '../../../utils/internshipExcelSync';
+import { testGoogleSheetWebhook, sanitizeAppsScriptUrl, exportInternshipWorkbook } from '../../../utils/internshipExcelSync';
 
 export default function GoogleSheetConfigModal({ isOpen, onClose }) {
   const { 
@@ -552,7 +552,9 @@ function getSheetRecords(sheet) {
 
   const handleSaveUrl = (e) => {
     e.preventDefault();
-    setGoogleSheetWebhookUrl(urlInput.trim());
+    const clean = sanitizeAppsScriptUrl(urlInput.trim());
+    setUrlInput(clean);
+    setGoogleSheetWebhookUrl(clean);
     showToast('Google Sheet Webhook URL saved!', 'success');
   };
 
@@ -561,13 +563,15 @@ function getSheetRecords(sheet) {
       showToast('Please enter your Webhook URL first', 'error');
       return;
     }
+    const clean = sanitizeAppsScriptUrl(urlInput.trim());
+    setUrlInput(clean);
     setIsTesting(true);
     setTestResult(null);
     try {
-      const res = await testGoogleSheetWebhook(urlInput.trim());
+      const res = await testGoogleSheetWebhook(clean);
       setTestResult(res);
       if (res.success) {
-        setGoogleSheetWebhookUrl(urlInput.trim());
+        setGoogleSheetWebhookUrl(res.cleanUrl || clean);
         showToast('Webhook verified successfully!', 'success');
       }
     } finally {
@@ -778,7 +782,7 @@ function getSheetRecords(sheet) {
 
             {/* Test Feedback Result */}
             {testResult && (
-              <div className={`mt-2 p-3 rounded-xl border flex items-start gap-2.5 ${
+              <div className={`mt-2 p-3.5 rounded-xl border flex items-start gap-2.5 ${
                 testResult.success
                   ? 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200'
                   : 'bg-rose-50 dark:bg-rose-950/50 border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-200'
@@ -788,7 +792,7 @@ function getSheetRecords(sheet) {
                 ) : (
                   <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
                 )}
-                <div className="text-[11px] leading-relaxed">
+                <div className="text-[11px] leading-relaxed flex-1">
                   {testResult.success ? (
                     <div>
                       <div className="font-bold">{testResult.message}</div>
@@ -799,9 +803,26 @@ function getSheetRecords(sheet) {
                       )}
                     </div>
                   ) : (
-                    <div>
-                      <div className="font-bold">Connection Check Failed</div>
-                      <div>{testResult.error}</div>
+                    <div className="space-y-2">
+                      <div className="font-bold text-xs text-rose-900 dark:text-rose-100">Connection Check Failed</div>
+                      <div className="text-rose-800 dark:text-rose-200 leading-normal">{testResult.error}</div>
+                      
+                      {testResult.url && (
+                        <div className="pt-1.5 border-t border-rose-200 dark:border-rose-800/80 flex flex-wrap items-center gap-2">
+                          <a
+                            href={`${testResult.url}?action=PING`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg font-bold text-[10px] shadow-2xs transition-all"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                            <span>1. Click Here to Authorize in New Tab</span>
+                          </a>
+                          <span className="text-[10px] text-rose-700 dark:text-rose-300">
+                            (If you see "Review permissions" or "Go to project (unsafe)", click Allow, then click Test Connection again!)
+                          </span>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -846,7 +867,12 @@ function getSheetRecords(sheet) {
               </ul>
             </li>
             <li>
-              Click <strong>Deploy</strong> (authorize Google permissions if prompted), copy the <strong>Web App URL</strong>, and paste it into the box above.
+              Click <strong>Deploy</strong>. If Google shows <em>"Authorization required"</em>:
+              <ul className="list-disc pl-4 pt-0.5 space-y-0.5 text-slate-700 dark:text-slate-300">
+                <li>Click <strong>Authorize access</strong> &gt; pick your Google account</li>
+                <li>Click <strong>Advanced</strong> (bottom left) &gt; click <strong>Go to ... (unsafe)</strong> &gt; click <strong>Allow</strong></li>
+              </ul>
+              Then copy the <strong>Web App URL</strong> (make sure it ends with <code>/exec</code>, NOT <code>/dev</code>) and paste it into the box above.
             </li>
             <li>
               Click <strong>Push All 14 Classes</strong> above! The script will automatically format and create all 14 class tabs, standardized columns (Col A to K), and a master <strong>Overview Dashboard</strong>!

@@ -414,15 +414,29 @@ export async function pushEntireDatabaseToGoogleSheet(webhookUrl, allRecords) {
 }
 
 /**
+ * Clean & sanitize Google Apps Script Web App URLs
+ * Strips whitespace, query params, trailing slashes, and multi-account segments like /u/1/
+ */
+export function sanitizeAppsScriptUrl(url) {
+  if (!url || typeof url !== 'string') return '';
+  let cleaned = url.trim();
+  // Strip any trailing query or hash if user copied them accidentally
+  cleaned = cleaned.split('?')[0].split('#')[0];
+  // Remove multi-account prefix (e.g. script.google.com/u/1/macros/... -> script.google.com/macros/...)
+  cleaned = cleaned.replace(/script\.google\.com\/u\/\d+\//, 'script.google.com/');
+  return cleaned;
+}
+
+/**
  * Test connectivity to Google Apps Script Webhook
  */
-export async function testGoogleSheetWebhook(webhookUrl) {
-  if (!webhookUrl || !webhookUrl.startsWith('http')) {
+export async function testGoogleSheetWebhook(rawWebhookUrl) {
+  if (!rawWebhookUrl || !rawWebhookUrl.startsWith('http')) {
     return { success: false, error: 'Please enter a valid URL starting with https://' };
   }
 
   // Detect if user mistakenly pasted the spreadsheet browser URL
-  if (webhookUrl.includes('docs.google.com/spreadsheets')) {
+  if (rawWebhookUrl.includes('docs.google.com/spreadsheets')) {
     return {
       success: false,
       isDocsUrl: true,
@@ -430,6 +444,40 @@ export async function testGoogleSheetWebhook(webhookUrl) {
     };
   }
 
+  const webhookUrl = sanitizeAppsScriptUrl(rawWebhookUrl);
+
+  // Detect if user copied the Test deployment URL (/dev) instead of production (/exec)
+  if (webhookUrl.endsWith('/dev')) {
+    return {
+      success: false,
+      isDevUrl: true,
+      url: webhookUrl,
+      error: 'Your URL ends in /dev (Test Deployment). Google blocks third-party websites from connecting to test URLs. In Google Apps Script, click "Deploy" > "Manage deployments" (or "New deployment") > choose "Web app", and copy the live URL ending in /exec.'
+    };
+  }
+
+  // First try GET with action=PING (GET has wider browser compatibility & redirects directly if needed)
+  try {
+    const getUrl = new URL(webhookUrl);
+    getUrl.searchParams.set('action', 'PING');
+    const getRes = await fetch(getUrl.toString(), {
+      method: 'GET',
+      headers: { 'Accept': 'application/json, text/plain, */*' },
+      redirect: 'follow',
+      mode: 'cors'
+    });
+
+    if (getRes.ok) {
+      const getData = await getRes.json();
+      if (getData.status === 'success') {
+        return { success: true, cleanUrl: webhookUrl, message: getData.message || 'Connected successfully', sheets: getData.sheets };
+      }
+    }
+  } catch (getErr) {
+    // Continue to POST ping attempt below
+  }
+
+  // Second try POST ping
   try {
     const payload = { action: 'PING', timestamp: Date.now() };
     const response = await fetch(webhookUrl, {
@@ -441,25 +489,16 @@ export async function testGoogleSheetWebhook(webhookUrl) {
 
     const data = await response.json();
     if (data.status === 'success') {
-      return { success: true, message: data.message, sheets: data.sheets };
+      return { success: true, cleanUrl: webhookUrl, message: data.message, sheets: data.sheets };
     } else {
-      return { success: false, error: data.message || 'Script returned an error' };
+      return { success: false, url: webhookUrl, error: data.message || 'Script returned an error' };
     }
   } catch (err) {
-    // Also try GET ping
-    try {
-      const getUrl = new URL(webhookUrl);
-      getUrl.searchParams.set('action', 'PING');
-      const getRes = await fetch(getUrl.toString(), { redirect: 'follow' });
-      const getData = await getRes.json();
-      if (getData.status === 'success') {
-        return { success: true, message: getData.message || 'Connected successfully', sheets: getData.sheets };
-      }
-    } catch (e) {}
-
     return {
       success: false,
-      error: `Could not reach Apps Script (${err.message}). In Google Apps Script, make sure you clicked 'Deploy > Manage deployments > Edit', and verified 'Who has access' is set to 'Anyone'.`
+      isFetchError: true,
+      url: webhookUrl,
+      error: `Could not reach Apps Script (${err.message}). This happens when Google requires a 1-time permission grant, or if "Who has access" is not set to "Anyone".`
     };
   }
 }
