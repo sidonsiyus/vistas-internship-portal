@@ -55,25 +55,25 @@ function doGet(e) {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var sheetName = e.parameter ? e.parameter.sheetName : null;
+    var callback = e.parameter ? e.parameter.callback : null;
+    var outputData = null;
     
     // Connectivity Ping
     if (e.parameter && e.parameter.action === "PING") {
-      return ContentService.createTextOutput(JSON.stringify({ 
+      outputData = { 
         status: "success", 
         message: "Connected to Google Sheet: " + ss.getName(),
         sheets: ss.getSheets().map(function(s) { return s.getName(); })
-      })).setMimeType(ContentService.MimeType.JSON);
-    }
-    
-    // Pull specific class
-    if (sheetName) {
+      };
+    } else if (sheetName) {
+      // Pull specific class
       var sheet = findSheet(ss, sheetName);
       var rows = getSheetRecords(sheet);
-      return ContentService.createTextOutput(JSON.stringify({ 
+      outputData = { 
         status: "success", 
         sheetName: sheet.getName(), 
         records: rows 
-      })).setMimeType(ContentService.MimeType.JSON);
+      };
     } else {
       // Pull all classes (skips Overview & Dashboard tabs)
       var allRecords = [];
@@ -85,13 +85,25 @@ function doGet(e) {
         }
         allRecords = allRecords.concat(getSheetRecords(sheets[s]));
       }
-      return ContentService.createTextOutput(JSON.stringify({ 
+      outputData = { 
         status: "success", 
         records: allRecords 
-      })).setMimeType(ContentService.MimeType.JSON);
+      };
     }
+
+    if (callback) {
+      return ContentService.createTextOutput(callback + "(" + JSON.stringify(outputData) + ");")
+        .setMimeType(ContentService.MimeType.JAVASCRIPT);
+    }
+    return ContentService.createTextOutput(JSON.stringify(outputData))
+      .setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: err.toString() }))
+    var errObj = { status: "error", message: err.toString() };
+    if (e && e.parameter && e.parameter.callback) {
+      return ContentService.createTextOutput(e.parameter.callback + "(" + JSON.stringify(errObj) + ");")
+        .setMimeType(ContentService.MimeType.JAVASCRIPT);
+    }
+    return ContentService.createTextOutput(JSON.stringify(errObj))
       .setMimeType(ContentService.MimeType.JSON);
   }
 }
