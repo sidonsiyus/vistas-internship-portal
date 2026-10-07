@@ -206,18 +206,25 @@ export default function ClassInchargeDashboard() {
 
             {/* Two-Way Google Sheets Sync Buttons */}
             <div className="flex items-center gap-1">
-              {googleSheetBrowserUrl && (
-                <a
-                  href={googleSheetBrowserUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-3 py-2 rounded-xl text-xs font-bold bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
-                  title="Open Google Sheet in a new browser tab"
-                >
-                  <ExternalLink className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                  <span>Open Sheet ↗</span>
-                </a>
-              )}
+              <button
+                type="button"
+                onClick={() => {
+                  if (googleSheetBrowserUrl) {
+                    window.open(googleSheetBrowserUrl, '_blank', 'noopener,noreferrer');
+                  } else {
+                    setIsGSheetModalOpen(true);
+                  }
+                }}
+                className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs cursor-pointer ${
+                  googleSheetBrowserUrl
+                    ? 'bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                    : 'bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700'
+                }`}
+                title={googleSheetBrowserUrl ? "Open Google Sheet in a new tab" : "Connect or paste your Google Sheet link"}
+              >
+                <ExternalLink className={`w-3.5 h-3.5 ${googleSheetBrowserUrl ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'}`} />
+                <span>Open Sheet ↗</span>
+              </button>
 
               <button
                 type="button"
