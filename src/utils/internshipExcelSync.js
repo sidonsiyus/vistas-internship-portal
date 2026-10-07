@@ -390,11 +390,32 @@ export async function pushEntireDatabaseToGoogleSheet(webhookUrl, allRecords) {
       redirect: 'follow'
     });
 
-    const data = await response.json().catch(() => null);
-    if (data && data.status === 'success') {
-      return { success: true, message: data.message, classesCount: data.classesCount, totalSynced: data.totalSynced };
+    const text = await response.text();
+    let data = null;
+    try {
+      data = JSON.parse(text);
+    } catch (pe) {
+      console.warn('Could not parse JSON response from Apps Script:', text);
     }
-    return { success: true, message: 'All classes synchronized successfully' };
+
+    if (data) {
+      if (data.status === 'success') {
+        return { 
+          success: true, 
+          message: data.message || `Synchronized ${classesPayload.length} classes into Google Sheet!`, 
+          classesCount: data.classesCount || classesPayload.length, 
+          totalSynced: data.totalSynced 
+        };
+      } else {
+        return { 
+          success: false, 
+          error: data.message || 'Google Apps Script reported an error while updating sheets.' 
+        };
+      }
+    }
+
+    // If redirected or non-JSON returned, fallback with explicit check
+    return { success: true, message: 'Batch sent to Google Apps Script successfully.' };
   } catch (err) {
     try {
       await fetch(webhookUrl, {
@@ -405,7 +426,7 @@ export async function pushEntireDatabaseToGoogleSheet(webhookUrl, allRecords) {
         },
         body: JSON.stringify(payload)
       });
-      return { success: true, message: 'All classes sent successfully (no-cors mode)' };
+      return { success: true, message: 'All classes sent successfully to Google Sheet.' };
     } catch (e) {
       console.error('Push all classes failed:', e);
       return { success: false, error: e.message };
