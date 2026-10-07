@@ -544,7 +544,9 @@ export async function testGoogleSheetWebhook(rawWebhookUrl) {
         success: true, 
         cleanUrl: webhookUrl, 
         message: jsonpResult.message || 'Connected successfully', 
-        sheets: jsonpResult.sheets 
+        sheets: jsonpResult.sheets,
+        sheetName: jsonpResult.sheetName,
+        spreadsheetUrl: jsonpResult.spreadsheetUrl
       };
     }
   } catch (jsonpErr) {
@@ -564,7 +566,14 @@ export async function testGoogleSheetWebhook(rawWebhookUrl) {
     if (getRes.ok) {
       const getData = await getRes.json();
       if (getData.status === 'success') {
-        return { success: true, cleanUrl: webhookUrl, message: getData.message || 'Connected successfully', sheets: getData.sheets };
+        return { 
+          success: true, 
+          cleanUrl: webhookUrl, 
+          message: getData.message || 'Connected successfully', 
+          sheets: getData.sheets,
+          sheetName: getData.sheetName,
+          spreadsheetUrl: getData.spreadsheetUrl
+        };
       }
     }
   } catch (getErr) {
@@ -583,7 +592,14 @@ export async function testGoogleSheetWebhook(rawWebhookUrl) {
 
     const data = await response.json();
     if (data.status === 'success') {
-      return { success: true, cleanUrl: webhookUrl, message: data.message, sheets: data.sheets };
+      return { 
+        success: true, 
+        cleanUrl: webhookUrl, 
+        message: data.message, 
+        sheets: data.sheets,
+        sheetName: data.sheetName,
+        spreadsheetUrl: data.spreadsheetUrl
+      };
     } else {
       return { success: false, url: webhookUrl, error: data.message || 'Script returned an error' };
     }

@@ -262,10 +262,32 @@ export function AppProvider({ children }) {
     }
   });
 
-  const setGoogleSheetWebhookUrl = (url) => {
+  const [googleSheetBrowserUrl, setGoogleSheetBrowserUrlState] = useState(() => {
+    try {
+      return localStorage.getItem('vistas_gsheet_browser_url') || '';
+    } catch (e) {
+      return '';
+    }
+  });
+
+  const setGoogleSheetWebhookUrl = (url, browserUrl = null) => {
     setGoogleSheetWebhookUrlState(url);
     try {
       localStorage.setItem('vistas_gsheet_webhook_url', url);
+    } catch (e) {}
+
+    if (browserUrl) {
+      setGoogleSheetBrowserUrlState(browserUrl);
+      try {
+        localStorage.setItem('vistas_gsheet_browser_url', browserUrl);
+      } catch (e) {}
+    }
+  };
+
+  const setGoogleSheetBrowserUrl = (url) => {
+    setGoogleSheetBrowserUrlState(url);
+    try {
+      localStorage.setItem('vistas_gsheet_browser_url', url);
     } catch (e) {}
   };
 
@@ -2491,6 +2513,8 @@ export function AppProvider({ children }) {
         setSelectedClassIncharge,
         googleSheetWebhookUrl,
         setGoogleSheetWebhookUrl,
+        googleSheetBrowserUrl,
+        setGoogleSheetBrowserUrl,
         lastGSheetSyncTime,
         syncWithGoogleSheet,
         pushClassToGoogleSheet,

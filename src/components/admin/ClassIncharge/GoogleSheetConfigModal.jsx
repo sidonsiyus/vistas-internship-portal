@@ -23,6 +23,8 @@ export default function GoogleSheetConfigModal({ isOpen, onClose }) {
   const { 
     googleSheetWebhookUrl, 
     setGoogleSheetWebhookUrl, 
+    googleSheetBrowserUrl,
+    setGoogleSheetBrowserUrl,
     syncWithGoogleSheet, 
     pushClassToGoogleSheet, 
     pushAllClassesToGoogleSheet,
@@ -33,6 +35,7 @@ export default function GoogleSheetConfigModal({ isOpen, onClose }) {
   } = useApp();
 
   const [urlInput, setUrlInput] = useState(googleSheetWebhookUrl || '');
+  const [sheetLinkInput, setSheetLinkInput] = useState(googleSheetBrowserUrl || '');
   const [copiedScript, setCopiedScript] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState(null);
@@ -64,6 +67,8 @@ function doGet(e) {
       outputData = { 
         status: "success", 
         message: "Connected to Google Sheet: " + ss.getName(),
+        sheetName: ss.getName(),
+        spreadsheetUrl: ss.getUrl(),
         sheets: ss.getSheets().map(function(s) { return s.getName(); })
       };
     } else if (sheetName) {
@@ -136,6 +141,8 @@ function doPost(e) {
       return ContentService.createTextOutput(JSON.stringify({ 
         status: "success", 
         message: "Connected to Google Sheet: " + ss.getName(),
+        sheetName: ss.getName(),
+        spreadsheetUrl: ss.getUrl(),
         sheets: ss.getSheets().map(function(s) { return s.getName(); })
       })).setMimeType(ContentService.MimeType.JSON);
     }
@@ -572,12 +579,19 @@ function getSheetRecords(sheet) {
       return;
     }
     setUrlInput(clean);
-    setGoogleSheetWebhookUrl(clean);
+    
+    // Save Webhook URL and optional direct Sheet Browser link
+    const cleanSheetLink = sheetLinkInput.trim();
+    setGoogleSheetWebhookUrl(clean, cleanSheetLink || null);
+    if (cleanSheetLink) {
+      setGoogleSheetBrowserUrl(cleanSheetLink);
+    }
+
     setSyncStatusBanner({ 
       type: 'success', 
-      message: '✓ Webhook URL successfully saved! You can now click "Push All 14 Classes" above to initialize your Google Sheet.' 
+      message: '✓ Webhook configuration successfully saved! You can now click "Push All 14 Classes" above to initialize your Google Sheet.' 
     });
-    showToast('Google Sheet Webhook URL saved!', 'success');
+    showToast('Google Sheet settings saved!', 'success');
   };
 
   const handleTestConnection = async () => {
@@ -594,10 +608,16 @@ function getSheetRecords(sheet) {
       const res = await testGoogleSheetWebhook(clean);
       setTestResult(res);
       if (res.success) {
-        setGoogleSheetWebhookUrl(res.cleanUrl || clean);
+        if (res.spreadsheetUrl) {
+          setGoogleSheetBrowserUrl(res.spreadsheetUrl);
+          setSheetLinkInput(res.spreadsheetUrl);
+          setGoogleSheetWebhookUrl(res.cleanUrl || clean, res.spreadsheetUrl);
+        } else {
+          setGoogleSheetWebhookUrl(res.cleanUrl || clean);
+        }
         setSyncStatusBanner({ 
           type: 'success', 
-          message: `✓ Connected to Google Sheet! ${res.sheets ? `Tabs: ${res.sheets.join(', ')}` : ''}` 
+          message: `✓ Connected to Google Sheet${res.sheetName ? ` "${res.sheetName}"` : ''}! ${res.sheets ? `Tabs: ${res.sheets.join(', ')}` : ''}` 
         });
         showToast('Webhook verified successfully!', 'success');
       }
@@ -749,6 +769,19 @@ function getSheetRecords(sheet) {
 
           {/* Quick Action Triggers */}
           <div className="flex flex-wrap items-center gap-2 shrink-0">
+            {googleSheetBrowserUrl && (
+              <a
+                href={googleSheetBrowserUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-2.5 py-1.5 rounded-lg font-bold text-[11px] bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-900/60 dark:hover:bg-emerald-800/60 text-emerald-900 dark:text-emerald-100 border border-emerald-300 dark:border-emerald-700 shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer"
+                title="Open Google Sheet directly in a new browser tab"
+              >
+                <ExternalLink className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-300" />
+                <span>Open Google Sheet ↗</span>
+              </a>
+            )}
+
             <button
               type="button"
               onClick={handleManualPull}
@@ -812,7 +845,7 @@ function getSheetRecords(sheet) {
           </div>
         )}
 
-        {/* Webhook URL Input & Test Button */}
+        {/* Webhook URL & Google Sheet Link Input */}
         <form onSubmit={handleSaveUrl} className="space-y-3">
           <div>
             <div className="flex items-center justify-between mb-1">
@@ -859,6 +892,36 @@ function getSheetRecords(sheet) {
               >
                 Save
               </button>
+            </div>
+
+            {/* Optional Direct Google Sheet Browser Link */}
+            <div className="mt-2.5">
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-[11px] font-medium text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Google Sheet Browser URL (Optional / Auto-detected)</span>
+                </label>
+                {sheetLinkInput && (
+                  <a
+                    href={sheetLinkInput}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[11px] text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 font-semibold"
+                  >
+                    <span>Click to Open Sheet ↗</span>
+                  </a>
+                )}
+              </div>
+              <div className="relative">
+                <ExternalLink className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="url"
+                  value={sheetLinkInput}
+                  onChange={(e) => setSheetLinkInput(e.target.value)}
+                  placeholder="https://docs.google.com/spreadsheets/d/.../edit"
+                  className="w-full pl-9 pr-3 py-1.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                />
+              </div>
             </div>
 
             {/* Warning if user pasted docs.google.com URL */}

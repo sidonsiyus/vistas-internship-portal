@@ -18,7 +18,8 @@ import {
   ChevronDown,
   Layers,
   FileCheck,
-  UserPlus
+  UserPlus,
+  ExternalLink
 } from 'lucide-react';
 import { useApp } from '../../../context/AppContext';
 import ClassSelectionModal from './ClassSelectionModal';
@@ -33,6 +34,7 @@ export default function ClassInchargeDashboard() {
     selectedClassIncharge, 
     setSelectedClassIncharge,
     googleSheetWebhookUrl,
+    googleSheetBrowserUrl,
     lastGSheetSyncTime,
     syncWithGoogleSheet,
     showToast 
@@ -204,6 +206,19 @@ export default function ClassInchargeDashboard() {
 
             {/* Two-Way Google Sheets Sync Buttons */}
             <div className="flex items-center gap-1">
+              {googleSheetBrowserUrl && (
+                <a
+                  href={googleSheetBrowserUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-2 rounded-xl text-xs font-bold bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
+                  title="Open Google Sheet in a new browser tab"
+                >
+                  <ExternalLink className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <span>Open Sheet ↗</span>
+                </a>
+              )}
+
               <button
                 type="button"
                 onClick={async () => {
