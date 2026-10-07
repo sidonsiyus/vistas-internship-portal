@@ -221,8 +221,19 @@ export function AppProvider({ children }) {
     try {
       const saved = localStorage.getItem('vistas_internship_records');
       if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        let parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Check if previously loaded shifted BBA 2C data is present (regNo="1" or studentName ends in ".0")
+          const hasShifted = parsed.some(r => r.className === 'BBA 2C' && (/^\d{1,2}$/.test(r.regNo) || String(r.studentName || '').endsWith('.0')));
+          if (hasShifted) {
+            // Merge with corrected database
+            const nonBba = parsed.filter(r => r.className !== 'BBA 2C');
+            const cleanBba = internshipRecordsDatabase.filter(r => r.className === 'BBA 2C');
+            parsed = [...nonBba, ...cleanBba];
+            localStorage.setItem('vistas_internship_records', JSON.stringify(parsed));
+          }
+          return parsed;
+        }
       }
     } catch (e) {}
     return Array.isArray(internshipRecordsDatabase) ? internshipRecordsDatabase : [];
