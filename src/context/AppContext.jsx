@@ -8,7 +8,8 @@ import internshipRecordsDatabase from '../data/internshipRecordsDatabase.json';
 import { 
   syncRecordToGoogleSheetWebhook, 
   pullRecordsFromGoogleSheet, 
-  pushAllClassRecordsToGoogleSheet 
+  pushAllClassRecordsToGoogleSheet,
+  pushEntireDatabaseToGoogleSheet
 } from '../utils/internshipExcelSync';
 
 const AppContext = createContext();
@@ -2440,6 +2441,27 @@ export function AppProvider({ children }) {
     return res;
   };
 
+  // Two-way network: Push all 14 classes to Google Sheet (Fresh Setup)
+  const pushAllClassesToGoogleSheet = async () => {
+    if (!googleSheetWebhookUrl) {
+      showToast('Please configure your Google Sheet URL in G-Sheet Sync settings', 'warning');
+      return { success: false, error: 'No URL configured' };
+    }
+
+    const res = await pushEntireDatabaseToGoogleSheet(googleSheetWebhookUrl, internshipRecords);
+    if (res.success) {
+      const nowIso = new Date().toISOString();
+      setLastGSheetSyncTime(nowIso);
+      try {
+        localStorage.setItem('vistas_last_gsheet_sync_time', nowIso);
+      } catch (e) {}
+      showToast(`Successfully synced all 14 classes (${internshipRecords.length} student records) to Google Sheet!`, 'success');
+    } else {
+      showToast(`Failed to push to Google Sheet: ${res.error}`, 'error');
+    }
+    return res;
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -2457,6 +2479,7 @@ export function AppProvider({ children }) {
         lastGSheetSyncTime,
         syncWithGoogleSheet,
         pushClassToGoogleSheet,
+        pushAllClassesToGoogleSheet,
         updateInternshipRecord,
         uploadInternshipDocument,
         deleteInternshipDocument,

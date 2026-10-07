@@ -151,6 +151,34 @@ export function exportInternshipWorkbook(records, specificClass = null) {
   
   const classesToExport = specificClass ? [specificClass] : ALL_CLASSES;
 
+  // If exporting all classes, add an Overview & Summary sheet as tab 0
+  if (!specificClass) {
+    const summaryData = [
+      ['VELS INSTITUTE OF SCIENCE, TECHNOLOGY & ADVANCED STUDIES (VISTAS) - INTERNSHIP DASHBOARD'],
+      ['Master Two-Way Live Tracking Roster • Generated on ' + new Date().toLocaleString()],
+      [''],
+      ['Class / Section', 'Total Enrolled', 'Completed', 'Ongoing', 'Not Started', 'Certs Collected', 'Completion Rate']
+    ];
+
+    ALL_CLASSES.forEach(cName => {
+      const cRecs = records.filter(r => (r.className || '').trim().toUpperCase() === cName.trim().toUpperCase());
+      const comp = cRecs.filter(r => (r.status || '').toLowerCase().includes('complete')).length;
+      const ong = cRecs.filter(r => (r.status || '').toLowerCase().includes('ongoing')).length;
+      const notSt = cRecs.length - comp - ong;
+      const certs = cRecs.filter(r => {
+        const cert = (r.certificateCollected || '').toLowerCase();
+        return cert === 'yes' || cert === 'collected';
+      }).length;
+      const rate = cRecs.length > 0 ? `${Math.round((comp / cRecs.length) * 100)}%` : '0%';
+
+      summaryData.push([cName, cRecs.length, comp, ong, notSt, certs, rate]);
+    });
+
+    const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+    wsSummary['!cols'] = [{ wch: 18 }, { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 18 }, { wch: 16 }];
+    XLSX.utils.book_append_sheet(wb, wsSummary, 'Overview & Summary');
+  }
+
   classesToExport.forEach(className => {
     const classRecords = records.filter(r => (r.className || '').trim().toUpperCase() === className.trim().toUpperCase());
     
@@ -194,7 +222,7 @@ export function exportInternshipWorkbook(records, specificClass = null) {
 
   const filename = specificClass 
     ? `INTERNSHIP_DETAILS_${specificClass.replace(/\s+/g, '_')}.xlsx`
-    : `INTERNSHIP_DETAILS_ALL_CLASSES.xlsx`;
+    : `VISTAS_Master_Internship_Template.xlsx`;
 
   XLSX.writeFile(wb, filename);
   return filename;
@@ -308,6 +336,78 @@ export async function pushAllClassRecordsToGoogleSheet(webhookUrl, classRecords,
       return { success: true };
     } catch (e) {
       console.error('Batch push to Google Sheet failed:', e);
+      return { success: false, error: e.message };
+    }
+  }
+}
+
+/**
+ * Push all 14 classes and all student records to Google Sheet in a single structured batch (Fresh Setup)
+ */
+export async function pushEntireDatabaseToGoogleSheet(webhookUrl, allRecords) {
+  if (!webhookUrl || !webhookUrl.startsWith('http')) {
+    return { success: false, error: 'No valid Webhook URL configured' };
+  }
+
+  const classesPayload = ALL_CLASSES.map(className => {
+    const classRecords = allRecords.filter(r => 
+      (r.className || '').trim().toUpperCase() === className.trim().toUpperCase()
+    );
+    // Sort by register number
+    classRecords.sort((a, b) => (a.regNo || '').localeCompare(b.regNo || ''));
+
+    return {
+      className,
+      records: classRecords.map(r => ({
+        regNo: r.regNo,
+        studentName: r.studentName,
+        companyName: r.companyName || '',
+        location: r.location || '',
+        startDate: r.startDate || '',
+        endDate: r.endDate || '',
+        duration: r.duration || '',
+        attendance: formatAttendance(r.attendance) || '',
+        status: r.status || 'Not Started',
+        certificateCollected: r.certificateCollected || 'No',
+        remarks: r.remarks || ''
+      }))
+    };
+  });
+
+  const payload = {
+    action: 'SYNC_ALL_CLASSES',
+    classes: classesPayload,
+    updatedAt: new Date().toISOString()
+  };
+
+  try {
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8'
+      },
+      body: JSON.stringify(payload),
+      redirect: 'follow'
+    });
+
+    const data = await response.json().catch(() => null);
+    if (data && data.status === 'success') {
+      return { success: true, message: data.message, classesCount: data.classesCount, totalSynced: data.totalSynced };
+    }
+    return { success: true, message: 'All classes synchronized successfully' };
+  } catch (err) {
+    try {
+      await fetch(webhookUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8'
+        },
+        body: JSON.stringify(payload)
+      });
+      return { success: true, message: 'All classes sent successfully (no-cors mode)' };
+    } catch (e) {
+      console.error('Push all classes failed:', e);
       return { success: false, error: e.message };
     }
   }

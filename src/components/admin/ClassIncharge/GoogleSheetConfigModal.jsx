@@ -11,11 +11,13 @@ import {
   DownloadCloud, 
   CheckCircle2, 
   AlertCircle,
-  Activity
+  Activity,
+  FileSpreadsheet,
+  Sparkles
 } from 'lucide-react';
 import Modal from '../../common/Modal';
 import { useApp } from '../../../context/AppContext';
-import { testGoogleSheetWebhook } from '../../../utils/internshipExcelSync';
+import { testGoogleSheetWebhook, exportInternshipWorkbook } from '../../../utils/internshipExcelSync';
 
 export default function GoogleSheetConfigModal({ isOpen, onClose }) {
   const { 
@@ -23,6 +25,8 @@ export default function GoogleSheetConfigModal({ isOpen, onClose }) {
     setGoogleSheetWebhookUrl, 
     syncWithGoogleSheet, 
     pushClassToGoogleSheet, 
+    pushAllClassesToGoogleSheet,
+    internshipRecords = [],
     selectedClassIncharge,
     lastGSheetSyncTime,
     showToast 
@@ -34,14 +38,17 @@ export default function GoogleSheetConfigModal({ isOpen, onClose }) {
   const [testResult, setTestResult] = useState(null);
   const [isPulling, setIsPulling] = useState(false);
   const [isPushing, setIsPushing] = useState(false);
+  const [isPushingAll, setIsPushingAll] = useState(false);
 
-  // Resilient, Two-Way Google Apps Script
+  // Resilient, Two-Way Google Apps Script (Supports Brand New or Existing Google Sheets)
   const appsScriptCode = `/**
  * VISTAS Portal Two-Way Google Sheet Synchronizer
  * Handles:
- * 1. PING: Test connectivity
- * 2. POST: Push single student or batch class updates from portal to Google Sheet
- * 3. GET:  Pull latest spreadsheet rows into portal
+ * 1. PING: Test connectivity & return sheet name + tab list
+ * 2. SYNC_ALL_CLASSES: One-click setup of all 14 class tabs + Overview dashboard
+ * 3. BATCH_UPDATE_CLASS: Push single class updates from portal to Google Sheet
+ * 4. UPDATE_STUDENT_INTERNSHIP: Push single student record updates
+ * 5. GET: Pull latest spreadsheet rows into portal
  */
 
 function doGet(e) {
@@ -49,6 +56,7 @@ function doGet(e) {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var sheetName = e.parameter ? e.parameter.sheetName : null;
     
+    // Connectivity Ping
     if (e.parameter && e.parameter.action === "PING") {
       return ContentService.createTextOutput(JSON.stringify({ 
         status: "success", 
@@ -57,6 +65,7 @@ function doGet(e) {
       })).setMimeType(ContentService.MimeType.JSON);
     }
     
+    // Pull specific class
     if (sheetName) {
       var sheet = findSheet(ss, sheetName);
       var rows = getSheetRecords(sheet);
@@ -66,9 +75,14 @@ function doGet(e) {
         records: rows 
       })).setMimeType(ContentService.MimeType.JSON);
     } else {
+      // Pull all classes (skips Overview & Dashboard tabs)
       var allRecords = [];
       var sheets = ss.getSheets();
       for (var s = 0; s < sheets.length; s++) {
+        var sName = sheets[s].getName();
+        if (sName.toLowerCase().indexOf('overview') !== -1 || sName.toLowerCase().indexOf('dashboard') !== -1) {
+          continue;
+        }
         allRecords = allRecords.concat(getSheetRecords(sheets[s]));
       }
       return ContentService.createTextOutput(JSON.stringify({ 
@@ -104,7 +118,7 @@ function doPost(e) {
     
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     
-    // PING Connectivity Test
+    // 1. PING Connectivity Test
     if (data.action === "PING") {
       return ContentService.createTextOutput(JSON.stringify({ 
         status: "success", 
@@ -112,11 +126,54 @@ function doPost(e) {
         sheets: ss.getSheets().map(function(s) { return s.getName(); })
       })).setMimeType(ContentService.MimeType.JSON);
     }
+
+    // 2. FRESH SETUP: SYNC ALL 14 CLASSES & DASHBOARD AT ONCE
+    if (data.action === "SYNC_ALL_CLASSES" && Array.isArray(data.classes)) {
+      var summaryList = [];
+      var totalSynced = 0;
+
+      for (var c = 0; c < data.classes.length; c++) {
+        var cData = data.classes[c];
+        var cSheet = findSheet(ss, cData.className);
+        var recs = cData.records || [];
+        
+        formatAndPopulateSheet(cSheet, cData.className, recs);
+        totalSynced += recs.length;
+        
+        var comp = recs.filter(function(r) { return (r.status || '').toLowerCase().indexOf('complete') !== -1; }).length;
+        var ong = recs.filter(function(r) { return (r.status || '').toLowerCase().indexOf('ongoing') !== -1; }).length;
+        var notSt = recs.length - comp - ong;
+        var certs = recs.filter(function(r) { 
+          var cert = (r.certificateCollected || '').toLowerCase();
+          return cert === 'yes' || cert === 'collected';
+        }).length;
+
+        summaryList.push([
+          cData.className,
+          recs.length,
+          comp,
+          ong,
+          notSt,
+          certs,
+          recs.length > 0 ? Math.round((comp / recs.length) * 100) + "%" : "0%"
+        ]);
+      }
+
+      // Build Overview & Summary dashboard tab
+      buildOverviewSheet(ss, summaryList);
+
+      return ContentService.createTextOutput(JSON.stringify({ 
+        status: "success", 
+        message: "Synchronized " + data.classes.length + " classes with " + totalSynced + " students into Google Sheet!",
+        totalSynced: totalSynced,
+        classesCount: data.classes.length
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
     
     var sheet = findSheet(ss, data.sheetName);
     var colMap = getColumnMapping(sheet);
     
-    // Batch Update Mode
+    // 3. BATCH UPDATE SINGLE CLASS
     if (data.action === "BATCH_UPDATE_CLASS" && Array.isArray(data.records)) {
       var updatedCount = 0;
       for (var k = 0; k < data.records.length; k++) {
@@ -132,7 +189,7 @@ function doPost(e) {
       })).setMimeType(ContentService.MimeType.JSON);
     }
     
-    // Single Student Update Mode
+    // 4. SINGLE STUDENT UPDATE
     var rowIndex = findRowIndex(sheet, data.regNo, data.studentName, colMap);
     writeRowWithColMap(sheet, rowIndex, colMap, data);
     
@@ -149,15 +206,20 @@ function doPost(e) {
   }
 }
 
-// Resilient Sheet Tab Finder: Matches casing, trailing spaces, or hyphens
+// Resilient Sheet Tab Finder: Matches casing, trailing spaces, or creates if missing
 function findSheet(ss, sheetName) {
   if (!sheetName) return ss.getSheets()[0];
   
-  var sheet = ss.getSheetByName(sheetName);
-  if (sheet) return sheet;
-  
   var cleanTarget = String(sheetName).trim().toLowerCase();
   var sheets = ss.getSheets();
+
+  // If brand new spreadsheet with only empty 'Sheet1', rename it!
+  if (sheets.length === 1 && sheets[0].getName().toLowerCase() === 'sheet1' && sheets[0].getLastRow() <= 1) {
+    sheets[0].setName(sheetName);
+    formatHeaders(sheets[0]);
+    return sheets[0];
+  }
+
   for (var i = 0; i < sheets.length; i++) {
     if (sheets[i].getName().trim().toLowerCase() === cleanTarget) {
       return sheets[i];
@@ -172,14 +234,113 @@ function findSheet(ss, sheetName) {
     }
   }
   
-  // If tab doesn't exist, create it matching that specific class format
+  // Tab doesn't exist, create it with standardized columns
   var newSheet = ss.insertSheet(sheetName);
-  if (cleanTarget.indexOf('2c') !== -1) {
-    newSheet.appendRow(["SNO", "REG NO", "NAME", "COMPANY NAME", "LOCATION", "START DATE", "END DATE", "DURATION", "ATTENDANCE", "STATUS", "CERTIFICATE COLLECTED", "REMARKS"]);
-  } else {
-    newSheet.appendRow(["REG NO", "NAME", "COMPANY NAME", "LOCATION", "START DATE", "END DATE", "DURATION", "ATTENDANCE", "STATUS", "CERTIFICATE COLLECTED", "REMARKS"]);
-  }
+  formatHeaders(newSheet);
   return newSheet;
+}
+
+// Format Headers cleanly with Dark Navy background, white bold text, freeze row 1
+function formatHeaders(sheet) {
+  var headers = [
+    "REG NO", "NAME", "COMPANY NAME", "LOCATION",
+    "START DATE", "END DATE", "DURATION", "ATTENDANCE",
+    "STATUS", "CERTIFICATE COLLECTED", "REMARKS"
+  ];
+  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  var headerRange = sheet.getRange(1, 1, 1, headers.length);
+  headerRange.setBackground("#0F172A");
+  headerRange.setFontColor("#FFFFFF");
+  headerRange.setFontWeight("bold");
+  headerRange.setHorizontalAlignment("center");
+  sheet.setFrozenRows(1);
+}
+
+// Bulk Populates a Sheet Tab cleanly
+function formatAndPopulateSheet(sheet, sheetName, records) {
+  var headers = [
+    "REG NO", "NAME", "COMPANY NAME", "LOCATION",
+    "START DATE", "END DATE", "DURATION", "ATTENDANCE",
+    "STATUS", "CERTIFICATE COLLECTED", "REMARKS"
+  ];
+
+  sheet.clear();
+  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+
+  var headerRange = sheet.getRange(1, 1, 1, headers.length);
+  headerRange.setBackground("#0F172A");
+  headerRange.setFontColor("#FFFFFF");
+  headerRange.setFontWeight("bold");
+  headerRange.setHorizontalAlignment("center");
+  sheet.setFrozenRows(1);
+
+  if (records && records.length > 0) {
+    var rows = records.map(function(r) {
+      return [
+        String(r.regNo || '').replace('.0','').trim(),
+        r.studentName || '',
+        r.companyName || '',
+        r.location || '',
+        r.startDate || '',
+        r.endDate || '',
+        r.duration || '',
+        r.attendance || '',
+        r.status || 'Not Started',
+        r.certificateCollected || 'No',
+        r.remarks || ''
+      ];
+    });
+    sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
+    sheet.getRange(2, 1, rows.length, 1).setNumberFormat("@");
+    sheet.getRange(2, 9, rows.length, 2).setHorizontalAlignment("center");
+  }
+
+  for (var col = 1; col <= headers.length; col++) {
+    sheet.autoResizeColumn(col);
+  }
+}
+
+// Creates / Updates Overview & Summary Dashboard tab
+function buildOverviewSheet(ss, summaryList) {
+  var overviewSheet = ss.getSheetByName("Overview & Summary");
+  if (!overviewSheet) {
+    overviewSheet = ss.insertSheet("Overview & Summary", 0);
+  } else {
+    overviewSheet.clear();
+  }
+
+  var titleRange = overviewSheet.getRange(1, 1, 1, 7);
+  titleRange.merge();
+  titleRange.setValue("VELS INSTITUTE OF SCIENCE, TECHNOLOGY & ADVANCED STUDIES (VISTAS) - INTERNSHIP DASHBOARD");
+  titleRange.setBackground("#1E3A8A");
+  titleRange.setFontColor("#FFFFFF");
+  titleRange.setFontWeight("bold");
+  titleRange.setHorizontalAlignment("center");
+
+  var subRange = overviewSheet.getRange(2, 1, 1, 7);
+  subRange.merge();
+  subRange.setValue("Two-Way Live Tracking Database • Synced on: " + Utilities.formatDate(new Date(), "GMT+05:30", "dd/MM/yyyy HH:mm:ss"));
+  subRange.setBackground("#F1F5F9");
+  subRange.setFontColor("#475569");
+  subRange.setFontSize(9);
+  subRange.setHorizontalAlignment("center");
+
+  var headers = ["Class / Section", "Total Enrolled", "Completed", "Ongoing", "Not Started", "Certs Collected", "Completion Rate"];
+  overviewSheet.getRange(4, 1, 1, headers.length).setValues([headers]);
+  var hdrRange = overviewSheet.getRange(4, 1, 1, headers.length);
+  hdrRange.setBackground("#0F172A");
+  hdrRange.setFontColor("#FFFFFF");
+  hdrRange.setFontWeight("bold");
+  hdrRange.setHorizontalAlignment("center");
+
+  if (summaryList && summaryList.length > 0) {
+    overviewSheet.getRange(5, 1, summaryList.length, headers.length).setValues(summaryList);
+    overviewSheet.getRange(5, 2, summaryList.length, 6).setHorizontalAlignment("center");
+  }
+
+  for (var c = 1; c <= headers.length; c++) {
+    overviewSheet.autoResizeColumn(c);
+  }
 }
 
 // Dynamic Header Column Mapping: Detects exact column structure for any class (e.g. AERO 2A vs BBA 2C with SNO)
@@ -446,6 +607,29 @@ function getSheetRecords(sheet) {
     }
   };
 
+  const handlePushAllClasses = async () => {
+    if (!urlInput.trim()) {
+      showToast('Please enter a Webhook URL first', 'error');
+      return;
+    }
+    setGoogleSheetWebhookUrl(urlInput.trim());
+    setIsPushingAll(true);
+    try {
+      await pushAllClassesToGoogleSheet();
+    } finally {
+      setIsPushingAll(false);
+    }
+  };
+
+  const handleDownloadMasterTemplate = () => {
+    try {
+      const filename = exportInternshipWorkbook(internshipRecords);
+      showToast(`Downloaded master template (${filename})`, 'success');
+    } catch (err) {
+      showToast('Failed to download template: ' + err.message, 'error');
+    }
+  };
+
   const isDocsUrl = urlInput.includes('docs.google.com/spreadsheets');
 
   return (
@@ -481,31 +665,54 @@ function getSheetRecords(sheet) {
           </div>
 
           {/* Quick Action Triggers */}
-          {googleSheetWebhookUrl && (
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={handleManualPull}
-                disabled={isPulling}
-                className="px-3 py-1.5 rounded-lg font-bold text-[11px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 text-slate-800 dark:text-slate-200 shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer"
-                title="Fetch any direct changes made in Google Sheet"
-              >
-                <DownloadCloud className={`w-3.5 h-3.5 text-blue-600 ${isPulling ? 'animate-bounce' : ''}`} />
-                <span>{isPulling ? 'Pulling...' : 'Pull from Sheet'}</span>
-              </button>
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            {googleSheetWebhookUrl && (
+              <>
+                <button
+                  type="button"
+                  onClick={handleManualPull}
+                  disabled={isPulling}
+                  className="px-2.5 py-1.5 rounded-lg font-bold text-[11px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 text-slate-800 dark:text-slate-200 shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer"
+                  title="Fetch any direct changes made in Google Sheet"
+                >
+                  <DownloadCloud className={`w-3.5 h-3.5 text-blue-600 ${isPulling ? 'animate-bounce' : ''}`} />
+                  <span>{isPulling ? 'Pulling...' : 'Pull Sheet'}</span>
+                </button>
 
-              <button
-                type="button"
-                onClick={handleManualPush}
-                disabled={isPushing}
-                className="px-3 py-1.5 rounded-lg font-bold text-[11px] bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer"
-                title="Push current class roster to Google Sheet"
-              >
-                <UploadCloud className={`w-3.5 h-3.5 ${isPushing ? 'animate-bounce' : ''}`} />
-                <span>{isPushing ? 'Pushing...' : 'Push to Sheet'}</span>
-              </button>
-            </div>
-          )}
+                <button
+                  type="button"
+                  onClick={handleManualPush}
+                  disabled={isPushing}
+                  className="px-2.5 py-1.5 rounded-lg font-bold text-[11px] bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer"
+                  title={`Push ${selectedClassIncharge || 'current'} class roster to Google Sheet`}
+                >
+                  <UploadCloud className={`w-3.5 h-3.5 text-emerald-600 ${isPushing ? 'animate-bounce' : ''}`} />
+                  <span>{isPushing ? 'Pushing...' : `Push ${selectedClassIncharge || 'Class'}`}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handlePushAllClasses}
+                  disabled={isPushingAll}
+                  className="px-3 py-1.5 rounded-lg font-bold text-[11px] bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer"
+                  title="Push entire 14-class database and initialize Overview dashboard in Google Sheet"
+                >
+                  <Sparkles className={`w-3.5 h-3.5 text-emerald-200 ${isPushingAll ? 'animate-spin' : ''}`} />
+                  <span>{isPushingAll ? 'Setting up...' : 'Push All 14 Classes'}</span>
+                </button>
+              </>
+            )}
+
+            <button
+              type="button"
+              onClick={handleDownloadMasterTemplate}
+              className="px-2.5 py-1.5 rounded-lg font-bold text-[11px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 text-slate-700 dark:text-slate-300 shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer"
+              title="Download pre-formatted .xlsx file with all 14 class tabs ready to import into Google Sheets"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Download Excel (.xlsx)</span>
+            </button>
+          </div>
         </div>
 
         {/* Webhook URL Input & Test Button */}
@@ -607,8 +814,8 @@ function getSheetRecords(sheet) {
         <div className="p-4 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl space-y-3">
           <div className="flex items-center justify-between">
             <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-              <HelpCircle className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-              <span>How to connect your Google Sheet in 2 minutes:</span>
+              <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <span>Setup Clean Google Sheet in 2 Minutes (Two-Way Sync):</span>
             </div>
             
             <button
@@ -621,19 +828,34 @@ function getSheetRecords(sheet) {
             </button>
           </div>
 
-          <ol className="text-slate-600 dark:text-slate-400 space-y-1.5 list-decimal pl-4 leading-relaxed text-[11px]">
-            <li>Open your Google Sheet in your web browser.</li>
-            <li>In the top menu, click <strong>Extensions &gt; Apps Script</strong>.</li>
-            <li>In the script editor, delete any existing code, paste the copied script, and click the <strong>Save (Disk)</strong> icon.</li>
-            <li>Click the blue <strong>Deploy &gt; New deployment</strong> button (top right).</li>
-            <li>Click the gear icon next to "Select type" and choose <strong>Web app</strong>. Configure:
-              <ul className="list-disc pl-4 pt-0.5 space-y-0.5 text-slate-500 font-medium">
+          <ol className="text-slate-600 dark:text-slate-400 space-y-2 list-decimal pl-4 leading-relaxed text-[11px]">
+            <li>
+              <strong>Create a new Google Sheet:</strong> Open <a href="https://sheets.new" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 font-bold underline">sheets.new</a> in your browser (or use your existing sheet).
+            </li>
+            <li>
+              In your Google Sheet menu, click <strong>Extensions &gt; Apps Script</strong>.
+            </li>
+            <li>
+              In the script editor, delete any existing code, paste the <strong>copied Apps Script</strong>, and click the <strong>Save</strong> (Disk 💾) icon.
+            </li>
+            <li>
+              Click the blue <strong>Deploy &gt; New deployment</strong> button (top right). Choose <strong>Web app</strong> and set:
+              <ul className="list-disc pl-4 pt-1 space-y-0.5 text-slate-700 dark:text-slate-300 font-medium">
                 <li><strong>Execute as:</strong> Me (your Google account)</li>
-                <li><strong>Who has access:</strong> <span className="text-blue-600 dark:text-blue-400 font-bold">Anyone</span> (crucial so the portal can sync without Google login prompts)</li>
+                <li><strong>Who has access:</strong> <span className="text-emerald-600 dark:text-emerald-400 font-bold">Anyone</span> (allows bidirectional sync without OAuth popups)</li>
               </ul>
             </li>
-            <li>Click <strong>Deploy</strong> (authorize permissions if prompted), copy the <strong>Web App URL</strong>, and paste it into the box above!</li>
+            <li>
+              Click <strong>Deploy</strong> (authorize Google permissions if prompted), copy the <strong>Web App URL</strong>, and paste it into the box above.
+            </li>
+            <li>
+              Click <strong>Push All 14 Classes</strong> above! The script will automatically format and create all 14 class tabs, standardized columns (Col A to K), and a master <strong>Overview Dashboard</strong>!
+            </li>
           </ol>
+
+          <div className="pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
+            <span>🔄 <strong>Two-Way Control:</strong> Click <strong>Push</strong> to send portal updates to Google Sheets, or <strong>Pull</strong> to load spreadsheet changes into the portal.</span>
+          </div>
         </div>
 
         <div className="flex justify-end pt-1">
