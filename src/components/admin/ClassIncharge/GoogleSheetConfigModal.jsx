@@ -44,15 +44,14 @@ export default function GoogleSheetConfigModal({ isOpen, onClose }) {
   const [isPushingAll, setIsPushingAll] = useState(false);
   const [syncStatusBanner, setSyncStatusBanner] = useState(null);
 
-  // Resilient, Two-Way Google Apps Script (Supports Brand New or Existing Google Sheets)
+  // Resilient One-Way Google Sheet Synchronizer
+  // Supports reading all 13 class tabs even with different header structures or column layouts (e.g., BBA 2C with SNO)
   const appsScriptCode = `/**
- * VISTAS Portal Two-Way Google Sheet Synchronizer
- * Handles:
- * 1. PING: Test connectivity & return sheet name + tab list
- * 2. SYNC_ALL_CLASSES: One-click setup of all 14 class tabs + Overview dashboard
- * 3. BATCH_UPDATE_CLASS: Push single class updates from portal to Google Sheet
- * 4. UPDATE_STUDENT_INTERNSHIP: Push single student record updates
- * 5. GET: Pull latest spreadsheet rows into portal
+ * VISTAS Official Google Sheet Live Synchronizer (One-Way Sync)
+ * Reads all class tabs directly from the official Google Sheet:
+ * - Automatically detects custom column headers per tab (e.g. BBA 2C with SNO vs BBA 2A without SNO)
+ * - Converts Excel date serials and formats cleanly into the portal
+ * - Provides doGet API for instant updates into VISTAS Internship Portal
  */
 
 function doGet(e) {
@@ -739,8 +738,8 @@ function getSheetRecords(sheet) {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Google Sheets Two-Way Manual Sync"
-      subtitle="Manual bidirectional sync: Push class roster updates to Google Sheets or pull spreadsheet edits into the portal on demand"
+      title="Official Google Sheet Live Sync (One-Way)"
+      subtitle="Connect your official multi-tab Google Sheet to pull the latest class internship updates directly into the website on demand"
       maxWidth="max-w-3xl"
     >
       <div className="space-y-4 text-xs font-sans">
@@ -754,12 +753,12 @@ function getSheetRecords(sheet) {
               }`} />
               <div>
                 <div className="font-bold text-slate-900 dark:text-white">
-                  {(googleSheetWebhookUrl || urlInput.trim()) ? 'Manual Two-Way Sync Ready' : 'Sync Not Configured'}
+                  {(googleSheetWebhookUrl || urlInput.trim()) ? 'Official Google Sheet Connected' : 'Sync Not Configured'}
                 </div>
                 <div className="text-[11px] text-slate-500 dark:text-slate-400">
                   {lastGSheetSyncTime 
                     ? `Last synchronized: ${new Date(lastGSheetSyncTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-                    : 'Manual sync mode: Click "Push All 14 Classes" or "Pull Sheet" whenever you want to update'}
+                    : 'Whenever someone edits the official Google Sheet, click "Pull / Sync from Sheet" to update the website'}
                 </div>
               </div>
             </div>
@@ -782,42 +781,20 @@ function getSheetRecords(sheet) {
           <div className="pt-2 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={handlePushAllClasses}
-              disabled={isPushingAll}
-              className="px-3 py-1.5 rounded-lg font-bold text-[11px] bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
-              title="Push entire 14-class database and initialize Overview dashboard in Google Sheet"
-            >
-              <Sparkles className={`w-3.5 h-3.5 text-emerald-200 ${isPushingAll ? 'animate-spin' : ''}`} />
-              <span>{isPushingAll ? 'Pushing 14 Classes...' : 'Push All 14 Classes'}</span>
-            </button>
-
-            <button
-              type="button"
               onClick={handleManualPull}
               disabled={isPulling}
-              className="px-2.5 py-1.5 rounded-lg font-bold text-[11px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 text-slate-800 dark:text-slate-200 shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
-              title="Fetch any direct changes made in Google Sheet"
+              className="px-3.5 py-1.5 rounded-lg font-bold text-[11px] bg-blue-600 hover:bg-blue-700 text-white shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+              title="Fetch and sync the latest updates from the official Google Sheet into the website"
             >
-              <DownloadCloud className={`w-3.5 h-3.5 text-blue-600 ${isPulling ? 'animate-bounce' : ''}`} />
-              <span>{isPulling ? 'Pulling...' : 'Pull Sheet'}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleManualPush}
-              disabled={isPushing}
-              className="px-2.5 py-1.5 rounded-lg font-bold text-[11px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 text-slate-800 dark:text-slate-200 shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
-              title={`Push ${selectedClassIncharge || 'current'} class roster to Google Sheet`}
-            >
-              <UploadCloud className={`w-3.5 h-3.5 text-emerald-600 ${isPushing ? 'animate-bounce' : ''}`} />
-              <span>{isPushing ? 'Pushing...' : `Push ${selectedClassIncharge || 'Class'}`}</span>
+              <DownloadCloud className={`w-3.5 h-3.5 text-blue-100 ${isPulling ? 'animate-bounce' : ''}`} />
+              <span>{isPulling ? 'Syncing from Sheet...' : 'Pull / Sync from Google Sheet'}</span>
             </button>
 
             <button
               type="button"
               onClick={handleDownloadMasterTemplate}
-              className="px-2.5 py-1.5 rounded-lg font-bold text-[11px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 text-slate-700 dark:text-slate-300 shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer ml-auto"
-              title="Download pre-formatted .xlsx file with all 14 class tabs ready to import into Google Sheets"
+              className="px-2.5 py-1.5 rounded-lg font-bold text-[11px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 text-slate-700 dark:text-slate-300 shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer"
+              title="Download backup .xlsx file with all class tabs"
             >
               <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
               <span>Download Excel (.xlsx)</span>
@@ -990,7 +967,7 @@ function getSheetRecords(sheet) {
           <div className="flex items-center justify-between">
             <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
               <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              <span>Setup Clean Google Sheet in 2 Minutes (Two-Way Sync):</span>
+              <span>Connect Official Google Sheet in 2 Minutes (Live Sync):</span>
             </div>
             
             <button
@@ -999,16 +976,16 @@ function getSheetRecords(sheet) {
               className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[11px] font-bold transition-colors shadow-xs cursor-pointer"
             >
               {copiedScript ? <Check className="w-3.5 h-3.5 text-white" /> : <Copy className="w-3.5 h-3.5" />}
-              <span>{copiedScript ? 'Copied Two-Way Script!' : 'Copy Apps Script'}</span>
+              <span>{copiedScript ? 'Copied Apps Script!' : 'Copy Apps Script'}</span>
             </button>
           </div>
 
           <ol className="text-slate-600 dark:text-slate-400 space-y-2 list-decimal pl-4 leading-relaxed text-[11px]">
             <li>
-              <strong>Create a new Google Sheet:</strong> Open <a href="https://sheets.new" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 font-bold underline">sheets.new</a> in your browser (or use your existing sheet).
+              <strong>Open your official Google Sheet:</strong> Open the spreadsheet containing your class tabs (<a href="https://docs.google.com/spreadsheets" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 font-bold underline">Google Sheets</a>).
             </li>
             <li>
-              In your Google Sheet menu, click <strong>Extensions &gt; Apps Script</strong>.
+              In your Google Sheet menu bar, click <strong>Extensions &gt; Apps Script</strong>.
             </li>
             <li>
               In the script editor, delete any existing code, paste the <strong>copied Apps Script</strong>, and click the <strong>Save</strong> (Disk 💾) icon.
@@ -1017,7 +994,7 @@ function getSheetRecords(sheet) {
               Click the blue <strong>Deploy &gt; New deployment</strong> button (top right). Choose <strong>Web app</strong> and set:
               <ul className="list-disc pl-4 pt-1 space-y-0.5 text-slate-700 dark:text-slate-300 font-medium">
                 <li><strong>Execute as:</strong> Me (your Google account)</li>
-                <li><strong>Who has access:</strong> <span className="text-emerald-600 dark:text-emerald-400 font-bold">Anyone</span> (allows bidirectional sync without OAuth popups)</li>
+                <li><strong>Who has access:</strong> <span className="text-emerald-600 dark:text-emerald-400 font-bold">Anyone</span> (allows the portal to fetch class updates)</li>
               </ul>
             </li>
             <li>
@@ -1026,15 +1003,15 @@ function getSheetRecords(sheet) {
                 <li>Click <strong>Authorize access</strong> &gt; pick your Google account</li>
                 <li>Click <strong>Advanced</strong> (bottom left) &gt; click <strong>Go to ... (unsafe)</strong> &gt; click <strong>Allow</strong></li>
               </ul>
-              Then copy the <strong>Web App URL</strong> (make sure it ends with <code>/exec</code>, NOT <code>/dev</code>) and paste it into the box above.
+              Then copy the <strong>Web App URL</strong> (must end with <code>/exec</code>) and paste it into the box above.
             </li>
             <li>
-              Click <strong>Push All 14 Classes</strong> above! The script will automatically format and create all 14 class tabs, standardized columns (Col A to K), and a master <strong>Overview Dashboard</strong>!
+              Click <strong>Test Connection</strong> and <strong>Save</strong>. Then click <strong>Pull / Sync from Google Sheet</strong>! The website will dynamically read each tab's custom headers (e.g. BBA 2C with SNO vs BBA 2A) and update all student internship records immediately!
             </li>
           </ol>
 
           <div className="pt-2 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
-            <span>🔄 <strong>Two-Way Control:</strong> Click <strong>Push</strong> to send portal updates to Google Sheets, or <strong>Pull</strong> to load spreadsheet changes into the portal.</span>
+            <span>⚡ <strong>One-Way Sync:</strong> When faculty or in-charges edit the official Google Sheet, click <strong>Sync G-Sheet</strong> on your dashboard or here to refresh the portal.</span>
           </div>
         </div>
 

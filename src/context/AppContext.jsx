@@ -219,21 +219,20 @@ export function AppProvider({ children }) {
   // Class Incharge & Student Internship Records State
   const [internshipRecords, setInternshipRecords] = useState(() => {
     try {
+      const dbVersion = '2026_10_07_v3_official';
+      const savedVersion = localStorage.getItem('vistas_records_version');
       const saved = localStorage.getItem('vistas_internship_records');
-      if (saved) {
+
+      if (saved && savedVersion === dbVersion) {
         let parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          // Check if previously loaded shifted BBA 2C data is present (regNo="1" or studentName ends in ".0")
-          const hasShifted = parsed.some(r => r.className === 'BBA 2C' && (/^\d{1,2}$/.test(r.regNo) || String(r.studentName || '').endsWith('.0')));
-          if (hasShifted) {
-            // Merge with corrected database
-            const nonBba = parsed.filter(r => r.className !== 'BBA 2C');
-            const cleanBba = internshipRecordsDatabase.filter(r => r.className === 'BBA 2C');
-            parsed = [...nonBba, ...cleanBba];
-            localStorage.setItem('vistas_internship_records', JSON.stringify(parsed));
-          }
           return parsed;
         }
+      } else {
+        // Upgrade to official cleansed database
+        localStorage.setItem('vistas_records_version', dbVersion);
+        localStorage.setItem('vistas_internship_records', JSON.stringify(internshipRecordsDatabase));
+        return internshipRecordsDatabase;
       }
     } catch (e) {}
     return Array.isArray(internshipRecordsDatabase) ? internshipRecordsDatabase : [];

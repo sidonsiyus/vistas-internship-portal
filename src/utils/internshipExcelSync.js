@@ -46,22 +46,37 @@ export const EXCEL_HEADERS = [
  * into simple, readable "DD/MM/YYYY" format.
  */
 export function cleanDisplayDate(val) {
-  if (!val) return '';
+  if (val === null || val === undefined) return '';
+  
+  // Handle numeric Excel date serials (e.g. 46088, 46150)
+  if (typeof val === 'number' || (/^\d{5}$/.test(String(val).trim()))) {
+    const num = Number(val);
+    if (num > 30000 && num < 60000) {
+      try {
+        const d = XLSX.SSF.parse_date_code(num);
+        if (d && d.y && d.m && d.d) {
+          const day = String(d.d).padStart(2, '0');
+          const month = String(d.m).padStart(2, '0');
+          return `${day}/${month}/${d.y}`;
+        }
+      } catch (e) {}
+    }
+  }
+
   const str = String(val).trim();
   if (!str || str === '-' || str === '—') return '';
 
-  // If it's already simple like "14/07/2026" or "2026-07-14", return clean
+  // If it's already standard clean like "14/07/2026", "22.06.2026", or "2026-07-14", return clean
   if (/^\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}$/.test(str)) {
-    return str;
+    return str.replace(/\./g, '/');
   }
 
   // Detect long JS Date string: "Sun Jun 07 2026 ..." or ISO string
   const parsed = new Date(str);
-  if (!isNaN(parsed.getTime())) {
+  if (!isNaN(parsed.getTime()) && !/^\d+$/.test(str)) {
     const day = String(parsed.getDate()).padStart(2, '0');
     const month = String(parsed.getMonth() + 1).padStart(2, '0');
     const year = parsed.getFullYear();
-    // Return standard DD/MM/YYYY
     return `${day}/${month}/${year}`;
   }
 
@@ -717,16 +732,16 @@ export async function pullRecordsFromGoogleSheet(webhookUrl, sheetName = null) {
           if (regNo && !/\d/.test(regNo) && !studentName) continue; // skip month divider rows like 'AUGUST'
 
           records.push({
-            className: sheetName || '',
+            className: (sheetName || '').trim(),
             regNo: regNo,
             studentName: studentName,
             companyName: colMap.companyName >= 0 ? String(row[colMap.companyName] || '').trim() : '',
             location: colMap.location >= 0 ? String(row[colMap.location] || '').trim() : '',
-            startDate: colMap.startDate >= 0 ? String(row[colMap.startDate] || '').trim() : '',
-            endDate: colMap.endDate >= 0 ? String(row[colMap.endDate] || '').trim() : '',
+            startDate: colMap.startDate >= 0 ? cleanDisplayDate(row[colMap.startDate]) : '',
+            endDate: colMap.endDate >= 0 ? cleanDisplayDate(row[colMap.endDate]) : '',
             duration: colMap.duration >= 0 ? String(row[colMap.duration] || '').trim() : '',
             attendance: colMap.attendance >= 0 ? formatAttendance(row[colMap.attendance]) : '',
-            status: colMap.status >= 0 ? String(row[colMap.status] || 'Not Started').trim() : 'Not Started',
+            status: colMap.status >= 0 ? String(row[colMap.status] || (colMap.companyName >= 0 && row[colMap.companyName] ? 'Completed' : 'Not Started')).trim() : 'Not Started',
             certificateCollected: colMap.certificateCollected >= 0 ? String(row[colMap.certificateCollected] || 'No').trim() : 'No',
             remarks: colMap.remarks >= 0 ? String(row[colMap.remarks] || '').trim() : ''
           });
