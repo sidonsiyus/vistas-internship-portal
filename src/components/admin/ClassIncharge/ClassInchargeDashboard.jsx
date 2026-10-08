@@ -19,14 +19,15 @@ import {
   Layers,
   FileCheck,
   UserPlus,
-  ExternalLink
+  ExternalLink,
+  RotateCcw
 } from 'lucide-react';
 import { useApp } from '../../../context/AppContext';
 import ClassSelectionModal from './ClassSelectionModal';
 import InternshipEditModal from './InternshipEditModal';
 import GoogleSheetConfigModal from './GoogleSheetConfigModal';
 import AddStudentToClassModal from './AddStudentToClassModal';
-import { exportInternshipWorkbook, formatAttendance, cleanDisplayDate } from '../../../utils/internshipExcelSync';
+import { exportInternshipWorkbook, formatAttendance, cleanDisplayDate, ALL_CLASSES } from '../../../utils/internshipExcelSync';
 
 export default function ClassInchargeDashboard() {
   const { 
@@ -37,6 +38,7 @@ export default function ClassInchargeDashboard() {
     googleSheetBrowserUrl,
     lastGSheetSyncTime,
     syncWithGoogleSheet,
+    restoreOfficialDatabase,
     showToast 
   } = useApp();
 
@@ -203,6 +205,21 @@ export default function ClassInchargeDashboard() {
                 </div>
               )}
             </div>
+
+            {/* Restore Database Button */}
+            <button
+              type="button"
+              onClick={() => {
+                if (window.confirm('Restore the official database of 531 students across all 14 classes? Any uploaded documents will be preserved.')) {
+                  restoreOfficialDatabase(false);
+                }
+              }}
+              className="px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
+              title="Restore official 531 student database across all classes"
+            >
+              <RotateCcw className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+              <span>Restore Roster</span>
+            </button>
 
             {/* Two-Way Google Sheets Sync Buttons */}
             <div className="flex items-center gap-1">
@@ -377,8 +394,28 @@ export default function ClassInchargeDashboard() {
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-xs">
                 {filteredRecords.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-12 text-center text-slate-400 text-xs">
-                      No student records found matching the current search or filter.
+                    <td colSpan={8} className="py-12 px-4 text-center text-slate-400 text-xs">
+                      {classRecords.length === 0 ? (
+                        <div className="max-w-md mx-auto space-y-3 py-4">
+                          <AlertCircle className="w-8 h-8 text-amber-500 mx-auto" />
+                          <p className="font-semibold text-slate-800 dark:text-slate-200 text-sm">
+                            No student records found in {selectedClassIncharge || 'this class'}.
+                          </p>
+                          <p className="text-slate-500 dark:text-slate-400 text-xs">
+                            If your data was cleared by a sync or an empty sheet was loaded, click below to immediately restore all 531 official student records across all 14 classes.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => restoreOfficialDatabase(false)}
+                            className="px-4 py-2.5 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-all inline-flex items-center gap-2 cursor-pointer"
+                          >
+                            <RotateCcw className="w-4 h-4" />
+                            <span>↺ Restore Official Database (531 Students)</span>
+                          </button>
+                        </div>
+                      ) : (
+                        <span>No student records found matching the current search or filter.</span>
+                      )}
                     </td>
                   </tr>
                 ) : (
@@ -520,13 +557,36 @@ export default function ClassInchargeDashboard() {
           <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto mt-1 mb-4">
             Choose your assigned class and section (e.g. AERO 2A, BSC 3B, BBA 2A) to view your students and manage their internship records.
           </p>
-          <button
-            type="button"
-            onClick={() => setIsClassModalOpen(true)}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm"
-          >
-            Select Class Now
-          </button>
+          <div className="flex flex-wrap items-center justify-center gap-2 max-w-lg mx-auto mb-5">
+            {ALL_CLASSES.map(cls => (
+              <button
+                key={cls}
+                type="button"
+                onClick={() => setSelectedClassIncharge(cls)}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-blue-50 dark:bg-slate-800 dark:hover:bg-blue-950/60 text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 border border-slate-200 dark:border-slate-700 hover:border-blue-300 transition-all cursor-pointer"
+              >
+                {cls}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => setIsClassModalOpen(true)}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
+            >
+              Choose from List
+            </button>
+            <button
+              type="button"
+              onClick={() => restoreOfficialDatabase(false)}
+              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition-all border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 cursor-pointer"
+            >
+              <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
+              <span>Restore Official Database</span>
+            </button>
+          </div>
         </div>
       )}
 

@@ -216,33 +216,87 @@ export function AppProvider({ children }) {
   const [toastNotification, setToastNotification] = useState(null);
   const [usingSupabase, setUsingSupabase] = useState(false);
 
+  // Helper: Generates a stable unique key for every student to prevent empty register collisions
+  const getRecordKey = (r) => {
+    if (!r) return '';
+    const reg = String(r.regNo || '').replace('.0', '').replace(/[^a-zA-Z0-9]/g, '').trim().toUpperCase();
+    if (reg && reg.length > 2) return `REG_${reg}`;
+    if (r.id) return `ID_${r.id}`;
+    const cName = String(r.className || '').trim().toUpperCase();
+    const sName = String(r.studentName || '').trim().toUpperCase();
+    return `NAME_${cName}_${sName}`;
+  };
+
+  // Helper: Safely merges user records on top of the official 531 student database
+  const mergeWithOfficialDatabase = (userRecords = []) => {
+    const map = new Map();
+    // 1. Populate official 531 records as guaranteed base
+    (Array.isArray(internshipRecordsDatabase) ? internshipRecordsDatabase : []).forEach(r => {
+      const key = getRecordKey(r);
+      if (key) map.set(key, { ...r });
+    });
+
+    // 2. Overlay user records (preserving local edits, uploads, new students)
+    if (Array.isArray(userRecords)) {
+      userRecords.forEach(u => {
+        const key = getRecordKey(u);
+        if (!key) return;
+
+        if (map.has(key)) {
+          const base = map.get(key);
+          map.set(key, {
+            ...base,
+            ...u,
+            className: u.className || base.className,
+            regNo: u.regNo || base.regNo,
+            studentName: u.studentName || base.studentName,
+            documents: Array.isArray(u.documents) && u.documents.length > 0 ? u.documents : (base.documents || []),
+            locallyEdited: u.locallyEdited || false
+          });
+        } else {
+          // New student added via + Add Student
+          map.set(key, { ...u });
+        }
+      });
+    }
+
+    return Array.from(map.values());
+  };
+
   // Class Incharge & Student Internship Records State
   const [internshipRecords, setInternshipRecords] = useState(() => {
     try {
-      const dbVersion = '2026_10_07_v3_official';
+      const dbVersion = '2026_10_08_v5_official';
       const savedVersion = localStorage.getItem('vistas_records_version');
       const saved = localStorage.getItem('vistas_internship_records');
 
       if (saved && savedVersion === dbVersion) {
         let parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed) && parsed.length >= 500) {
           return parsed;
         }
-      } else {
-        // Upgrade to official cleansed database
-        localStorage.setItem('vistas_records_version', dbVersion);
-        localStorage.setItem('vistas_internship_records', JSON.stringify(internshipRecordsDatabase));
-        return internshipRecordsDatabase;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const merged = mergeWithOfficialDatabase(parsed);
+          localStorage.setItem('vistas_internship_records', JSON.stringify(merged));
+          return merged;
+        }
       }
+
+      // Auto-heal / initialize with official cleansed database (531 students across 14 classes)
+      localStorage.setItem('vistas_records_version', dbVersion);
+      localStorage.setItem('vistas_internship_records', JSON.stringify(internshipRecordsDatabase));
+      return internshipRecordsDatabase;
     } catch (e) {}
     return Array.isArray(internshipRecordsDatabase) ? internshipRecordsDatabase : [];
   });
 
   const [selectedClassIncharge, setSelectedClassInchargeState] = useState(() => {
     try {
-      return localStorage.getItem('vistas_selected_class_incharge') || '';
+      const saved = localStorage.getItem('vistas_selected_class_incharge');
+      if (saved && saved.trim()) return saved.trim();
+      return 'BBA 2A';
     } catch (e) {
-      return '';
+      return 'BBA 2A';
     }
   });
 
@@ -2360,13 +2414,35 @@ export function AppProvider({ children }) {
     showToast(`Added ${student.name} to class ${targetClass}`, 'success');
   };
 
-  // Two-way network: Pull latest changes from Google Sheet into portal
+  // One-Click Official Database Restoration
+  const restoreOfficialDatabase = (clean = true) => {
+    let restored;
+    if (clean) {
+      restored = internshipRecordsDatabase;
+    } else {
+      restored = mergeWithOfficialDatabase(internshipRecords);
+    }
+    setInternshipRecords(restored);
+    try {
+      localStorage.setItem('vistas_records_version', '2026_10_08_v5_official');
+      localStorage.setItem('vistas_internship_records', JSON.stringify(restored));
+    } catch (e) {}
+    showToast(`Restored all ${restored.length} student records across 14 classes!`, 'success');
+    return restored;
+  };
+
+  // Resilient One-Way Google Sheet Synchronizer
   const syncWithGoogleSheet = async (targetClass = null, explicitUrl = null) => {
     const url = explicitUrl || googleSheetWebhookUrl;
     if (!url) {
       showToast('Please configure your Google Sheet URL in G-Sheet Sync settings', 'warning');
       return { success: false, error: 'No URL configured' };
     }
+
+    // Always create pre-sync safety snapshot in localStorage
+    try {
+      localStorage.setItem('vistas_internship_records_backup', JSON.stringify(internshipRecords));
+    } catch (e) {}
 
     const res = await pullRecordsFromGoogleSheet(url, targetClass);
     if (!res.success) {
@@ -2384,53 +2460,59 @@ export function AppProvider({ children }) {
     let addedCount = 0;
 
     setInternshipRecords(prev => {
-      // Map existing records to preserve local-only students and user modifications made in website
-      const recordsByReg = new Map();
-      prev.forEach(r => recordsByReg.set(String(r.regNo || '').trim(), { ...r }));
+      // Ensure base has the official 531 student database so records are NEVER dropped
+      const baseList = (Array.isArray(prev) && prev.length >= 500) ? prev : mergeWithOfficialDatabase(prev);
+      const recordsMap = new Map();
+      baseList.forEach(r => {
+        const key = getRecordKey(r);
+        if (key) recordsMap.set(key, { ...r });
+      });
 
       incomingRecords.forEach(inc => {
-        const reg = String(inc.regNo || '').trim();
-        if (!reg) return;
+        const key = getRecordKey(inc);
+        if (!key) return;
 
-        if (recordsByReg.has(reg)) {
-          const existing = recordsByReg.get(reg);
-          
-          // Non-destructive update: If user edited fields directly on the website, retain website values if incoming G-Sheet value is blank/default
+        if (recordsMap.has(key)) {
+          const existing = recordsMap.get(key);
+
+          // Non-destructive update: If user edited fields directly on website, preserve website values
           const cleanStart = cleanDisplayDate(inc.startDate);
           const cleanEnd = cleanDisplayDate(inc.endDate);
+          const incomingComp = String(inc.companyName || '').trim();
+          const isPlaceholderComp = !incomingComp || incomingComp === '-' || incomingComp === 'NIL' || incomingComp === 'NA' || incomingComp === 'N/A';
 
           const merged = {
             ...existing,
             studentName: inc.studentName || existing.studentName,
-            // If G-sheet has company info, use it; otherwise keep existing local company info
-            companyName: inc.companyName || existing.companyName,
-            location: inc.location || existing.location,
-            startDate: cleanStart || existing.startDate,
-            endDate: cleanEnd || existing.endDate,
-            duration: inc.duration || existing.duration,
-            attendance: inc.attendance || existing.attendance,
+            // If G-sheet has valid company info, update it; otherwise preserve local
+            companyName: (!isPlaceholderComp && incomingComp) ? incomingComp : (existing.companyName || ''),
+            location: (inc.location && inc.location !== '-') ? inc.location : (existing.location || ''),
+            startDate: cleanStart || existing.startDate || '',
+            endDate: cleanEnd || existing.endDate || '',
+            duration: (inc.duration && inc.duration !== '-') ? inc.duration : (existing.duration || ''),
+            attendance: inc.attendance || existing.attendance || '',
             status: (inc.status && inc.status !== 'Not Started') ? inc.status : existing.status,
             certificateCollected: (inc.certificateCollected && inc.certificateCollected !== 'No') ? inc.certificateCollected : existing.certificateCollected,
-            remarks: inc.remarks || existing.remarks,
-            // Preserve uploaded documents and any local flags
+            remarks: inc.remarks || existing.remarks || '',
+            // Retain uploaded documents and local edit flags
             documents: existing.documents || [],
             locallyEdited: existing.locallyEdited || false,
             updatedAt: new Date().toISOString()
           };
 
-          recordsByReg.set(reg, merged);
+          recordsMap.set(key, merged);
           updatedCount++;
         } else {
-          // New student discovered in Google Sheet
-          recordsByReg.set(reg, {
-            id: `int-${reg}`,
-            regNo: reg,
+          // New student found in sheet
+          recordsMap.set(key, {
+            id: inc.id || `int-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+            regNo: inc.regNo || '',
             studentName: inc.studentName || 'Student',
-            department: '',
-            year: '',
-            section: '',
+            department: inc.department || '',
+            year: inc.year || '',
+            section: inc.section || '',
             className: inc.className || targetClass || 'UNKNOWN',
-            email: `${reg}@velshitech.edu.in`,
+            email: inc.regNo ? `${inc.regNo}@velshitech.edu.in` : '',
             phone: '',
             companyName: inc.companyName || '',
             location: inc.location || '',
@@ -2449,8 +2531,12 @@ export function AppProvider({ children }) {
         }
       });
 
-      // Notice: recordsByReg retains ALL entries that exist only on the website!
-      const mergedList = Array.from(recordsByReg.values());
+      let mergedList = Array.from(recordsMap.values());
+      // Extra safety guarantee: if count somehow dropped below 500, heal with official DB
+      if (mergedList.length < 500) {
+        mergedList = mergeWithOfficialDatabase(mergedList);
+      }
+
       try {
         localStorage.setItem('vistas_internship_records', JSON.stringify(mergedList));
       } catch (e) {}
@@ -2538,6 +2624,7 @@ export function AppProvider({ children }) {
         setGoogleSheetBrowserUrl,
         lastGSheetSyncTime,
         syncWithGoogleSheet,
+        restoreOfficialDatabase,
         pushClassToGoogleSheet,
         pushAllClassesToGoogleSheet,
         updateInternshipRecord,
