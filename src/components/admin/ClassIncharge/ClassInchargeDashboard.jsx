@@ -54,6 +54,19 @@ export default function ClassInchargeDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL' | 'Completed' | 'On Going' | 'Not Started' | 'PENDING_CERT'
 
+  // Helper functions for resilient status detection
+  const isCompleted = (status) => {
+    if (!status) return false;
+    const s = String(status).trim().toUpperCase();
+    return s.includes('COMPLET');
+  };
+
+  const isOngoing = (status) => {
+    if (!status) return false;
+    const s = String(status).trim().toUpperCase().replace(/[\s_-]/g, '');
+    return s.includes('ONGOING') || s === 'OD';
+  };
+
   // Filter records for active class
   const classRecords = useMemo(() => {
     if (!selectedClassIncharge) return [];
@@ -64,11 +77,11 @@ export default function ClassInchargeDashboard() {
 
   // KPIs
   const totalCount = classRecords.length;
-  const completedCount = classRecords.filter(r => r.status === 'Completed').length;
-  const ongoingCount = classRecords.filter(r => r.status === 'On Going').length;
-  const notStartedCount = classRecords.filter(r => r.status === 'Not Started' || !r.status).length;
+  const completedCount = classRecords.filter(r => isCompleted(r.status)).length;
+  const ongoingCount = classRecords.filter(r => isOngoing(r.status)).length;
+  const notStartedCount = classRecords.filter(r => !isCompleted(r.status) && !isOngoing(r.status)).length;
   const certCollectedCount = classRecords.filter(r => r.certificateCollected === 'Yes' || r.certificateCollected === 'Collected').length;
-  const certPendingCount = classRecords.filter(r => r.status === 'Completed' && (r.certificateCollected === 'No' || r.certificateCollected === 'Pending' || !r.certificateCollected)).length;
+  const certPendingCount = classRecords.filter(r => isCompleted(r.status) && (r.certificateCollected === 'No' || r.certificateCollected === 'Pending' || !r.certificateCollected)).length;
 
   // Filtered displayed records
   const filteredRecords = useMemo(() => {
@@ -81,11 +94,11 @@ export default function ClassInchargeDashboard() {
 
       if (!matchesSearch) return false;
 
-      if (statusFilter === 'Completed') return r.status === 'Completed';
-      if (statusFilter === 'On Going') return r.status === 'On Going';
-      if (statusFilter === 'Not Started') return r.status === 'Not Started' || !r.status;
+      if (statusFilter === 'Completed') return isCompleted(r.status);
+      if (statusFilter === 'On Going') return isOngoing(r.status);
+      if (statusFilter === 'Not Started') return !isCompleted(r.status) && !isOngoing(r.status);
       if (statusFilter === 'PENDING_CERT') {
-        return r.status === 'Completed' && (r.certificateCollected === 'No' || r.certificateCollected === 'Pending');
+        return isCompleted(r.status) && (r.certificateCollected === 'No' || r.certificateCollected === 'Pending');
       }
 
       return true;
@@ -481,12 +494,12 @@ export default function ClassInchargeDashboard() {
 
                         {/* Status */}
                         <td className="py-3 px-4">
-                          {r.status === 'Completed' ? (
+                          {isCompleted(r.status) ? (
                             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                               <CheckCircle2 className="w-3 h-3" />
                               Completed
                             </span>
-                          ) : r.status === 'On Going' ? (
+                          ) : isOngoing(r.status) ? (
                             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                               <Clock className="w-3 h-3" />
                               On Going
@@ -504,7 +517,7 @@ export default function ClassInchargeDashboard() {
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                               Collected
                             </span>
-                          ) : r.status === 'Completed' ? (
+                          ) : isCompleted(r.status) ? (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
                               Pending
                             </span>

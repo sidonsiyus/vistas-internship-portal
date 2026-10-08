@@ -43,6 +43,14 @@ export default function InternshipEditModal({ isOpen, onClose, record }) {
 
   useEffect(() => {
     if (record) {
+      let formStatus = 'Not Started';
+      if (record.status) {
+        const s = String(record.status).trim().toUpperCase();
+        if (s.includes('COMPLET')) formStatus = 'Completed';
+        else if (s.includes('ONGO') || s.includes('ON GO') || s === 'OD') formStatus = 'On Going';
+        else formStatus = record.status;
+      }
+
       setFormData({
         companyName: record.companyName || '',
         location: record.location || '',
@@ -50,7 +58,7 @@ export default function InternshipEditModal({ isOpen, onClose, record }) {
         endDate: record.endDate || '',
         duration: record.duration || '',
         attendance: record.attendance || 'No leaves taken',
-        status: record.status || 'Not Started',
+        status: formStatus,
         certificateCollected: record.certificateCollected || 'No',
         remarks: record.remarks || ''
       });

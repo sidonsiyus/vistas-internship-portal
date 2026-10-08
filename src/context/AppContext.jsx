@@ -244,9 +244,19 @@ export function AppProvider({ children }) {
 
         if (map.has(key)) {
           const base = map.get(key);
+          let finalStatus = base.status;
+          if (u.locallyEdited && u.status) {
+            finalStatus = u.status;
+          } else if (base.status === 'Completed') {
+            finalStatus = 'Completed';
+          } else if (u.status && u.status !== 'Not Started') {
+            finalStatus = u.status;
+          }
+
           map.set(key, {
             ...base,
             ...u,
+            status: finalStatus,
             className: u.className || base.className,
             regNo: u.regNo || base.regNo,
             studentName: u.studentName || base.studentName,
@@ -266,7 +276,7 @@ export function AppProvider({ children }) {
   // Class Incharge & Student Internship Records State
   const [internshipRecords, setInternshipRecords] = useState(() => {
     try {
-      const dbVersion = '2026_10_08_v6_restored_full';
+      const dbVersion = '2026_10_08_v7_status_normalized';
       const savedVersion = localStorage.getItem('vistas_records_version');
       const saved = localStorage.getItem('vistas_internship_records');
 
@@ -2424,7 +2434,7 @@ export function AppProvider({ children }) {
     }
     setInternshipRecords(restored);
     try {
-      localStorage.setItem('vistas_records_version', '2026_10_08_v6_restored_full');
+      localStorage.setItem('vistas_records_version', '2026_10_08_v7_status_normalized');
       localStorage.setItem('vistas_internship_records', JSON.stringify(restored));
     } catch (e) {}
     showToast(`Restored all ${restored.length} student records across 14 classes!`, 'success');
