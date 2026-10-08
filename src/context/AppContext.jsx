@@ -2213,6 +2213,8 @@ export function AppProvider({ children }) {
         updatedRecord = {
           ...rec,
           ...updatedFields,
+          locallyEdited: true, // Flag indicating user modified this on website
+          lastLocalEditAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         };
         return updatedRecord;
@@ -2263,6 +2265,7 @@ export function AppProvider({ children }) {
           ...rec,
           certificateCollected: certCollected,
           documents: docs,
+          locallyEdited: true,
           updatedAt: new Date().toISOString()
         };
         return updatedRecord;
@@ -2285,6 +2288,7 @@ export function AppProvider({ children }) {
         return {
           ...rec,
           documents: (rec.documents || []).filter(d => d.id !== docId),
+          locallyEdited: true,
           updatedAt: new Date().toISOString()
         };
       }
@@ -2313,6 +2317,7 @@ export function AppProvider({ children }) {
           department: student.department || rec.department,
           year: student.year || rec.year,
           section: student.section || rec.section,
+          locallyEdited: true,
           updatedAt: new Date().toISOString()
         };
       }
@@ -2340,6 +2345,8 @@ export function AppProvider({ children }) {
         certificateCollected: 'No',
         remarks: '',
         documents: [],
+        locallyEdited: true,
+        localOnly: true, // Specifically created on website
         updatedAt: new Date().toISOString()
       };
       nextList = [newRec, ...nextList];
@@ -2377,6 +2384,7 @@ export function AppProvider({ children }) {
     let addedCount = 0;
 
     setInternshipRecords(prev => {
+      // Map existing records to preserve local-only students and user modifications made in website
       const recordsByReg = new Map();
       prev.forEach(r => recordsByReg.set(String(r.regNo || '').trim(), { ...r }));
 
@@ -2386,22 +2394,34 @@ export function AppProvider({ children }) {
 
         if (recordsByReg.has(reg)) {
           const existing = recordsByReg.get(reg);
-          recordsByReg.set(reg, {
+          
+          // Non-destructive update: If user edited fields directly on the website, retain website values if incoming G-Sheet value is blank/default
+          const cleanStart = cleanDisplayDate(inc.startDate);
+          const cleanEnd = cleanDisplayDate(inc.endDate);
+
+          const merged = {
             ...existing,
             studentName: inc.studentName || existing.studentName,
+            // If G-sheet has company info, use it; otherwise keep existing local company info
             companyName: inc.companyName || existing.companyName,
             location: inc.location || existing.location,
-            startDate: cleanDisplayDate(inc.startDate) || existing.startDate,
-            endDate: cleanDisplayDate(inc.endDate) || existing.endDate,
+            startDate: cleanStart || existing.startDate,
+            endDate: cleanEnd || existing.endDate,
             duration: inc.duration || existing.duration,
             attendance: inc.attendance || existing.attendance,
-            status: inc.status || existing.status,
-            certificateCollected: inc.certificateCollected || existing.certificateCollected,
+            status: (inc.status && inc.status !== 'Not Started') ? inc.status : existing.status,
+            certificateCollected: (inc.certificateCollected && inc.certificateCollected !== 'No') ? inc.certificateCollected : existing.certificateCollected,
             remarks: inc.remarks || existing.remarks,
+            // Preserve uploaded documents and any local flags
+            documents: existing.documents || [],
+            locallyEdited: existing.locallyEdited || false,
             updatedAt: new Date().toISOString()
-          });
+          };
+
+          recordsByReg.set(reg, merged);
           updatedCount++;
         } else {
+          // New student discovered in Google Sheet
           recordsByReg.set(reg, {
             id: `int-${reg}`,
             regNo: reg,
@@ -2422,12 +2442,14 @@ export function AppProvider({ children }) {
             certificateCollected: inc.certificateCollected || 'No',
             remarks: inc.remarks || '',
             documents: [],
+            locallyEdited: false,
             updatedAt: new Date().toISOString()
           });
           addedCount++;
         }
       });
 
+      // Notice: recordsByReg retains ALL entries that exist only on the website!
       const mergedList = Array.from(recordsByReg.values());
       try {
         localStorage.setItem('vistas_internship_records', JSON.stringify(mergedList));
