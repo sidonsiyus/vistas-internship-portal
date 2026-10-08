@@ -266,13 +266,13 @@ export function AppProvider({ children }) {
   // Class Incharge & Student Internship Records State
   const [internshipRecords, setInternshipRecords] = useState(() => {
     try {
-      const dbVersion = '2026_10_08_v5_official';
+      const dbVersion = '2026_10_08_v6_restored_full';
       const savedVersion = localStorage.getItem('vistas_records_version');
       const saved = localStorage.getItem('vistas_internship_records');
 
       if (saved && savedVersion === dbVersion) {
         let parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length >= 500) {
+        if (Array.isArray(parsed) && parsed.length >= 600) {
           return parsed;
         }
         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -282,7 +282,7 @@ export function AppProvider({ children }) {
         }
       }
 
-      // Auto-heal / initialize with official cleansed database (531 students across 14 classes)
+      // Auto-heal / initialize with complete restored database (613 students across 14 classes)
       localStorage.setItem('vistas_records_version', dbVersion);
       localStorage.setItem('vistas_internship_records', JSON.stringify(internshipRecordsDatabase));
       return internshipRecordsDatabase;
@@ -2424,7 +2424,7 @@ export function AppProvider({ children }) {
     }
     setInternshipRecords(restored);
     try {
-      localStorage.setItem('vistas_records_version', '2026_10_08_v5_official');
+      localStorage.setItem('vistas_records_version', '2026_10_08_v6_restored_full');
       localStorage.setItem('vistas_internship_records', JSON.stringify(restored));
     } catch (e) {}
     showToast(`Restored all ${restored.length} student records across 14 classes!`, 'success');
@@ -2460,8 +2460,8 @@ export function AppProvider({ children }) {
     let addedCount = 0;
 
     setInternshipRecords(prev => {
-      // Ensure base has the official 531 student database so records are NEVER dropped
-      const baseList = (Array.isArray(prev) && prev.length >= 500) ? prev : mergeWithOfficialDatabase(prev);
+      // Ensure base has the complete 613 student database so records are NEVER dropped
+      const baseList = (Array.isArray(prev) && prev.length >= 600) ? prev : mergeWithOfficialDatabase(prev);
       const recordsMap = new Map();
       baseList.forEach(r => {
         const key = getRecordKey(r);
@@ -2532,8 +2532,8 @@ export function AppProvider({ children }) {
       });
 
       let mergedList = Array.from(recordsMap.values());
-      // Extra safety guarantee: if count somehow dropped below 500, heal with official DB
-      if (mergedList.length < 500) {
+      // Extra safety guarantee: if count somehow dropped below 600, heal with official DB
+      if (mergedList.length < 600) {
         mergedList = mergeWithOfficialDatabase(mergedList);
       }
 

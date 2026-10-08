@@ -815,11 +815,11 @@ function getSheetRecords(sheet) {
             <button
               type="button"
               onClick={() => {
-                if (window.confirm('Restore official database of 531 students across all 14 classes? Any uploaded documents will be preserved.')) {
+                if (window.confirm('Restore full database of 613 students across all 14 classes? Any uploaded documents will be preserved.')) {
                   restoreOfficialDatabase(false);
                   setSyncStatusBanner({
                     type: 'success',
-                    message: '✓ Restored all 531 official student records across all 14 classes!'
+                    message: '✓ Restored all 613 official student records across all 14 classes!'
                   });
                 }
               }}
