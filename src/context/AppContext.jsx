@@ -2475,7 +2475,13 @@ export function AppProvider({ children }) {
         if (recordsMap.has(key)) {
           const existing = recordsMap.get(key);
 
-          // Non-destructive update: If user edited fields directly on website, preserve website values
+          // ABSOLUTE PROTECTION: If this student was modified or added on the website, leave it 100% untouched!
+          if (existing.locallyEdited || existing.localOnly) {
+            return;
+          }
+
+          // For all other students: STRICTLY PRESERVE whatever is already on the website!
+          // Only fill in fields that are currently blank/empty on the website.
           const cleanStart = cleanDisplayDate(inc.startDate);
           const cleanEnd = cleanDisplayDate(inc.endDate);
           const incomingComp = String(inc.companyName || '').trim();
@@ -2483,20 +2489,29 @@ export function AppProvider({ children }) {
 
           const merged = {
             ...existing,
-            studentName: inc.studentName || existing.studentName,
-            // If G-sheet has valid company info, update it; otherwise preserve local
-            companyName: (!isPlaceholderComp && incomingComp) ? incomingComp : (existing.companyName || ''),
-            location: (inc.location && inc.location !== '-') ? inc.location : (existing.location || ''),
-            startDate: cleanStart || existing.startDate || '',
-            endDate: cleanEnd || existing.endDate || '',
-            duration: (inc.duration && inc.duration !== '-') ? inc.duration : (existing.duration || ''),
-            attendance: inc.attendance || existing.attendance || '',
-            status: (inc.status && inc.status !== 'Not Started') ? inc.status : existing.status,
-            certificateCollected: (inc.certificateCollected && inc.certificateCollected !== 'No') ? inc.certificateCollected : existing.certificateCollected,
-            remarks: inc.remarks || existing.remarks || '',
-            // Retain uploaded documents and local edit flags
+            studentName: existing.studentName || inc.studentName,
+            // If website already has company, KEEP IT! Only fill in from sheet if website company is blank
+            companyName: (existing.companyName && existing.companyName.trim()) 
+              ? existing.companyName 
+              : (!isPlaceholderComp && incomingComp ? incomingComp : ''),
+            // If website already has location, KEEP IT!
+            location: (existing.location && existing.location.trim())
+              ? existing.location
+              : ((inc.location && inc.location !== '-') ? inc.location : ''),
+            // If website already has dates, KEEP THEM!
+            startDate: existing.startDate || cleanStart || '',
+            endDate: existing.endDate || cleanEnd || '',
+            duration: existing.duration || ((inc.duration && inc.duration !== '-') ? inc.duration : ''),
+            attendance: existing.attendance || inc.attendance || '',
+            status: (existing.status && existing.status !== 'Not Started') 
+              ? existing.status 
+              : (inc.status || 'Not Started'),
+            certificateCollected: (existing.certificateCollected && existing.certificateCollected !== 'No') 
+              ? existing.certificateCollected 
+              : (inc.certificateCollected || 'No'),
+            remarks: existing.remarks || inc.remarks || '',
             documents: existing.documents || [],
-            locallyEdited: existing.locallyEdited || false,
+            locallyEdited: false,
             updatedAt: new Date().toISOString()
           };
 
