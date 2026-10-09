@@ -451,7 +451,15 @@ export function AppProvider({ children }) {
         });
       }
 
-      // 2. Always persist full announcements state to __SYS_ANNOUNCEMENTS__ in Supabase
+      // 2. Persist lightweight metadata only (strip massive base64 attachmentUrl strings to save Supabase egress)
+      const lightweightAnnouncements = updatedList.map(a => {
+        const { attachmentUrl, ...rest } = a;
+        return {
+          ...rest,
+          attachmentUrl: (attachmentUrl && !attachmentUrl.startsWith('data:')) ? attachmentUrl : ''
+        };
+      });
+
       const { error } = await supabase.from('students').upsert({
         register_number: '__SYS_ANNOUNCEMENTS__',
         name: 'SYSTEM_ANNOUNCEMENTS',
@@ -459,7 +467,7 @@ export function AppProvider({ children }) {
         year: 'ALL',
         email: 'sys_ann@vistas.internal',
         phone: '',
-        private_notes: JSON.stringify(updatedList)
+        private_notes: JSON.stringify(lightweightAnnouncements)
       }, { onConflict: 'register_number' });
 
       if (error) {
@@ -520,7 +528,15 @@ export function AppProvider({ children }) {
         });
       }
 
-      // 2. Persist to __SYS_DOCUMENTS__ in students table for resilient zero-config cross-device sync
+      // 2. Persist lightweight metadata to __SYS_DOCUMENTS__ (strip base64 localPreviewUrl to save Supabase egress)
+      const lightweightDocs = updatedDocs.map(d => {
+        const { localPreviewUrl, ...rest } = d;
+        return {
+          ...rest,
+          localPreviewUrl: (localPreviewUrl && !localPreviewUrl.startsWith('data:')) ? localPreviewUrl : ''
+        };
+      });
+
       await supabase.from('students').upsert({
         register_number: '__SYS_DOCUMENTS__',
         name: 'SYSTEM_DOCUMENTS',
@@ -528,7 +544,7 @@ export function AppProvider({ children }) {
         year: 'ALL',
         email: 'sys_docs@vistas.internal',
         phone: '',
-        private_notes: JSON.stringify(updatedDocs)
+        private_notes: JSON.stringify(lightweightDocs)
       }, { onConflict: 'register_number' });
     } catch (e) {
       console.warn('Sync documents exception:', e);
@@ -567,12 +583,11 @@ export function AppProvider({ children }) {
       setUsingSupabase(true);
 
       try {
-        // Fetch appointments & availability in parallel
-        const [aptRes, availRes, sysRes, stdRes] = await Promise.allSettled([
+        // Fetch appointments & availability in parallel (only fetch essential lightweight state)
+        const [aptRes, availRes, sysRes] = await Promise.allSettled([
           supabase.from('appointments').select('*').order('created_at', { ascending: true }),
           supabase.from('availability').select('*').single(),
-          supabase.from('students').select('register_number, private_notes').in('register_number', ['__SYS_ANNOUNCEMENTS__', '__SYS_AVAILABILITY__', '__SYS_DOCUMENTS__', '__SYS_TICKETS__']),
-          supabase.from('students').select('*').not('register_number', 'like', '__SYS_%').order('name', { ascending: true })
+          supabase.from('students').select('register_number, private_notes').in('register_number', ['__SYS_ANNOUNCEMENTS__', '__SYS_AVAILABILITY__', '__SYS_DOCUMENTS__', '__SYS_TICKETS__'])
         ]);
 
         if (aptRes.status === 'fulfilled' && aptRes.value.data) {
@@ -793,28 +808,6 @@ export function AppProvider({ children }) {
             } catch (e) {}
           }
         }
-
-        if (stdRes.status === 'fulfilled' && stdRes.value.data && stdRes.value.data.length > 0) {
-          const realStudents = stdRes.value.data
-            .filter(s => s.register_number && !String(s.register_number).startsWith('__SYS_'))
-            .map(s => ({
-              id: s.id || `std-${s.register_number}`,
-              registerNumber: s.register_number,
-              name: s.name,
-              department: s.department,
-              year: s.year,
-              email: s.email,
-              phone: s.phone || '',
-              historyCount: s.history_count || 0,
-              privateNotes: s.private_notes || ''
-            }));
-          if (realStudents.length >= 50) {
-            setStudents(realStudents);
-            try {
-              localStorage.setItem('vistas_students', JSON.stringify(realStudents));
-            } catch (e) {}
-          }
-        }
       } catch (e) {
         console.warn('Supabase fetch error', e);
       }
@@ -822,10 +815,16 @@ export function AppProvider({ children }) {
 
     fetchSupabaseState();
 
-    // 🔄 Periodic Polling (every 3s) to guarantee real-time sync across devices
-    const pollInterval = setInterval(() => {
-      fetchSupabaseState();
-    }, 3000);
+    // ⚡ Intelligent Egress-Safe Sync: Only sync when user returns to this tab (debounced to max once every 30s)
+    let lastFocusFetchTime = Date.now();
+    const handleWindowFocus = () => {
+      const now = Date.now();
+      if (now - lastFocusFetchTime > 30000) {
+        lastFocusFetchTime = now;
+        fetchSupabaseState();
+      }
+    };
+    window.addEventListener('focus', handleWindowFocus);
 
     let channel;
     if (isSupabaseConfigured()) {
@@ -833,7 +832,7 @@ export function AppProvider({ children }) {
         .channel('vistas_global_sync', {
           config: { broadcast: { self: false } }
         })
-        // ⚡ INSTANT CROSS-DEVICE BROADCAST LISTENERS (<50ms)
+        // ⚡ INSTANT CROSS-DEVICE BROADCAST LISTENERS (<50ms, zero egress cost!)
         .on('broadcast', { event: 'announcement_sync' }, ({ payload }) => {
           if (payload?.announcements && Array.isArray(payload.announcements)) {
             setAnnouncements(payload.announcements);
@@ -874,7 +873,7 @@ export function AppProvider({ children }) {
             } catch (e) {}
           }
         })
-        // 📡 POSTGRES DATABASE REPLICATION LISTENERS
+        // 📡 POSTGRES DATABASE REPLICATION LISTENERS (filtered to prevent recursive query storms)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'appointments' }, payload => {
           fetchSupabaseState();
           if (payload.new && payload.new.status === 'CALLED') {
@@ -883,9 +882,6 @@ export function AppProvider({ children }) {
           }
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'availability' }, () => {
-          fetchSupabaseState();
-        })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, () => {
           fetchSupabaseState();
         })
         .subscribe();
@@ -919,7 +915,7 @@ export function AppProvider({ children }) {
     } catch (e) {}
 
     return () => {
-      clearInterval(pollInterval);
+      window.removeEventListener('focus', handleWindowFocus);
       if (channel) {
         supabase.removeChannel(channel);
         globalRealtimeChannelRef.current = null;
