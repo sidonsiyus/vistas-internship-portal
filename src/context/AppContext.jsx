@@ -2494,13 +2494,8 @@ export function AppProvider({ children }) {
         if (recordsMap.has(key)) {
           const existing = recordsMap.get(key);
 
-          // ABSOLUTE PROTECTION: If this student was modified or added on the website, leave it 100% untouched!
-          if (existing.locallyEdited || existing.localOnly) {
-            return;
-          }
-
-          // For all other students: STRICTLY PRESERVE whatever is already on the website!
-          // Only fill in fields that are currently blank/empty on the website.
+          // For student records: preserve company name, location and documents if already on the website,
+          // but allow new status updates (e.g. Completed, On Going) from the Google Sheet to sync smoothly!
           const cleanStart = cleanDisplayDate(inc.startDate);
           const cleanEnd = cleanDisplayDate(inc.endDate);
           const incomingComp = String(inc.companyName || '').trim();
@@ -2522,12 +2517,26 @@ export function AppProvider({ children }) {
             endDate: existing.endDate || cleanEnd || '',
             duration: existing.duration || ((inc.duration && inc.duration !== '-') ? inc.duration : ''),
             attendance: existing.attendance || inc.attendance || '',
-            status: (existing.status && existing.status !== 'Not Started') 
-              ? existing.status 
-              : (inc.status || 'Not Started'),
-            certificateCollected: (existing.certificateCollected && existing.certificateCollected !== 'No') 
-              ? existing.certificateCollected 
-              : (inc.certificateCollected || 'No'),
+            // STATUS UPDATE: If Google Sheet explicitly has 'Completed', 'On Going', etc., accept the new status!
+            // Otherwise preserve whatever status the website already has.
+            status: (() => {
+              const incStatusRaw = String(inc.status || '').trim();
+              const incUpper = incStatusRaw.toUpperCase();
+              if (incUpper.includes('COMPLET')) return 'Completed';
+              if (incUpper.includes('ONGOING') || incUpper.includes('ON GOING') || incUpper === 'OD') return 'On Going';
+              if (incUpper.includes('NOT') || incUpper.includes('PENDING') || incUpper === 'NO') {
+                return (existing.status && existing.status !== 'Not Started') ? existing.status : 'Not Started';
+              }
+              // If incoming row has an explicit status, use it
+              if (incStatusRaw && incStatusRaw !== '-') return incStatusRaw;
+              return existing.status || 'Not Started';
+            })(),
+            certificateCollected: (() => {
+              const incCertRaw = String(inc.certificateCollected || '').trim().toLowerCase();
+              if (incCertRaw === 'yes' || incCertRaw === 'collected' || incCertRaw === 'true') return 'Yes';
+              if (existing.certificateCollected && existing.certificateCollected !== 'No') return existing.certificateCollected;
+              return (incCertRaw && incCertRaw !== 'no' && incCertRaw !== '-') ? inc.certificateCollected : (existing.certificateCollected || 'No');
+            })(),
             remarks: existing.remarks || inc.remarks || '',
             documents: existing.documents || [],
             locallyEdited: false,
