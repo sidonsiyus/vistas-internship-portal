@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { supabase, isSupabaseConfigured, getStorageClient } from '../lib/supabase';
 import { INITIAL_APPOINTMENTS, INITIAL_AVAILABILITY, MOCK_STUDENTS, INITIAL_ANNOUNCEMENTS } from '../mock/sampleData';
 import { generateNextTokenNumber } from '../utils/tokenGenerator';
 import { sendTicketEmailAlert } from '../utils/emailNotifier';
@@ -1621,7 +1621,8 @@ export function AppProvider({ children }) {
     let downloadUrl = ann.attachmentUrl;
     if (isSupabaseConfigured() && ann.attachmentPath) {
       try {
-        const { data, error } = await supabase.storage
+        const storageClient = getStorageClient();
+        const { data, error } = await storageClient.storage
           .from('student-documents')
           .createSignedUrl(ann.attachmentPath, 3600);
         if (!error && data?.signedUrl) {
@@ -1683,7 +1684,8 @@ export function AppProvider({ children }) {
         try {
           const sanitizedFileName = data.attachmentFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
           const computedPath = `announcements/${Date.now()}_${sanitizedFileName}`;
-          const { data: uploadData, error: uploadErr } = await supabase.storage
+          const storageClient = getStorageClient();
+          const { data: uploadData, error: uploadErr } = await storageClient.storage
             .from('student-documents')
             .upload(computedPath, data.attachmentFile, {
               cacheControl: '3600',
@@ -1795,6 +1797,12 @@ export function AppProvider({ children }) {
     let attachmentMime = existing?.attachmentMime || 'application/pdf';
 
     if (updatedFields.removeAttachment) {
+      if (isSupabaseConfigured() && attachmentPath) {
+        try {
+          const storageClient = getStorageClient();
+          await storageClient.storage.from('student-documents').remove([attachmentPath]);
+        } catch (e) {}
+      }
       attachmentName = '';
       attachmentSize = 0;
       attachmentPath = '';
@@ -1818,7 +1826,8 @@ export function AppProvider({ children }) {
         try {
           const sanitizedFileName = updatedFields.attachmentFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
           const computedPath = `announcements/${Date.now()}_${sanitizedFileName}`;
-          const { data: uploadData, error: uploadErr } = await supabase.storage
+          const storageClient = getStorageClient();
+          const { data: uploadData, error: uploadErr } = await storageClient.storage
             .from('student-documents')
             .upload(computedPath, updatedFields.attachmentFile, {
               cacheControl: '3600',
@@ -1981,7 +1990,8 @@ export function AppProvider({ children }) {
 
     if (isSupabaseConfigured()) {
       try {
-        const { data: uploadData, error: uploadErr } = await supabase.storage
+        const storageClient = getStorageClient();
+        const { data: uploadData, error: uploadErr } = await storageClient.storage
           .from('student-documents')
           .upload(computedStoragePath, file, {
             cacheControl: '3600',
@@ -2078,7 +2088,8 @@ export function AppProvider({ children }) {
 
     if (isSupabaseConfigured()) {
       try {
-        await supabase.storage.from('student-documents').upload(newStoragePath, file, {
+        const storageClient = getStorageClient();
+        await storageClient.storage.from('student-documents').upload(newStoragePath, file, {
           cacheControl: '3600',
           upsert: true
         });
@@ -2149,7 +2160,8 @@ export function AppProvider({ children }) {
 
     if (isSupabaseConfigured() && target.storagePath) {
       try {
-        await supabase.storage.from('student-documents').remove([target.storagePath]);
+        const storageClient = getStorageClient();
+        await storageClient.storage.from('student-documents').remove([target.storagePath]);
       } catch (e) {}
       try {
         await supabase.from('student_documents').delete().eq('storage_path', target.storagePath);
@@ -2171,7 +2183,8 @@ export function AppProvider({ children }) {
     if (!doc) return '';
     if (isSupabaseConfigured() && doc.storagePath) {
       try {
-        const { data, error } = await supabase.storage
+        const storageClient = getStorageClient();
+        const { data, error } = await storageClient.storage
           .from('student-documents')
           .createSignedUrl(doc.storagePath, 3600); // 1-hour secure URL
         if (!error && data?.signedUrl) {

@@ -193,6 +193,119 @@ export default function SettingsPage({ setActiveAdminPage }) {
         )}
       </div>
 
+      {/* DUAL SUPABASE ACCOUNTS & EGRESS MANAGER */}
+      <div className="bg-white dark:bg-slate-900 border border-indigo-200/80 dark:border-indigo-900/50 p-6 rounded-2xl shadow-sm space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">☁️ Dual Supabase Accounts & Egress Shield</h3>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 font-bold">
+                Egress Protection Active
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Connect a 2nd Supabase project to split storage from database queries, or have an automatic zero-egress backup.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+          {/* Account #1 Card */}
+          <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Account #1 (Primary)</span>
+              <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded">
+                Queue & Realtime
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+              URL: <span className="font-mono text-slate-700 dark:text-slate-300">https://apjwptavagbrxwsxoxei.supabase.co</span>
+            </p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              Handles: Live Token Queue, Appointments, Broadcast Sync.
+            </p>
+          </div>
+
+          {/* Account #2 Card */}
+          <div className="p-4 rounded-xl border border-indigo-200 dark:border-indigo-800/50 bg-indigo-50/30 dark:bg-indigo-950/20 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-indigo-900 dark:text-indigo-200">Account #2 (Secondary / Storage)</span>
+              <span className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-900/50 px-2 py-0.5 rounded">
+                File Storage & Vault
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              Status: <span className="font-semibold text-slate-700 dark:text-slate-300">
+                {localStorage.getItem('vistas_supabase_secondary_url') ? 'Configured & Active' : 'Optional (Using Account #1 by default)'}
+              </span>
+            </p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              Handles: Student Resumes, PDF Invite Letters, Heavy Attachments.
+            </p>
+          </div>
+        </div>
+
+        {/* Form to set Secondary Supabase Credentials */}
+        <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const form = e.target;
+              const secUrl = form.secUrl.value.trim();
+              const secKey = form.secKey.value.trim();
+              if (secUrl) localStorage.setItem('vistas_supabase_secondary_url', secUrl);
+              else localStorage.removeItem('vistas_supabase_secondary_url');
+              if (secKey) localStorage.setItem('vistas_supabase_secondary_anon_key', secKey);
+              else localStorage.removeItem('vistas_supabase_secondary_anon_key');
+              showToast('Secondary Supabase Account saved! Reloading to apply...', 'success');
+              setTimeout(() => window.location.reload(), 1000);
+            }}
+            className="space-y-3"
+          >
+            <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">
+              Connect or Update Secondary Supabase Project
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-[11px] font-medium text-slate-600 dark:text-slate-400 block mb-1">
+                  Secondary Project URL
+                </label>
+                <input
+                  name="secUrl"
+                  type="url"
+                  placeholder="https://xyzproject.supabase.co"
+                  defaultValue={localStorage.getItem('vistas_supabase_secondary_url') || ''}
+                  className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 font-mono"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-medium text-slate-600 dark:text-slate-400 block mb-1">
+                  Secondary Anon Public Key
+                </label>
+                <input
+                  name="secKey"
+                  type="password"
+                  placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6..."
+                  defaultValue={localStorage.getItem('vistas_supabase_secondary_anon_key') || ''}
+                  className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 font-mono"
+                />
+              </div>
+            </div>
+            <div className="flex justify-between items-center pt-1">
+              <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                You can also specify VITE_SUPABASE_SECONDARY_URL in your .env file.
+              </span>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl shadow-sm transition-colors"
+              >
+                Save Secondary Account
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
       {/* Reset Data Card */}
       <div className="bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-900/50 p-6 rounded-2xl shadow-sm flex items-center justify-between">
         <div className="space-y-1">
