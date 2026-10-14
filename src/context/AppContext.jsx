@@ -1011,7 +1011,8 @@ export function AppProvider({ children }) {
     const queuePosition = activeWaiting.length + 1;
     const nowIso = new Date().toISOString();
 
-    const isPre3Pm = bookingData.timeSlot ? timeToMinutes(bookingData.timeSlot) < 900 : false;
+    const isAdminAction = !!bookingData.byAdmin || !!bookingData.injectedByAdmin;
+    const isPre3Pm = !isAdminAction && bookingData.timeSlot ? timeToMinutes(bookingData.timeSlot) < 900 : false;
     const initialStatus = isPre3Pm ? 'PENDING_APPROVAL' : 'WAITING';
     const emergencyJustification = (bookingData.emergencyJustification || '').trim();
 
@@ -1137,11 +1138,18 @@ export function AppProvider({ children }) {
     const tokenNumber = generateNextTokenNumber(appointments);
     const activeWaiting = appointments.filter(a => a.status === 'WAITING' || a.status === 'CALLED');
     let pos = activeWaiting.length + 1;
-    if (walkInData.positionChoice === 'PRIORITY') pos = 1;
+    if (walkInData.positionChoice === 'PRIORITY') {
+      pos = 1;
+    } else if (walkInData.positionChoice === 'NEXT_AVAILABLE') {
+      pos = Math.min(2, activeWaiting.length + 1);
+    }
 
     const nowIso = new Date().toISOString();
-    const todayDate = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`;
+    const defaultToday = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`;
+    const appointmentDate = walkInData.appointmentDate || walkInData.date || defaultToday;
+
     const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const appointmentTime = walkInData.appointmentTime || walkInData.timeSlot || walkInData.time || timeNow;
 
     const newApt = {
       id: `apt-${Date.now()}`,
@@ -1153,18 +1161,22 @@ export function AppProvider({ children }) {
       phone: walkInData.phone || 'N/A',
       email: walkInData.email || 'N/A',
       category: walkInData.category,
-      description: `[WALK-IN] ${walkInData.description || ''}`,
-      status: 'WAITING',
+      description: walkInData.description ? `[INJECTED] ${walkInData.description}` : '[INJECTED BY COORDINATOR]',
+      status: walkInData.status || 'WAITING',
       queuePosition: pos,
-      appointmentDate: todayDate,
-      appointmentTime: timeNow,
+      appointmentDate: appointmentDate,
+      appointmentTime: appointmentTime,
       isWalkIn: true,
+      injectedByAdmin: true,
       createdAt: nowIso
     };
 
     // 1. Optimistic Local State Update
     const updated = [...appointments, newApt];
     setAppointments(updated);
+    try {
+      localStorage.setItem('vistas_appointments', JSON.stringify(updated));
+    } catch (e) {}
     broadcastChange('SYNC', { appointments: updated });
 
     // 2. Persist to Supabase Cloud
@@ -1179,11 +1191,11 @@ export function AppProvider({ children }) {
           phone: walkInData.phone || 'N/A',
           email: walkInData.email || 'N/A',
           category: walkInData.category,
-          description: `[WALK-IN] ${walkInData.description || ''}`,
-          status: 'WAITING',
+          description: walkInData.description ? `[INJECTED] ${walkInData.description}` : '[INJECTED BY COORDINATOR]',
+          status: walkInData.status || 'WAITING',
           queue_position: pos,
-          appointment_date: todayDate,
-          appointment_time: timeNow,
+          appointment_date: appointmentDate,
+          appointment_time: appointmentTime,
           is_walk_in: true
         }]).select('*').single();
 
@@ -1199,7 +1211,8 @@ export function AppProvider({ children }) {
       }
     }
 
-    showToast(`Walk-in added: ${tokenNumber}`, 'success');
+    showToast(`Appointment injected: ${tokenNumber} for ${walkInData.name} at ${appointmentTime}`, 'success');
+    return newApt;
   };
 
   const callStudent = async (appointmentId) => {
@@ -2689,6 +2702,7 @@ export function AppProvider({ children }) {
         resetAllTokens,
         bookAppointment,
         addWalkInStudent,
+        injectAppointment: addWalkInStudent,
         callStudent,
         startMeeting,
         endMeeting,

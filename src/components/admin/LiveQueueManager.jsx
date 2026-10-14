@@ -13,7 +13,8 @@ import {
   Calendar,
   Clock,
   UserX,
-  X
+  X,
+  Zap
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import TokenBadge from '../common/TokenBadge';
@@ -78,10 +79,11 @@ export default function LiveQueueManager() {
 
           <button
             onClick={() => setIsWalkInOpen(true)}
-            className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm flex items-center gap-2 transition-all shrink-0"
+            className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm flex items-center gap-2 transition-all shrink-0 cursor-pointer"
+            title="Inject or schedule consultation for anytime in the day"
           >
-            <UserPlus className="w-4 h-4" />
-            <span>+ ADD WALK-IN STUDENT</span>
+            <Zap className="w-4 h-4 fill-current" />
+            <span>+ INJECT APPOINTMENT</span>
           </button>
         </div>
       </div>

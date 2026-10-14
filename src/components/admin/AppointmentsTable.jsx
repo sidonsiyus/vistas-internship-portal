@@ -15,7 +15,9 @@ import {
   Clock,
   Check,
   X,
-  AlertTriangle
+  AlertTriangle,
+  UserPlus,
+  Zap
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import TokenBadge from '../common/TokenBadge';
@@ -23,6 +25,7 @@ import StatusBadge from '../common/StatusBadge';
 import Modal from '../common/Modal';
 import PostponeAppointmentModal from './PostponeAppointmentModal';
 import RescheduleAppointmentModal from './RescheduleAppointmentModal';
+import WalkInModal from './WalkInModal';
 import { DEPARTMENTS, QUERY_CATEGORIES } from '../../mock/sampleData';
 
 export default function AppointmentsTable() {
@@ -32,6 +35,7 @@ export default function AppointmentsTable() {
   const [denyTargetApt, setDenyTargetApt] = useState(null);
   const [denyReason, setDenyReason] = useState('Emergency criteria not met. Please book during standard consultation hours (3:30 PM – 5:30 PM).');
 
+  const [isInjectModalOpen, setIsInjectModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDept, setSelectedDept] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -147,21 +151,32 @@ export default function AppointmentsTable() {
           </p>
         </div>
 
-        <button
-          onClick={() => {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appointments, null, 2));
-            const downloadAnchor = document.createElement('a');
-            downloadAnchor.setAttribute("href", dataStr);
-            downloadAnchor.setAttribute("download", `VISTAS_Appointments_Log_${Date.now()}.json`);
-            document.body.appendChild(downloadAnchor);
-            downloadAnchor.click();
-            downloadAnchor.remove();
-          }}
-          className="px-4 py-2.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs border border-slate-200 dark:border-slate-700 flex items-center gap-2 shadow-sm transition-colors shrink-0"
-        >
-          <Download className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-          <span>Export JSON Log</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsInjectModalOpen(true)}
+            className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all shrink-0 cursor-pointer"
+            title="Inject or schedule appointment for anytime today or future dates"
+          >
+            <Zap className="w-3.5 h-3.5 fill-current" />
+            <span>+ Inject Appointment</span>
+          </button>
+
+          <button
+            onClick={() => {
+              const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appointments, null, 2));
+              const downloadAnchor = document.createElement('a');
+              downloadAnchor.setAttribute("href", dataStr);
+              downloadAnchor.setAttribute("download", `VISTAS_Appointments_Log_${Date.now()}.json`);
+              document.body.appendChild(downloadAnchor);
+              downloadAnchor.click();
+              downloadAnchor.remove();
+            }}
+            className="px-4 py-2.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs border border-slate-200 dark:border-slate-700 flex items-center gap-2 shadow-sm transition-colors shrink-0 cursor-pointer"
+          >
+            <Download className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            <span>Export JSON Log</span>
+          </button>
+        </div>
       </div>
 
       {/* SEARCH AND FILTER CONTROLS */}
@@ -625,6 +640,12 @@ export default function AppointmentsTable() {
         isOpen={!!rescheduleTargetApt}
         onClose={() => setRescheduleTargetApt(null)}
         appointment={rescheduleTargetApt}
+      />
+
+      {/* INJECT APPOINTMENT / WALK-IN MODAL */}
+      <WalkInModal
+        isOpen={isInjectModalOpen}
+        onClose={() => setIsInjectModalOpen(false)}
       />
 
     </div>

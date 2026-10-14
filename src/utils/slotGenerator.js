@@ -115,8 +115,11 @@ export function generateRegularSlots({
 export function generateEmergencySlots(regularStartTime = '15:30') {
   const regularStartMin = timeToMinutes(regularStartTime);
 
-  // Standard emergency checkpoints across the campus day (prior to afternoon regular hours)
-  const candidateTimes = ['11:00 AM', '11:30 AM', '01:30 PM', '02:30 PM'];
+  // Comprehensive pre-regular hours checkpoints across the campus day (prior to afternoon regular hours)
+  const candidateTimes = [
+    '09:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM',
+    '12:00 PM', '12:30 PM', '01:00 PM', '01:30 PM', '02:00 PM', '02:30 PM', '03:00 PM'
+  ];
 
   return candidateTimes
     .filter(t => timeToMinutes(t) < regularStartMin)
@@ -124,6 +127,37 @@ export function generateEmergencySlots(regularStartTime = '15:30') {
       time: `${t} (Emergency Only)`,
       value: t
     }));
+}
+
+/**
+ * Generates slot presets for the entire day, categorized into:
+ * - Morning: 09:00 AM – 12:00 PM (before 3:30 PM)
+ * - Afternoon: 12:00 PM – 03:30 PM (before 3:30 PM)
+ * - Evening / Regular: 03:30 PM – 06:00 PM
+ */
+export function getAllDaySlotPresets() {
+  return {
+    morning: [
+      '09:00 AM', '09:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM'
+    ],
+    afternoon: [
+      '12:00 PM', '12:30 PM', '01:00 PM', '01:30 PM', '02:00 PM', '02:30 PM', '03:00 PM'
+    ],
+    evening: [
+      '03:30 PM', '03:45 PM', '04:00 PM', '04:15 PM', '04:30 PM', '04:45 PM', '05:00 PM', '05:15 PM', '05:30 PM'
+    ]
+  };
+}
+
+/**
+ * Generates all consultation slots spanning the campus day (e.g. 09:00 to 18:00).
+ */
+export function generateAllDaySlots(slotDuration = 15, startTime = '09:00', endTime = '18:00') {
+  return generateRegularSlots({
+    startTime,
+    endTime,
+    slotDuration
+  });
 }
 
 /**

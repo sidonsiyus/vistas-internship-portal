@@ -20,6 +20,7 @@ import {
   getUpcomingActiveDays,
   getRecentAndUpcomingActiveDays,
   generateRegularSlots, 
+  getAllDaySlotPresets,
   formatTimeDisplay,
   timeToMinutes
 } from '../../utils/slotGenerator';
@@ -27,6 +28,8 @@ import TokenBadge from '../common/TokenBadge';
 
 export default function RescheduleAppointmentModal({ isOpen, onClose, appointment }) {
   const { availability = {}, rescheduleAppointment } = useApp();
+
+  const slotPresets = useMemo(() => getAllDaySlotPresets(), []);
 
   const workingDays = availability.workingDays || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
   const dateOverrides = availability.dateOverrides || {};
@@ -231,13 +234,28 @@ export default function RescheduleAppointmentModal({ isOpen, onClose, appointmen
             className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white font-mono focus:outline-none focus:border-blue-500"
             required
           >
-            {availableSlots.map(slot => (
-              <option key={slot.value} value={slot.value} className="dark:bg-slate-800">
-                {slot.time} {slot.value === availableSlots[0]?.value ? '(First Slot)' : ''}
-              </option>
-            ))}
+            <optgroup label="🌅 Morning Sessions (09:00 AM – 12:00 PM)">
+              {slotPresets.morning.map(s => (
+                <option key={s} value={s} className="dark:bg-slate-800">{s}</option>
+              ))}
+            </optgroup>
+            <optgroup label="☀️ Afternoon Sessions Before 3:30 PM (12:00 PM – 03:00 PM)">
+              {slotPresets.afternoon.map(s => (
+                <option key={s} value={s} className="dark:bg-slate-800">{s}</option>
+              ))}
+            </optgroup>
+            <optgroup label="🌆 Regular Consultation Slots (03:30 PM – 05:30 PM)">
+              {availableSlots.map(slot => (
+                <option key={slot.value} value={slot.value} className="dark:bg-slate-800">
+                  {slot.time} {slot.value === availableSlots[0]?.value ? '(First Regular Slot)' : ''}
+                </option>
+              ))}
+            </optgroup>
             {/* If existing slot is non-standard, include it */}
-            {!availableSlots.some(s => s.value === selectedTime) && selectedTime && (
+            {selectedTime && 
+              !slotPresets.morning.includes(selectedTime) && 
+              !slotPresets.afternoon.includes(selectedTime) && 
+              !availableSlots.some(s => s.value === selectedTime) && (
               <option value={selectedTime} className="dark:bg-slate-800">
                 {selectedTime} (Custom Slot)
               </option>

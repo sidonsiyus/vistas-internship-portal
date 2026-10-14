@@ -16,7 +16,8 @@ import {
   FolderGit2,
   AlertTriangle,
   Check,
-  X
+  X,
+  Zap
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import TokenBadge from '../common/TokenBadge';
@@ -139,10 +140,11 @@ export default function OverviewDashboard({ setActiveAdminPage }) {
 
           <button
             onClick={() => setIsWalkInOpen(true)}
-            className="ml-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm flex items-center gap-1.5 transition-all"
+            className="ml-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm flex items-center gap-1.5 transition-all cursor-pointer"
+            title="Inject or schedule consultation for anytime in the day"
           >
-            <UserPlus className="w-4 h-4" />
-            <span>+ ADD WALK-IN</span>
+            <Zap className="w-4 h-4 fill-current" />
+            <span>+ INJECT APPOINTMENT</span>
           </button>
         </div>
       </div>

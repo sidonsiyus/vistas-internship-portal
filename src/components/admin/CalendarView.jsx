@@ -15,7 +15,8 @@ import {
   CheckCircle2,
   Eye,
   Building,
-  UserCheck
+  UserCheck,
+  Zap
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import TokenBadge from '../common/TokenBadge';
@@ -23,6 +24,7 @@ import StatusBadge from '../common/StatusBadge';
 import Modal from '../common/Modal';
 import RescheduleAppointmentModal from './RescheduleAppointmentModal';
 import PostponeAppointmentModal from './PostponeAppointmentModal';
+import WalkInModal from './WalkInModal';
 import { timeToMinutes } from '../../utils/slotGenerator';
 import { DEPARTMENTS } from '../../mock/sampleData';
 
@@ -64,6 +66,7 @@ export default function CalendarView() {
   const [postponeTargetApt, setPostponeTargetApt] = useState(null);
   const [denyTargetApt, setDenyTargetApt] = useState(null);
   const [denyReason, setDenyReason] = useState('Emergency criteria not met. Please book during standard consultation hours.');
+  const [isInjectOpen, setIsInjectOpen] = useState(false);
 
   const todayIso = useMemo(() => toIsoDate(new Date()), []);
 
@@ -262,6 +265,17 @@ export default function CalendarView() {
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
+
+          {/* Quick Inject Appointment Button */}
+          <button
+            type="button"
+            onClick={() => setIsInjectOpen(true)}
+            className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition-all cursor-pointer shrink-0"
+            title="Inject or schedule an appointment anytime in the day"
+          >
+            <Zap className="w-3.5 h-3.5 fill-current" />
+            <span>+ Inject Appointment</span>
+          </button>
 
         </div>
       </div>
@@ -569,6 +583,13 @@ export default function CalendarView() {
         isOpen={!!postponeTargetApt}
         onClose={() => setPostponeTargetApt(null)}
         appointment={postponeTargetApt}
+      />
+
+      {/* INJECT APPOINTMENT / WALK-IN MODAL */}
+      <WalkInModal
+        isOpen={isInjectOpen}
+        onClose={() => setIsInjectOpen(false)}
+        initialDate={toIsoDate(currentDate)}
       />
 
     </div>
