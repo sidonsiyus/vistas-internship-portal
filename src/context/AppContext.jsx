@@ -276,23 +276,25 @@ export function AppProvider({ children }) {
   // Class Incharge & Student Internship Records State
   const [internshipRecords, setInternshipRecords] = useState(() => {
     try {
-      const dbVersion = '2026_10_08_v7_status_normalized';
+      const dbVersion = '2026_10_14_v8_bba2b_consolidated';
       const savedVersion = localStorage.getItem('vistas_records_version');
       const saved = localStorage.getItem('vistas_internship_records');
 
       if (saved && savedVersion === dbVersion) {
         let parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length >= 600) {
-          return parsed;
+          // Ensure BBA 1B is consolidated into BBA 2B
+          const healed = parsed.map(r => r.className === 'BBA 1B' ? { ...r, className: 'BBA 2B', section: 'B', year: 'II' } : r);
+          return healed;
         }
         if (Array.isArray(parsed) && parsed.length > 0) {
-          const merged = mergeWithOfficialDatabase(parsed);
+          const merged = mergeWithOfficialDatabase(parsed).map(r => r.className === 'BBA 1B' ? { ...r, className: 'BBA 2B', section: 'B', year: 'II' } : r);
           localStorage.setItem('vistas_internship_records', JSON.stringify(merged));
           return merged;
         }
       }
 
-      // Auto-heal / initialize with complete restored database (613 students across 14 classes)
+      // Auto-heal / initialize with complete restored database (613 students across 13 classes)
       localStorage.setItem('vistas_records_version', dbVersion);
       localStorage.setItem('vistas_internship_records', JSON.stringify(internshipRecordsDatabase));
       return internshipRecordsDatabase;

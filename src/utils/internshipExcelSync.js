@@ -7,7 +7,7 @@ export const CLASS_GROUPS = [
   },
   {
     category: 'Aviation Management (BBA)',
-    classes: ['BBA 2A', 'BBA 2B', 'BBA 2C', 'BBA 3A', 'BBA 3B', 'BBA 1B']
+    classes: ['BBA 2A', 'BBA 2B', 'BBA 2C', 'BBA 3A', 'BBA 3B']
   },
   {
     category: 'Aviation (B.Sc)',
@@ -21,7 +21,7 @@ export const CLASS_GROUPS = [
 
 export const ALL_CLASSES = [
   'AERO 2A', 'AERO 2B', 'AERO 3',
-  'BBA 2A', 'BBA 2B', 'BBA 2C', 'BBA 3A', 'BBA 3B', 'BBA 1B',
+  'BBA 2A', 'BBA 2B', 'BBA 2C', 'BBA 3A', 'BBA 3B',
   'BSC 2A', 'BSC 2B', 'BSC 3A', 'BSC 3B',
   'MBA 2'
 ];
@@ -269,6 +269,281 @@ export function exportInternshipWorkbook(records, specificClass = null) {
 
   XLSX.writeFile(wb, filename);
   return filename;
+}
+
+/**
+ * Export internship records for all classes (or a specific class) as a clean,
+ * straight-to-the-point official PDF report.
+ */
+export async function exportInternshipPDF(records, specificClass = null) {
+  const { jsPDF } = await import('jspdf');
+  const autoTableModule = await import('jspdf-autotable');
+  const autoTable = autoTableModule.default || autoTableModule;
+
+  const doc = new jsPDF({
+    orientation: 'landscape',
+    format: 'a4',
+    unit: 'mm'
+  });
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const classesToExport = specificClass ? [specificClass] : ALL_CLASSES;
+
+  // Compute overall summary KPIs
+  const allTargetRecords = specificClass
+    ? records.filter(r => (r.className || '').trim().toUpperCase() === specificClass.trim().toUpperCase())
+    : records.filter(r => ALL_CLASSES.some(c => c.trim().toUpperCase() === (r.className || '').trim().toUpperCase()));
+
+  const totalEnrolled = allTargetRecords.length;
+  const totalCompleted = allTargetRecords.filter(r => (r.status || '').toLowerCase().includes('complet')).length;
+  const totalOngoing = allTargetRecords.filter(r => {
+    const s = (r.status || '').toLowerCase().replace(/[\s_-]/g, '');
+    return s.includes('ongoing') || s === 'od';
+  }).length;
+  const totalNotStarted = totalEnrolled - totalCompleted - totalOngoing;
+  const totalCerts = allTargetRecords.filter(r => {
+    const c = (r.certificateCollected || '').toLowerCase();
+    return c === 'yes' || c === 'collected';
+  }).length;
+  const completionRate = totalEnrolled > 0 ? `${Math.round((totalCompleted / totalEnrolled) * 100)}%` : '0%';
+
+  // ----------------------------------------------------
+  // COVER / EXECUTIVE SUMMARY SECTION (if all classes)
+  // ----------------------------------------------------
+  if (!specificClass) {
+    // Header Banner
+    doc.setFillColor(15, 23, 42); // slate-900
+    doc.rect(0, 0, pageWidth, 28, 'F');
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('VELS INSTITUTE OF SCIENCE, TECHNOLOGY & ADVANCED STUDIES (VISTAS)', 14, 11);
+
+    doc.setFontSize(9.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(203, 213, 225); // slate-300
+    doc.text('Department of Aviation & Management • Master Internship Tracking Report (All 13 Classes)', 14, 18);
+    doc.text(`Generated on: ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} at ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`, pageWidth - 14, 18, { align: 'right' });
+
+    // Executive KPI Summary Cards
+    const kpiY = 34;
+    const cardWidth = (pageWidth - 28 - 20) / 5; // 5 cards with 5mm gaps
+    const cardHeight = 16;
+    const kpis = [
+      { label: 'TOTAL ENROLLED', val: String(totalEnrolled), color: [30, 41, 59], textCol: [255, 255, 255] },
+      { label: 'COMPLETED', val: String(totalCompleted), color: [16, 185, 129], textCol: [255, 255, 255] },
+      { label: 'ONGOING', val: String(totalOngoing), color: [59, 130, 246], textCol: [255, 255, 255] },
+      { label: 'NOT STARTED', val: String(totalNotStarted), color: [241, 245, 249], textCol: [71, 85, 105], border: true },
+      { label: 'COMPLETION RATE', val: completionRate, color: [99, 102, 241], textCol: [255, 255, 255] }
+    ];
+
+    kpis.forEach((kpi, idx) => {
+      const x = 14 + idx * (cardWidth + 5);
+      doc.setFillColor(...kpi.color);
+      if (kpi.border) {
+        doc.setDrawColor(203, 213, 225);
+        doc.rect(x, kpiY, cardWidth, cardHeight, 'FD');
+      } else {
+        doc.rect(x, kpiY, cardWidth, cardHeight, 'F');
+      }
+      doc.setTextColor(...kpi.textCol);
+      doc.setFontSize(7.5);
+      doc.setFont('helvetica', 'bold');
+      doc.text(kpi.label, x + cardWidth / 2, kpiY + 5.5, { align: 'center' });
+      doc.setFontSize(11);
+      doc.text(kpi.val, x + cardWidth / 2, kpiY + 12.5, { align: 'center' });
+    });
+
+    // Summary Table by Class
+    const classSummaryHeaders = [
+      ['#', 'Class / Section', 'Total Students', 'Completed', 'Ongoing', 'Not Started', 'Certs Collected', 'Completion %']
+    ];
+    const classSummaryBody = ALL_CLASSES.map((cName, idx) => {
+      const cRecs = records.filter(r => (r.className || '').trim().toUpperCase() === cName.trim().toUpperCase());
+      const comp = cRecs.filter(r => (r.status || '').toLowerCase().includes('complet')).length;
+      const ong = cRecs.filter(r => {
+        const s = (r.status || '').toLowerCase().replace(/[\s_-]/g, '');
+        return s.includes('ongoing') || s === 'od';
+      }).length;
+      const notSt = cRecs.length - comp - ong;
+      const certs = cRecs.filter(r => {
+        const c = (r.certificateCollected || '').toLowerCase();
+        return c === 'yes' || c === 'collected';
+      }).length;
+      const pct = cRecs.length > 0 ? `${Math.round((comp / cRecs.length) * 100)}%` : '0%';
+      return [idx + 1, cName, cRecs.length, comp, ong, notSt, certs, pct];
+    });
+
+    // Add total footer row
+    classSummaryBody.push([
+      '', 'TOTAL / OVERALL', totalEnrolled, totalCompleted, totalOngoing, totalNotStarted, totalCerts, completionRate
+    ]);
+
+    autoTable(doc, {
+      startY: 55,
+      head: classSummaryHeaders,
+      body: classSummaryBody,
+      theme: 'grid',
+      styles: {
+        fontSize: 8,
+        cellPadding: 2,
+        halign: 'center'
+      },
+      headStyles: {
+        fillColor: [15, 23, 42],
+        textColor: 255,
+        fontStyle: 'bold'
+      },
+      columnStyles: {
+        0: { cellWidth: 10 },
+        1: { cellWidth: 35, fontStyle: 'bold', halign: 'left' },
+        2: { cellWidth: 30 },
+        3: { cellWidth: 26, textColor: [16, 149, 102], fontStyle: 'bold' },
+        4: { cellWidth: 26, textColor: [37, 99, 235], fontStyle: 'bold' },
+        5: { cellWidth: 26 },
+        6: { cellWidth: 32 },
+        7: { cellWidth: 30, fontStyle: 'bold' }
+      },
+      didParseCell: (data) => {
+        if (data.row.index === classSummaryBody.length - 1) {
+          data.cell.styles.fontStyle = 'bold';
+          data.cell.styles.fillColor = [241, 245, 249];
+          data.cell.styles.textColor = [15, 23, 42];
+        }
+      }
+    });
+
+    doc.addPage();
+  }
+
+  // ----------------------------------------------------
+  // STUDENT ROSTER TABLES (ONE CLEAN TABLE PER CLASS)
+  // ----------------------------------------------------
+  classesToExport.forEach((className, classIdx) => {
+    if (classIdx > 0 || specificClass) {
+      if (classIdx > 0) doc.addPage();
+    }
+
+    const classRecords = records
+      .filter(r => (r.className || '').trim().toUpperCase() === className.trim().toUpperCase())
+      .sort((a, b) => (a.regNo || '').localeCompare(b.regNo || ''));
+
+    const classCompleted = classRecords.filter(r => (r.status || '').toLowerCase().includes('complet')).length;
+    const classOngoing = classRecords.filter(r => {
+      const s = (r.status || '').toLowerCase().replace(/[\s_-]/g, '');
+      return s.includes('ongoing') || s === 'od';
+    }).length;
+    const classNotStarted = classRecords.length - classCompleted - classOngoing;
+    const classCerts = classRecords.filter(r => {
+      const c = (r.certificateCollected || '').toLowerCase();
+      return c === 'yes' || c === 'collected';
+    }).length;
+
+    // Header Bar for Class
+    doc.setFillColor(30, 41, 59); // slate-800
+    doc.rect(0, 0, pageWidth, 20, 'F');
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`CLASS SECTION: ${className} • INTERNSHIP TRACKING ROSTER`, 14, 9);
+
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(203, 213, 225);
+    doc.text(`Enrolled: ${classRecords.length} Students  |  Completed: ${classCompleted}  |  Ongoing: ${classOngoing}  |  Not Started: ${classNotStarted}  |  Certificates: ${classCerts}`, 14, 15);
+    doc.text(`VISTAS Internship Coordination`, pageWidth - 14, 12, { align: 'right' });
+
+    const tableHeaders = [
+      ['#', 'Reg No', 'Student Name', 'Company Name', 'Location', 'Start Date', 'End Date', 'Dur', 'Attend', 'Status', 'Cert']
+    ];
+
+    const tableBody = classRecords.map((r, idx) => {
+      const isComp = (r.status || '').toLowerCase().includes('complet');
+      const isOng = !isComp && ((r.status || '').toLowerCase().replace(/[\s_-]/g, '').includes('ongoing') || (r.status || '').toUpperCase() === 'OD');
+      const statusLabel = isComp ? 'Completed' : (isOng ? 'On Going' : 'Not Started');
+
+      return [
+        idx + 1,
+        r.regNo || '-',
+        r.studentName || '-',
+        r.companyName || '-',
+        r.location || '-',
+        r.startDate || '-',
+        r.endDate || '-',
+        r.duration || '-',
+        r.attendance || '-',
+        statusLabel,
+        r.certificateCollected === 'Yes' || r.certificateCollected === 'Collected' ? 'Yes' : 'No'
+      ];
+    });
+
+    autoTable(doc, {
+      startY: 23,
+      head: tableHeaders,
+      body: tableBody,
+      theme: 'grid',
+      styles: {
+        fontSize: 7,
+        cellPadding: 1.5,
+        overflow: 'linebreak'
+      },
+      headStyles: {
+        fillColor: [30, 41, 59],
+        textColor: 255,
+        fontStyle: 'bold',
+        halign: 'center'
+      },
+      columnStyles: {
+        0: { cellWidth: 7, halign: 'center' },
+        1: { cellWidth: 20, fontStyle: 'bold' },
+        2: { cellWidth: 38 },
+        3: { cellWidth: 54 },
+        4: { cellWidth: 26 },
+        5: { cellWidth: 18, halign: 'center' },
+        6: { cellWidth: 18, halign: 'center' },
+        7: { cellWidth: 12, halign: 'center' },
+        8: { cellWidth: 15, halign: 'center' },
+        9: { cellWidth: 20, halign: 'center', fontStyle: 'bold' },
+        10: { cellWidth: 14, halign: 'center' }
+      },
+      didParseCell: (data) => {
+        if (data.section === 'body' && data.column.index === 9) {
+          const val = data.cell.raw;
+          if (val === 'Completed') {
+            data.cell.styles.textColor = [16, 149, 102];
+          } else if (val === 'On Going') {
+            data.cell.styles.textColor = [37, 99, 235];
+          } else {
+            data.cell.styles.textColor = [100, 116, 139];
+          }
+        }
+      }
+    });
+  });
+
+  // Add page numbering footer to all generated pages
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let p = 1; p <= pageCount; p++) {
+    doc.setPage(p);
+    doc.setFontSize(7.5);
+    doc.setTextColor(148, 163, 184); // slate-400
+    doc.text(
+      `VISTAS University • Official Internship Documentation • Page ${p} of ${pageCount}`,
+      pageWidth / 2,
+      pageHeight - 6,
+      { align: 'center' }
+    );
+  }
+
+  const pdfFilename = specificClass
+    ? `VISTAS_Internship_Report_${specificClass.replace(/\s+/g, '_')}.pdf`
+    : `VISTAS_Master_Internship_Report_All_Classes.pdf`;
+
+  doc.save(pdfFilename);
+  return pdfFilename;
 }
 
 /**

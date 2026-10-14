@@ -55,7 +55,7 @@ export default function ClassSelectionModal({ isOpen, onClose, selectedClass, on
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
                   {visibleClasses.map((cls) => {
                     const isSelected = selectedClass === cls;
-                    const count = classCountMap[cls] || 0;
+                    const count = classCountMap[cls.toUpperCase()] ?? classCountMap[cls] ?? 0;
 
                     return (
                       <button

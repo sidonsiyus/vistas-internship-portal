@@ -27,7 +27,7 @@ import ClassSelectionModal from './ClassSelectionModal';
 import InternshipEditModal from './InternshipEditModal';
 import GoogleSheetConfigModal from './GoogleSheetConfigModal';
 import AddStudentToClassModal from './AddStudentToClassModal';
-import { exportInternshipWorkbook, formatAttendance, cleanDisplayDate, ALL_CLASSES } from '../../../utils/internshipExcelSync';
+import { exportInternshipWorkbook, exportInternshipPDF, formatAttendance, cleanDisplayDate, ALL_CLASSES } from '../../../utils/internshipExcelSync';
 
 export default function ClassInchargeDashboard() {
   const { 
@@ -118,6 +118,39 @@ export default function ClassInchargeDashboard() {
     setShowExportMenu(false);
   };
 
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
+
+  const handleExportAllClassesPDF = async () => {
+    setIsExportingPDF(true);
+    showToast('Generating official Master PDF report for all 13 classes...', 'info');
+    try {
+      await exportInternshipPDF(internshipRecords, null);
+      showToast('Master Internship PDF Report generated and downloaded!', 'success');
+    } catch (err) {
+      console.error('PDF export error:', err);
+      showToast('Failed to generate PDF: ' + err.message, 'error');
+    } finally {
+      setIsExportingPDF(false);
+      setShowExportMenu(false);
+    }
+  };
+
+  const handleExportThisClassPDF = async () => {
+    if (!selectedClassIncharge) return;
+    setIsExportingPDF(true);
+    showToast(`Generating PDF report for ${selectedClassIncharge}...`, 'info');
+    try {
+      await exportInternshipPDF(internshipRecords, selectedClassIncharge);
+      showToast(`${selectedClassIncharge} Internship PDF Report downloaded!`, 'success');
+    } catch (err) {
+      console.error('PDF export error:', err);
+      showToast('Failed to generate PDF: ' + err.message, 'error');
+    } finally {
+      setIsExportingPDF(false);
+      setShowExportMenu(false);
+    }
+  };
+
   return (
     <div className="space-y-6 font-sans">
       
@@ -185,45 +218,96 @@ export default function ClassInchargeDashboard() {
               <span>{selectedClassIncharge ? 'Switch Class' : 'Choose Class'}</span>
             </button>
 
-            {/* Excel Export Menu */}
+            {/* Export Menu (Excel & PDF) */}
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setShowExportMenu(!showExportMenu)}
+                disabled={isExportingPDF}
                 className="px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
               >
-                <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                <span>Export Excel</span>
+                <Download className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>Export Report</span>
                 <ChevronDown className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
               </button>
 
               {showExportMenu && (
-                <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg py-1.5 z-30 animate-in fade-in zoom-in-95 duration-150">
+                <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl py-2 z-30 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="px-3.5 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    Official PDF Reports
+                  </div>
                   <button
                     type="button"
-                    onClick={handleExportThisClass}
-                    className="w-full text-left px-3.5 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/80 flex items-center justify-between cursor-pointer"
+                    onClick={handleExportAllClassesPDF}
+                    className="w-full text-left px-3.5 py-2 text-xs font-semibold text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center justify-between cursor-pointer transition-colors"
                   >
-                    <span>Export {selectedClassIncharge || 'Active Class'} (.xlsx)</span>
-                    <Download className="w-3.5 h-3.5 text-slate-400" />
+                    <span className="flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-rose-500" />
+                      <span>Export All 13 Classes (.pdf)</span>
+                    </span>
+                    <span className="text-[10px] bg-rose-100 dark:bg-rose-900/60 text-rose-800 dark:text-rose-200 px-1.5 py-0.5 rounded font-mono">Master</span>
                   </button>
+                  {selectedClassIncharge && (
+                    <button
+                      type="button"
+                      onClick={handleExportThisClassPDF}
+                      className="w-full text-left px-3.5 py-2 text-xs font-semibold text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center justify-between cursor-pointer transition-colors"
+                    >
+                      <span className="flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-rose-500" />
+                        <span>Export {selectedClassIncharge} (.pdf)</span>
+                      </span>
+                    </button>
+                  )}
+
+                  <div className="my-1.5 border-t border-slate-100 dark:border-slate-800"></div>
+
+                  <div className="px-3.5 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    Excel Workbooks (.xlsx)
+                  </div>
                   <button
                     type="button"
                     onClick={handleExportAllClasses}
-                    className="w-full text-left px-3.5 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/80 flex items-center justify-between border-t border-slate-100 dark:border-slate-800 cursor-pointer"
+                    className="w-full text-left px-3.5 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/80 flex items-center justify-between cursor-pointer"
                   >
-                    <span>Export All 13 Classes (.xlsx)</span>
-                    <Download className="w-3.5 h-3.5 text-slate-400" />
+                    <span className="flex items-center gap-2">
+                      <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
+                      <span>Export All 13 Classes (.xlsx)</span>
+                    </span>
                   </button>
+                  {selectedClassIncharge && (
+                    <button
+                      type="button"
+                      onClick={handleExportThisClass}
+                      className="w-full text-left px-3.5 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/80 flex items-center justify-between cursor-pointer"
+                    >
+                      <span className="flex items-center gap-2">
+                        <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
+                        <span>Export {selectedClassIncharge} (.xlsx)</span>
+                      </span>
+                    </button>
+                  )}
                 </div>
               )}
             </div>
+
+            {/* Quick Master PDF Export Button */}
+            <button
+              type="button"
+              onClick={handleExportAllClassesPDF}
+              disabled={isExportingPDF}
+              className="px-3.5 py-2 rounded-xl text-xs font-bold bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900 transition-all flex items-center gap-1.5 shadow-xs cursor-pointer shrink-0"
+              title="Download clean, official PDF report for all 13 classes"
+            >
+              <FileText className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+              <span>{isExportingPDF ? 'Generating...' : 'Download PDF'}</span>
+            </button>
 
             {/* Restore Database Button */}
             <button
               type="button"
               onClick={() => {
-                if (window.confirm('Restore the full database of 613 students across all 14 classes? Any uploaded documents will be preserved.')) {
+                if (window.confirm('Restore the full database of 613 students across all 13 classes? Any uploaded documents will be preserved.')) {
                   restoreOfficialDatabase(false);
                 }
               }}
