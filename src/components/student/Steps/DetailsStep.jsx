@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { User, Users, FileText, Phone, Mail, Building, GraduationCap, AlertTriangle, CheckCircle2, Sparkles, Search, X, Plus, Trash2, Building2 } from 'lucide-react';
+import { User, Users, FileText, Phone, Mail, Building, GraduationCap, AlertTriangle, CheckCircle2, Sparkles, Search, X, Plus, Trash2, Building2, Video } from 'lucide-react';
 import { QUERY_CATEGORIES, DEPARTMENTS } from '../../../mock/sampleData';
 import { useApp } from '../../../context/AppContext';
 import { timeToMinutes } from '../../../utils/slotGenerator';
@@ -9,7 +9,8 @@ export default function DetailsStep({ formData, setFormData, selectedTime, selec
   const { appointments, students: contextStudents = [] } = useApp();
   const [errors, setErrors] = useState({});
 
-  const isPre3Pm = selectedTime ? timeToMinutes(selectedTime) < 900 : false;
+  const isOnlineMode = formData.consultationMode === 'ONLINE';
+  const isPre3Pm = !isOnlineMode && selectedTime ? timeToMinutes(selectedTime) < 900 : false;
 
   // Unified student pool combining studentsDatabase and live context students
   const studentPool = useMemo(() => {
@@ -315,6 +316,25 @@ export default function DetailsStep({ formData, setFormData, selectedTime, selec
           Search by your <strong>Name</strong> or <strong>Register Number</strong> to auto-fill your verified student record.
         </p>
       </div>
+
+      {isOnlineMode && (
+        <div className="p-3.5 rounded-xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-lg bg-indigo-600 text-white shrink-0">
+              <Video className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-indigo-950 dark:text-indigo-100">
+                Online Video Consultation • {selectedDate} at {selectedTime}
+              </p>
+              <p className="text-[11px] text-indigo-700 dark:text-indigo-300">
+                Direct confirmation (No emergency approval needed for 2:00 PM – 5:00 PM online slots).
+              </p>
+            </div>
+          </div>
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-600 text-white shrink-0">ONLINE</span>
+        </div>
+      )}
 
       {/* Consultation Mode Selector: Individual vs Bulk Group */}
       <div className="space-y-1.5 bg-slate-50/70 dark:bg-slate-800/40 p-3.5 sm:p-4 rounded-2xl border border-slate-200 dark:border-slate-700/80">

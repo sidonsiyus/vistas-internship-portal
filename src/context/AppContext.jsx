@@ -686,7 +686,20 @@ export function AppProvider({ children }) {
               if (emMatch) emergencyJustification = emMatch[1].trim();
             }
 
-            const isEmergencyTime = (a.appointment_time && timeToMinutes(a.appointment_time) < 900) || !!emergencyJustification;
+            // Reconstruct Online vs In-Person Consultation Mode
+            let consultationMode = cached.consultationMode || 'IN_PERSON';
+            let meetingLink = cached.meetingLink || '';
+            const combinedText = `${a.notes || ''}\n${a.description || ''}`;
+            if (/\[Consultation Mode:\s*ONLINE\]/i.test(combinedText)) {
+              consultationMode = 'ONLINE';
+            }
+            if (!meetingLink) {
+              const linkMatch = combinedText.match(/\[Meet Link:\s*([^\]]+)\]/i);
+              if (linkMatch) meetingLink = linkMatch[1].trim();
+            }
+
+            const isOnline = consultationMode === 'ONLINE';
+            const isEmergencyTime = (!isOnline && a.appointment_time && timeToMinutes(a.appointment_time) < 900) || !!emergencyJustification;
 
             return {
               id: a.id,
@@ -701,6 +714,8 @@ export function AppProvider({ children }) {
               category: a.category,
               description: a.description,
               companyName: companyName || '',
+              consultationMode,
+              meetingLink,
               isBulk: !!isBulk,
               studentCount: studentCount || (Array.isArray(students) && students.length > 0 ? students.length : 1),
               students: students || [],
@@ -1011,8 +1026,13 @@ export function AppProvider({ children }) {
     const queuePosition = activeWaiting.length + 1;
     const nowIso = new Date().toISOString();
 
+    const consultationMode = bookingData.consultationMode === 'ONLINE' ? 'ONLINE' : 'IN_PERSON';
+    const isOnline = consultationMode === 'ONLINE';
+    const meetingLink = isOnline ? (bookingData.meetingLink || availability.onlineMeetingLink || '').trim() : '';
+
     const isAdminAction = !!bookingData.byAdmin || !!bookingData.injectedByAdmin;
-    const isPre3Pm = !isAdminAction && bookingData.timeSlot ? timeToMinutes(bookingData.timeSlot) < 900 : false;
+    // Pre-3PM emergency hold applies ONLY to in-person bookings before 3:00 PM (Online bookings 2:00 PM - 5:00 PM are regular)
+    const isPre3Pm = !isAdminAction && !isOnline && bookingData.timeSlot ? timeToMinutes(bookingData.timeSlot) < 900 : false;
     const initialStatus = isPre3Pm ? 'PENDING_APPROVAL' : 'WAITING';
     const emergencyJustification = (bookingData.emergencyJustification || '').trim();
 
@@ -1033,9 +1053,14 @@ export function AppProvider({ children }) {
       ? allStudents.map(s => s.name).join(', ')
       : bookingData.name;
 
-    const notesInit = isPre3Pm
-      ? `[Awaiting Coordinator Approval: Emergency slot before 3:00 PM${emergencyJustification ? ` - Justification: ${emergencyJustification}` : ''}]`
-      : null;
+    const noteParts = [];
+    if (isOnline) {
+      noteParts.push(`[Consultation Mode: ONLINE]${meetingLink ? ` [Meet Link: ${meetingLink}]` : ''}`);
+    }
+    if (isPre3Pm) {
+      noteParts.push(`[Awaiting Coordinator Approval: Emergency slot before 3:00 PM${emergencyJustification ? ` - Justification: ${emergencyJustification}` : ''}]`);
+    }
+    const notesInit = noteParts.length > 0 ? noteParts.join('\n') : null;
 
     const newApt = {
       id: `apt-${Date.now()}`,
@@ -1049,6 +1074,8 @@ export function AppProvider({ children }) {
       email: bookingData.email,
       category: bookingData.category,
       companyName: bookingData.companyName || '',
+      consultationMode,
+      meetingLink,
       description: bookingData.description,
       isBulk,
       studentCount,
@@ -1080,6 +1107,9 @@ export function AppProvider({ children }) {
           : bookingData.name;
 
         let descToSave = bookingData.description || '';
+        if (isOnline) {
+          descToSave = `[Consultation Mode: ONLINE]${meetingLink ? ` [Meet Link: ${meetingLink}]` : ''}\n${descToSave}`.trim();
+        }
         if (isBulk && studentCount > 1) {
           const membersList = allStudents.map(s => `${s.name} (${s.registerNumber})`).join(', ');
           descToSave = `[Group Consultation: ${studentCount} Students${bookingData.companyName ? ` • ${bookingData.companyName}` : ''}]\nMembers: ${membersList}\n\n${descToSave}`.trim();
@@ -1123,6 +1153,8 @@ export function AppProvider({ children }) {
 
     if (isPre3Pm) {
       showToast(`Emergency slot request submitted (Token ${tokenNumber})! Awaiting coordinator approval.`, 'warning');
+    } else if (isOnline) {
+      showToast(`Online Consultation Confirmed! Token is ${tokenNumber}`, 'success');
     } else {
       showToast(
         isBulk && studentCount > 1
@@ -1151,6 +1183,18 @@ export function AppProvider({ children }) {
     const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const appointmentTime = walkInData.appointmentTime || walkInData.timeSlot || walkInData.time || timeNow;
 
+    const consultationMode = walkInData.consultationMode === 'ONLINE' ? 'ONLINE' : 'IN_PERSON';
+    const isOnline = consultationMode === 'ONLINE';
+    const meetingLink = isOnline ? (walkInData.meetingLink || availability.onlineMeetingLink || '').trim() : '';
+    const notesInit = isOnline
+      ? `[Consultation Mode: ONLINE]${meetingLink ? ` [Meet Link: ${meetingLink}]` : ''}`
+      : null;
+
+    const descBase = walkInData.description ? `[INJECTED] ${walkInData.description}` : '[INJECTED BY COORDINATOR]';
+    const descToSave = isOnline
+      ? `[Consultation Mode: ONLINE]${meetingLink ? ` [Meet Link: ${meetingLink}]` : ''}\n${descBase}`
+      : descBase;
+
     const newApt = {
       id: `apt-${Date.now()}`,
       tokenNumber,
@@ -1161,7 +1205,10 @@ export function AppProvider({ children }) {
       phone: walkInData.phone || 'N/A',
       email: walkInData.email || 'N/A',
       category: walkInData.category,
-      description: walkInData.description ? `[INJECTED] ${walkInData.description}` : '[INJECTED BY COORDINATOR]',
+      consultationMode,
+      meetingLink,
+      description: descToSave,
+      notes: notesInit,
       status: walkInData.status || 'WAITING',
       queuePosition: pos,
       appointmentDate: appointmentDate,
@@ -1191,7 +1238,8 @@ export function AppProvider({ children }) {
           phone: walkInData.phone || 'N/A',
           email: walkInData.email || 'N/A',
           category: walkInData.category,
-          description: walkInData.description ? `[INJECTED] ${walkInData.description}` : '[INJECTED BY COORDINATOR]',
+          description: descToSave,
+          notes: notesInit,
           status: walkInData.status || 'WAITING',
           queue_position: pos,
           appointment_date: appointmentDate,
@@ -1211,7 +1259,7 @@ export function AppProvider({ children }) {
       }
     }
 
-    showToast(`Appointment injected: ${tokenNumber} for ${walkInData.name} at ${appointmentTime}`, 'success');
+    showToast(`${isOnline ? 'Online appointment' : 'Appointment'} injected: ${tokenNumber} for ${walkInData.name} at ${appointmentTime}`, 'success');
     return newApt;
   };
 

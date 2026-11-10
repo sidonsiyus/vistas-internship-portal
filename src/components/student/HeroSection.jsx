@@ -1,5 +1,5 @@
 import React from 'react';
-import { Ticket, Clock, ArrowRight, ShieldCheck, MapPin, AlertCircle, Building2, Award } from 'lucide-react';
+import { Ticket, Clock, ArrowRight, ShieldCheck, MapPin, AlertCircle, Building2, Award, Video } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import StatusBadge from '../common/StatusBadge';
 import { OFFICE_LOCATION } from '../../mock/sampleData';
@@ -10,6 +10,9 @@ export default function HeroSection({ setActiveTab, onBookClick }) {
 
   const formattedStart = formatTimeDisplay(availability.startTime || '15:30');
   const slotDuration = availability.slotDuration || 15;
+  const onlineEnabled = !!availability.onlineAppointmentsEnabled;
+  const formattedOnlineStart = formatTimeDisplay(availability.onlineStartTime || '14:00');
+  const formattedOnlineEnd = formatTimeDisplay(availability.onlineEndTime || '17:00');
 
   const handleBook = () => {
     if (onBookClick) onBookClick();
@@ -93,11 +96,20 @@ export default function HeroSection({ setActiveTab, onBookClick }) {
           </div>
 
           {/* Clean Policy Note */}
-          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+          <div className="pt-2 flex flex-col sm:flex-row flex-wrap items-center justify-center gap-3 text-xs text-slate-500 dark:text-slate-400">
             <div className="flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
               <span>Regular Slots: <strong className="text-slate-800 dark:text-slate-200 font-medium">After {formattedStart}</strong> ({slotDuration} Mins / Student)</span>
             </div>
+            {onlineEnabled && (
+              <>
+                <span className="hidden sm:inline text-slate-300 dark:text-slate-700">•</span>
+                <div className="flex items-center gap-1.5 text-indigo-700 dark:text-indigo-300 font-medium">
+                  <Video className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                  <span>Online Slots Active: <strong>{formattedOnlineStart} – {formattedOnlineEnd}</strong></span>
+                </div>
+              </>
+            )}
             <span className="hidden sm:inline text-slate-300 dark:text-slate-700">•</span>
             <div className="flex items-center gap-1.5 text-rose-600 dark:text-rose-400">
               <AlertCircle className="w-3.5 h-3.5 text-rose-500 shrink-0" />

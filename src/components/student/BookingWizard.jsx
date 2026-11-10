@@ -15,13 +15,14 @@ const getTodayIso = () => {
 };
 
 export default function BookingWizard({ setActiveTab }) {
-  const { bookAppointment } = useApp();
+  const { bookAppointment, availability = {} } = useApp();
 
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedDate, setSelectedDate] = useState(getTodayIso);
   const [selectedTime, setSelectedTime] = useState('');
   const [formData, setFormData] = useState({
     bookingType: 'INDIVIDUAL',
+    consultationMode: 'IN_PERSON',
     isBulk: false,
     name: '',
     registerNumber: '',
@@ -37,6 +38,18 @@ export default function BookingWizard({ setActiveTab }) {
   });
 
   const [confirmedAppointment, setConfirmedAppointment] = useState(null);
+
+  const effectiveMode = availability.onlineAppointmentsEnabled && formData.consultationMode === 'ONLINE'
+    ? 'ONLINE'
+    : 'IN_PERSON';
+
+  const handleChangeConsultationMode = (nextMode) => {
+    const safeMode = availability.onlineAppointmentsEnabled && nextMode === 'ONLINE' ? 'ONLINE' : 'IN_PERSON';
+    if (safeMode !== formData.consultationMode) {
+      setFormData(prev => ({ ...prev, consultationMode: safeMode }));
+      setSelectedTime('');
+    }
+  };
 
   const steps = [
     { number: 1, title: 'Date', icon: Calendar },
@@ -62,6 +75,8 @@ export default function BookingWizard({ setActiveTab }) {
 
     const bookingPayload = {
       ...formData,
+      consultationMode: effectiveMode,
+      meetingLink: effectiveMode === 'ONLINE' ? (availability.onlineMeetingLink || '') : '',
       isBulk,
       studentCount: allStudents.length,
       students: allStudents,
@@ -127,6 +142,8 @@ export default function BookingWizard({ setActiveTab }) {
             <DateStep
               selectedDate={selectedDate}
               setSelectedDate={setSelectedDate}
+              consultationMode={effectiveMode}
+              setConsultationMode={handleChangeConsultationMode}
               onNext={() => setCurrentStep(2)}
             />
           )}
@@ -136,6 +153,8 @@ export default function BookingWizard({ setActiveTab }) {
               selectedDate={selectedDate}
               selectedTime={selectedTime}
               setSelectedTime={setSelectedTime}
+              consultationMode={effectiveMode}
+              setConsultationMode={handleChangeConsultationMode}
               onNext={() => setCurrentStep(3)}
               onBack={() => setCurrentStep(1)}
             />
@@ -143,7 +162,7 @@ export default function BookingWizard({ setActiveTab }) {
 
           {currentStep === 3 && (
             <DetailsStep
-              formData={formData}
+              formData={{ ...formData, consultationMode: effectiveMode }}
               setFormData={setFormData}
               selectedTime={selectedTime}
               selectedDate={selectedDate}

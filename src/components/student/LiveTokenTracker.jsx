@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Ticket, Users, Clock, AlertCircle, RefreshCw, CheckCircle2, ChevronRight, Volume2, Search, ArrowRight, MapPin, Calendar, Sparkles } from 'lucide-react';
+import { Ticket, Users, Clock, AlertCircle, RefreshCw, CheckCircle2, ChevronRight, Volume2, Search, ArrowRight, MapPin, Calendar, Sparkles, Video, ExternalLink } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import TokenBadge from '../common/TokenBadge';
 import StatusBadge from '../common/StatusBadge';
@@ -195,26 +195,47 @@ export default function LiveTokenTracker({ setActiveTab }) {
       )}
 
       {/* CALL NOTIFICATION BANNER IF STUDENT IS CALLED */}
-      {myAppointment?.status === 'CALLED' && (
-        <div className="bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 p-5 rounded-xl border border-amber-300 dark:border-amber-800 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-amber-100 dark:bg-amber-900/60 rounded-lg text-amber-700 dark:text-amber-300">
-              <Volume2 className="w-6 h-6 animate-pulse" />
+      {myAppointment?.status === 'CALLED' && (() => {
+        const isMyOnline = myAppointment.consultationMode === 'ONLINE';
+        const myMeetLink = myAppointment.meetingLink || availability?.onlineMeetingLink || '';
+        return (
+          <div className="bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 p-5 rounded-xl border border-amber-300 dark:border-amber-800 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-amber-100 dark:bg-amber-900/60 rounded-lg text-amber-700 dark:text-amber-300">
+                {isMyOnline ? <Video className="w-6 h-6 animate-pulse" /> : <Volume2 className="w-6 h-6 animate-pulse" />}
+              </div>
+              <div>
+                <span className="text-[11px] uppercase font-bold tracking-wider text-amber-800 dark:text-amber-400 block">
+                  YOUR TOKEN IS CALLED NOW
+                </span>
+                <h3 className="text-xl font-bold tracking-tight text-amber-950 dark:text-white">
+                  {isMyOnline
+                    ? `TOKEN ${myAppointment.tokenNumber} — JOIN ONLINE VIDEO MEETING NOW`
+                    : `TOKEN ${myAppointment.tokenNumber} — PROCEED TO 7TH FLOOR STAFF ROOM`}
+                </h3>
+                <p className="text-xs text-amber-800 dark:text-amber-300 mt-0.5">
+                  {isMyOnline
+                    ? 'The Internship Coordinator is ready to meet you online via video call.'
+                    : 'The Internship Coordinator is ready to meet you at Vels Hi-Tech Campus.'}
+                </p>
+              </div>
             </div>
-            <div>
-              <span className="text-[11px] uppercase font-bold tracking-wider text-amber-800 dark:text-amber-400 block">
-                YOUR TOKEN IS CALLED NOW
-              </span>
-              <h3 className="text-xl font-bold tracking-tight text-amber-950 dark:text-white">
-                TOKEN {myAppointment.tokenNumber} — PROCEED TO 7TH FLOOR STAFF ROOM
-              </h3>
-              <p className="text-xs text-amber-800 dark:text-amber-300 mt-0.5">
-                The Internship Coordinator is ready to meet you at Vels Hi-Tech Campus.
-              </p>
-            </div>
+
+            {isMyOnline && myMeetLink && (
+              <a
+                href={myMeetLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-sm flex items-center gap-2 shrink-0 transition-all"
+              >
+                <Video className="w-4 h-4" />
+                <span>Join Video Meeting</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            )}
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* MAIN QUEUE METRICS DASHBOARD */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -334,15 +355,34 @@ export default function LiveTokenTracker({ setActiveTab }) {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
           <div>
             <span className="text-[11px] font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400">YOUR TRACKED TOKEN</span>
-            <div className="flex items-center gap-3 mt-1">
+            <div className="flex items-center gap-3 mt-1 flex-wrap">
               {trackedToken ? (
                 <TokenBadge tokenNumber={trackedToken} size="large" variant="blue" />
               ) : (
                 <span className="text-sm text-slate-500 dark:text-slate-400 font-mono">No Token Tracked</span>
               )}
               {myAppointment && <StatusBadge status={myAppointment.status} size="normal" />}
+              {myAppointment?.consultationMode === 'ONLINE' && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                  <Video className="w-3.5 h-3.5" />
+                  <span>Online Consultation</span>
+                </span>
+              )}
             </div>
           </div>
+
+          {myAppointment?.consultationMode === 'ONLINE' && (myAppointment.meetingLink || availability?.onlineMeetingLink) && myAppointment.status !== 'COMPLETED' && myAppointment.status !== 'CANCELLED' && (
+            <a
+              href={myAppointment.meetingLink || availability.onlineMeetingLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs flex items-center gap-2 shrink-0 transition-all"
+            >
+              <Video className="w-4 h-4" />
+              <span>Join Online Meeting Link</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          )}
 
           {!myAppointment && (
             <div className="p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-600 dark:text-slate-300">
@@ -404,7 +444,11 @@ export default function LiveTokenTracker({ setActiveTab }) {
                     ⚠️ Emergency justification under review by Coordinator. You will be notified here once approved.
                   </span>
                 ) : myAppointment.status === 'CALLED' ? (
-                  <span className="text-amber-700 dark:text-amber-300 font-semibold">Please proceed to 7th Floor Staff Room immediately!</span>
+                  <span className="text-amber-700 dark:text-amber-300 font-semibold">
+                    {myAppointment.consultationMode === 'ONLINE'
+                      ? 'Your turn now! Please click Join Online Meeting Link immediately.'
+                      : 'Please proceed to 7th Floor Staff Room immediately!'}
+                  </span>
                 ) : myAppointment.status === 'IN_PROGRESS' ? (
                   <span className="text-blue-700 dark:text-blue-300 font-semibold">You are currently meeting the Internship Coordinator.</span>
                 ) : myAppointment.status === 'COMPLETED' ? (

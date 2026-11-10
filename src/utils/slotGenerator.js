@@ -109,6 +109,25 @@ export function generateRegularSlots({
 }
 
 /**
+ * Generates an array of Online consultation slots strictly between onlineStartTime (2:00 PM) and onlineEndTime (5:00 PM).
+ */
+export function generateOnlineSlots({
+  startTime = '14:00',
+  endTime = '17:00',
+  slotDuration = 15,
+  breakStartTime,
+  breakEndTime
+} = {}) {
+  return generateRegularSlots({
+    startTime,
+    endTime,
+    slotDuration,
+    breakStartTime,
+    breakEndTime
+  });
+}
+
+/**
  * Generates emergency slots that precede the regular consultation start time.
  * Regular hours start strictly at 3:30 PM (15:30). Emergency slots are early sessions only.
  */

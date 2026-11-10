@@ -16,7 +16,9 @@ import {
   Eye,
   Building,
   UserCheck,
-  Zap
+  Zap,
+  Video,
+  ExternalLink
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import TokenBadge from '../common/TokenBadge';
@@ -383,6 +385,12 @@ export default function CalendarView() {
                       <span>Group ({selectedApt.studentCount || selectedApt.students?.length} Students)</span>
                     </span>
                   )}
+                  {selectedApt.consultationMode === 'ONLINE' && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-800 flex items-center gap-1">
+                      <Video className="w-3 h-3" />
+                      <span>ONLINE VIDEO</span>
+                    </span>
+                  )}
                 </div>
                 <StatusBadge status={selectedApt.status} />
               </div>
@@ -395,6 +403,20 @@ export default function CalendarView() {
               <p className="text-xs text-slate-700 dark:text-slate-300 font-mono">
                 Date & Time: <strong>{selectedApt.appointmentDate} at {selectedApt.appointmentTime}</strong>
               </p>
+              {selectedApt.consultationMode === 'ONLINE' && selectedApt.meetingLink && (
+                <div className="pt-1">
+                  <a
+                    href={selectedApt.meetingLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold transition-colors"
+                  >
+                    <Video className="w-3 h-3" />
+                    <span>Open Meeting Link</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+              )}
             </div>
 
             {/* Emergency Justification Banner if present */}

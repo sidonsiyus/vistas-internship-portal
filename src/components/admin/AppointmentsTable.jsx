@@ -17,7 +17,9 @@ import {
   X,
   AlertTriangle,
   UserPlus,
-  Zap
+  Zap,
+  Video,
+  ExternalLink
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import TokenBadge from '../common/TokenBadge';
@@ -29,7 +31,7 @@ import WalkInModal from './WalkInModal';
 import { DEPARTMENTS, QUERY_CATEGORIES } from '../../mock/sampleData';
 
 export default function AppointmentsTable() {
-  const { appointments, markNoShow, cancelAppointment, endMeeting, postponeAppointment, rescheduleAppointment, approveAppointment, denyAppointment } = useApp();
+  const { appointments, availability = {}, markNoShow, cancelAppointment, endMeeting, postponeAppointment, rescheduleAppointment, approveAppointment, denyAppointment } = useApp();
   const [postponeTargetApt, setPostponeTargetApt] = useState(null);
   const [rescheduleTargetApt, setRescheduleTargetApt] = useState(null);
   const [denyTargetApt, setDenyTargetApt] = useState(null);
@@ -40,6 +42,7 @@ export default function AppointmentsTable() {
   const [selectedDept, setSelectedDept] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
+  const [selectedMode, setSelectedMode] = useState('');
 
   const [selectedApt, setSelectedApt] = useState(null);
 
@@ -132,10 +135,11 @@ export default function AppointmentsTable() {
       const matchesDept = !selectedDept || apt.department === selectedDept;
       const matchesCategory = !selectedCategory || apt.category === selectedCategory;
       const matchesStatus = !selectedStatus || apt.status === selectedStatus;
+      const matchesMode = !selectedMode || (apt.consultationMode || 'IN_PERSON') === selectedMode;
 
-      return matchesSearch && matchesDept && matchesCategory && matchesStatus;
+      return matchesSearch && matchesDept && matchesCategory && matchesStatus && matchesMode;
     });
-  }, [expandedAppointments, searchTerm, selectedDept, selectedCategory, selectedStatus]);
+  }, [expandedAppointments, searchTerm, selectedDept, selectedCategory, selectedStatus, selectedMode]);
 
   return (
     <div className="space-y-6">
@@ -234,6 +238,17 @@ export default function AppointmentsTable() {
           <option value="CANCELLED" className="dark:bg-slate-800">CANCELLED</option>
         </select>
 
+        {/* Mode Filter */}
+        <select
+          value={selectedMode}
+          onChange={(e) => setSelectedMode(e.target.value)}
+          className="w-full md:w-auto px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-700 dark:text-slate-300 focus:outline-none focus:border-blue-500 focus:bg-white dark:focus:bg-slate-800"
+        >
+          <option value="" className="dark:bg-slate-800">All Modes</option>
+          <option value="IN_PERSON" className="dark:bg-slate-800">In-Person</option>
+          <option value="ONLINE" className="dark:bg-slate-800">Online Video</option>
+        </select>
+
       </div>
 
       {/* APPOINTMENTS TABLE */}
@@ -260,6 +275,12 @@ export default function AppointmentsTable() {
                   <td className="p-4">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="font-bold text-slate-900 dark:text-white text-sm">{apt.studentName}</span>
+                      {(apt.consultationMode === 'ONLINE' || apt.parentAppointment?.consultationMode === 'ONLINE') && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 inline-flex items-center gap-1">
+                          <Video className="w-2.5 h-2.5" />
+                          <span>ONLINE</span>
+                        </span>
+                      )}
                       {(apt.isEmergency || apt.emergencyJustification) && (
                         <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-50 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 flex items-center gap-1">
                           <AlertTriangle className="w-2.5 h-2.5 text-rose-500" />
@@ -375,6 +396,12 @@ export default function AppointmentsTable() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-bold text-slate-900 dark:text-white text-base">{selectedApt.studentName}</span>
+                  {(selectedApt.consultationMode === 'ONLINE' || selectedApt.parentAppointment?.consultationMode === 'ONLINE') && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-800 flex items-center gap-1">
+                      <Video className="w-3 h-3" />
+                      <span>ONLINE VIDEO</span>
+                    </span>
+                  )}
                   {selectedApt.isGroupMember && (
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300 flex items-center gap-1">
                       <Users className="w-3 h-3" />
@@ -389,6 +416,22 @@ export default function AppointmentsTable() {
               {selectedApt.phone && <p className="text-xs text-slate-500">Phone: {selectedApt.phone}</p>}
               <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold">Category: {selectedApt.category}</p>
               <p className="text-xs text-slate-500 dark:text-slate-400">Slot: {selectedApt.appointmentDate} at {selectedApt.appointmentTime}</p>
+              {(selectedApt.consultationMode === 'ONLINE' || selectedApt.parentAppointment?.consultationMode === 'ONLINE') && (
+                (selectedApt.meetingLink || selectedApt.parentAppointment?.meetingLink || availability?.onlineMeetingLink) && (
+                  <div className="pt-1">
+                    <a
+                      href={selectedApt.meetingLink || selectedApt.parentAppointment?.meetingLink || availability.onlineMeetingLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold transition-colors"
+                    >
+                      <Video className="w-3 h-3" />
+                      <span>Open Meeting Link</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                )
+              )}
             </div>
 
             {/* Emergency Justification Prominent Card */}

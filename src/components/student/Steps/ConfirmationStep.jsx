@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { CheckCircle2, AlertTriangle, Ticket, Download, ArrowRight, MapPin, Users } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, Ticket, Download, ArrowRight, MapPin, Users, Video, ExternalLink } from 'lucide-react';
 import TokenBadge from '../../common/TokenBadge';
 import { downloadIcsFile } from '../../../utils/calendar';
 import { useApp } from '../../../context/AppContext';
@@ -7,9 +7,11 @@ import { useApp } from '../../../context/AppContext';
 export const OFFICE_LOCATION = '7th Floor Staff Room, Vels Hi-Tech Campus';
 
 export default function ConfirmationStep({ appointment, onTrackToken, onCancel }) {
-  const { cancelAppointment } = useApp();
+  const { cancelAppointment, availability = {} } = useApp();
 
   const isPendingApproval = appointment?.status === 'PENDING_APPROVAL';
+  const isOnline = appointment?.consultationMode === 'ONLINE';
+  const meetingLink = appointment?.meetingLink || availability.onlineMeetingLink || '';
 
   useEffect(() => {
     try {
@@ -30,18 +32,26 @@ export default function ConfirmationStep({ appointment, onTrackToken, onCancel }
       <div className={`inline-flex items-center justify-center p-3 rounded-full border mb-1 ${
         isPendingApproval
           ? 'bg-amber-50 dark:bg-amber-950/60 border-amber-200 dark:border-amber-800 text-amber-600 dark:text-amber-400'
+          : isOnline
+          ? 'bg-indigo-50 dark:bg-indigo-950/60 border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400'
           : 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400'
       }`}>
-        {isPendingApproval ? <AlertTriangle className="w-10 h-10" /> : <CheckCircle2 className="w-10 h-10" />}
+        {isPendingApproval ? <AlertTriangle className="w-10 h-10" /> : isOnline ? <Video className="w-10 h-10" /> : <CheckCircle2 className="w-10 h-10" />}
       </div>
 
       <div>
         <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-          {isPendingApproval ? 'EMERGENCY REQUEST SUBMITTED' : '✓ BOOKING CONFIRMED!'}
+          {isPendingApproval
+            ? 'EMERGENCY REQUEST SUBMITTED'
+            : isOnline
+            ? '✓ ONLINE CONSULTATION CONFIRMED!'
+            : '✓ BOOKING CONFIRMED!'}
         </h2>
         <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 max-w-lg mx-auto">
           {isPendingApproval
             ? 'Your pre-3:00 PM consultation request has been forwarded to the Placement Coordinator for emergency validation.'
+            : isOnline
+            ? 'Your online video consultation slot has been reserved. Join using the meeting link below when your token is called.'
             : 'Your consultation slot has been reserved. Please state your token number when called.'}
         </p>
       </div>
@@ -49,9 +59,16 @@ export default function ConfirmationStep({ appointment, onTrackToken, onCancel }
       {/* Prominent Token Card */}
       <div className="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-md space-y-6 max-w-md mx-auto">
         <div className="space-y-2">
-          <span className="text-xs font-extrabold uppercase tracking-widest text-blue-600 dark:text-blue-400">
-            YOUR DIGITAL CONSULTATION TOKEN
-          </span>
+          <div className="flex items-center justify-center gap-2">
+            <span className="text-xs font-extrabold uppercase tracking-widest text-blue-600 dark:text-blue-400">
+              YOUR DIGITAL CONSULTATION TOKEN
+            </span>
+            {isOnline && (
+              <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                Online
+              </span>
+            )}
+          </div>
           <div className="py-2">
             <TokenBadge tokenNumber={actualTokenNumber} size="giant" variant={isPendingApproval ? 'orange' : 'blue'} />
           </div>
@@ -87,11 +104,38 @@ export default function ConfirmationStep({ appointment, onTrackToken, onCancel }
             </div>
           )}
           <div className="col-span-2 border-t border-slate-100 dark:border-slate-800 pt-2">
-            <span className="text-slate-500 dark:text-slate-400 block font-medium">LOCATION</span>
-            <span className="font-semibold text-slate-800 dark:text-slate-200 text-xs flex items-center gap-1 mt-0.5">
-              <MapPin className="w-3.5 h-3.5 shrink-0 text-rose-500" />
-              <span>{OFFICE_LOCATION}</span>
+            <span className="text-slate-500 dark:text-slate-400 block font-medium">
+              {isOnline ? 'CONSULTATION MODE & VIDEO LINK' : 'LOCATION'}
             </span>
+            {isOnline ? (
+              <div className="mt-1 space-y-2">
+                <span className="font-semibold text-indigo-700 dark:text-indigo-300 text-xs flex items-center gap-1.5">
+                  <Video className="w-3.5 h-3.5 shrink-0 text-indigo-600 dark:text-indigo-400" />
+                  <span>Online Video Consultation (2:00 PM – 5:00 PM Window)</span>
+                </span>
+                {meetingLink ? (
+                  <a
+                    href={meetingLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs transition-colors"
+                  >
+                    <Video className="w-3.5 h-3.5" />
+                    <span>Join Online Meeting</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                ) : (
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 italic">
+                    Meeting link will be displayed on your Live Token Tracker before your slot.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <span className="font-semibold text-slate-800 dark:text-slate-200 text-xs flex items-center gap-1 mt-0.5">
+                <MapPin className="w-3.5 h-3.5 shrink-0 text-rose-500" />
+                <span>{OFFICE_LOCATION}</span>
+              </span>
+            )}
           </div>
         </div>
 
@@ -140,7 +184,7 @@ export default function ConfirmationStep({ appointment, onTrackToken, onCancel }
         </button>
 
         <button
-          onClick={() => downloadIcsFile(appointment)}
+          onClick={() => downloadIcsFile({ ...appointment, meetingLink })}
           className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-sm border border-slate-200 dark:border-slate-700 shadow-sm transition-all"
         >
           <Download className="w-4 h-4 text-blue-600 dark:text-blue-400" />

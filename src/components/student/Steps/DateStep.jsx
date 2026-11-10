@@ -1,10 +1,19 @@
 import React from 'react';
-import { Calendar as CalendarIcon, Check, Info } from 'lucide-react';
+import { Calendar as CalendarIcon, Check, Info, Video, Building2 } from 'lucide-react';
 import { useApp } from '../../../context/AppContext';
 import { timeToMinutes, formatTimeDisplay } from '../../../utils/slotGenerator';
 
-export default function DateStep({ selectedDate, setSelectedDate, onNext }) {
+export default function DateStep({
+  selectedDate,
+  setSelectedDate,
+  consultationMode = 'IN_PERSON',
+  setConsultationMode,
+  onNext
+}) {
   const { appointments, availability = {} } = useApp();
+
+  const onlineEnabled = !!availability.onlineAppointmentsEnabled;
+  const isOnline = onlineEnabled && consultationMode === 'ONLINE';
 
   const maxSlotsPerDay = availability.maxBookings || 25;
   const activeWorkingDays = availability.workingDays || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
@@ -13,7 +22,9 @@ export default function DateStep({ selectedDate, setSelectedDate, onNext }) {
   // Real-time current date (no past days shown)
   const now = new Date();
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
-  const closingMinutes = timeToMinutes(availability.endTime || '17:30');
+  const closingMinutes = isOnline
+    ? timeToMinutes(availability.onlineEndTime || '17:00')
+    : timeToMinutes(availability.endTime || '17:30');
   const isPastClosingToday = currentMinutes >= closingMinutes;
 
   const baseToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -49,7 +60,7 @@ export default function DateStep({ selectedDate, setSelectedDate, onNext }) {
     const isWeekend = d.getDay() === 0 || d.getDay() === 6; // Sat or Sun
     const isSpecialWorkingWeekend = isWorkingDay && isWeekend;
 
-    // Live booked appointments count for this date
+    // Live booked appointments count for this date (shared across modes)
     const bookedForDate = appointments.filter(
       a => a.appointmentDate === isoDate && a.status !== 'CANCELLED'
     ).length;
@@ -82,29 +93,99 @@ export default function DateStep({ selectedDate, setSelectedDate, onNext }) {
   });
 
   const monthYearLabel = baseToday.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const onlineStartDisplay = formatTimeDisplay(availability.onlineStartTime || '14:00');
+  const onlineEndDisplay = formatTimeDisplay(availability.onlineEndTime || '17:00');
 
   return (
     <div className="space-y-6 font-sans transition-colors duration-200">
       <div>
         <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
           <CalendarIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-          <span>Step 1: Select Consultation Date</span>
+          <span>Step 1: Select Consultation Mode & Date</span>
         </h3>
         <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
           Select an upcoming consultation date. Working days and Saturday hours are managed dynamically by the Coordinator.
         </p>
       </div>
 
+      {/* Consultation Mode Selector (Shown whenever Coordinator enables Online Appointments) */}
+      {onlineEnabled && setConsultationMode && (
+        <div className="p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 space-y-2.5">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+              Choose Consultation Mode
+            </span>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+              Online Appointments Active ({onlineStartDisplay} – {onlineEndDisplay})
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setConsultationMode('IN_PERSON')}
+              className={`p-3.5 rounded-xl border text-left flex items-start gap-3 transition-all cursor-pointer ${
+                !isOnline
+                  ? 'bg-white dark:bg-slate-900 border-2 border-blue-600 text-blue-900 dark:text-blue-100 shadow-xs ring-2 ring-blue-500/10'
+                  : 'bg-white/70 dark:bg-slate-800/70 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800'
+              }`}
+            >
+              <div className={`p-2 rounded-lg shrink-0 ${!isOnline ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-500'}`}>
+                <Building2 className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-900 dark:text-white">In-Person Visit</span>
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">Staff Room</span>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
+                  Meet at 7th Floor Staff Room ({formatTimeDisplay(availability.startTime || '15:30')} – {formatTimeDisplay(availability.endTime || '17:30')}).
+                </p>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setConsultationMode('ONLINE')}
+              className={`p-3.5 rounded-xl border text-left flex items-start gap-3 transition-all cursor-pointer ${
+                isOnline
+                  ? 'bg-white dark:bg-slate-900 border-2 border-indigo-600 text-indigo-900 dark:text-indigo-100 shadow-xs ring-2 ring-indigo-500/10'
+                  : 'bg-white/70 dark:bg-slate-800/70 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800'
+              }`}
+            >
+              <div className={`p-2 rounded-lg shrink-0 ${isOnline ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-500'}`}>
+                <Video className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-900 dark:text-white">Online Consultation</span>
+                  <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300">2 PM – 5 PM</span>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
+                  Video call with Coordinator ({onlineStartDisplay} – {onlineEndDisplay}). Meeting link provided on token.
+                </p>
+              </div>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Month & Status Header */}
       <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/80 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
         <div className="flex items-center gap-3">
           <span className="text-base font-bold text-slate-900 dark:text-white">{monthYearLabel}</span>
-          <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 font-semibold">
-            Active Schedule
+          <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-semibold border ${
+            isOnline
+              ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800'
+              : 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800'
+          }`}>
+            {isOnline ? 'Online Schedule Active' : 'Active Schedule'}
           </span>
         </div>
         <span className="text-xs text-slate-500 dark:text-slate-400 hidden sm:inline">
-          Regular hours from {formatTimeDisplay(availability.startTime || '15:30')}
+          {isOnline
+            ? `Online hours: ${onlineStartDisplay} – ${onlineEndDisplay}`
+            : `Regular hours from ${formatTimeDisplay(availability.startTime || '15:30')}`}
         </span>
       </div>
 

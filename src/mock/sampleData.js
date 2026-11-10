@@ -39,7 +39,12 @@ export const INITIAL_AVAILABILITY = {
   bookingDeadline: '17:00',
   isAcceptingBookings: true,
   workingDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
-  dateOverrides: {}
+  dateOverrides: {},
+  onlineAppointmentsEnabled: false,
+  onlineStartTime: '14:00',
+  onlineEndTime: '17:00',
+  onlineSlotDuration: 15,
+  onlineMeetingLink: ''
 };
 
 export const INITIAL_APPOINTMENTS = [];

@@ -17,7 +17,9 @@ import {
   AlertTriangle,
   Check,
   X,
-  Zap
+  Zap,
+  Video,
+  ExternalLink
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import TokenBadge from '../common/TokenBadge';
@@ -38,6 +40,7 @@ export default function OverviewDashboard({ setActiveAdminPage }) {
     endMeeting, 
     markNoShow,
     updateAvailabilityStatus,
+    updateAvailabilityConfig,
     resetAllTokens,
     approveAppointment,
     denyAppointment
@@ -139,8 +142,22 @@ export default function OverviewDashboard({ setActiveAdminPage }) {
           </button>
 
           <button
+            type="button"
+            onClick={() => updateAvailabilityConfig({ onlineAppointmentsEnabled: !availability.onlineAppointmentsEnabled })}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all flex items-center gap-1.5 cursor-pointer ${
+              availability.onlineAppointmentsEnabled
+                ? 'bg-indigo-50 dark:bg-indigo-950/60 border-indigo-300 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300'
+                : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+            title="Toggle student Online Appointment bookings (2:00 PM – 5:00 PM)"
+          >
+            <Video className="w-3.5 h-3.5" />
+            <span>Online: {availability.onlineAppointmentsEnabled ? 'ON' : 'OFF'}</span>
+          </button>
+
+          <button
             onClick={() => setIsWalkInOpen(true)}
-            className="ml-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm flex items-center gap-1.5 transition-all cursor-pointer"
+            className="ml-1 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm flex items-center gap-1.5 transition-all cursor-pointer"
             title="Inject or schedule consultation for anytime in the day"
           >
             <Zap className="w-4 h-4 fill-current" />
@@ -369,6 +386,12 @@ export default function OverviewDashboard({ setActiveAdminPage }) {
                         <span>Group ({currentlyMeetingApt.studentCount || currentlyMeetingApt.students?.length} Students)</span>
                       </span>
                     )}
+                    {currentlyMeetingApt.consultationMode === 'ONLINE' && (
+                      <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-800 flex items-center gap-1">
+                        <Video className="w-3.5 h-3.5" />
+                        <span>ONLINE</span>
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs text-slate-600 dark:text-slate-300">{currentlyMeetingApt.department} • {currentlyMeetingApt.year}</p>
                   <p className="text-xs font-mono text-slate-500 dark:text-slate-400">
@@ -409,6 +432,19 @@ export default function OverviewDashboard({ setActiveAdminPage }) {
 
             {/* Actions for Currently Meeting */}
             <div className="space-y-3 flex flex-col justify-center">
+              {currentlyMeetingApt.consultationMode === 'ONLINE' && (currentlyMeetingApt.meetingLink || availability?.onlineMeetingLink) && (
+                <a
+                  href={currentlyMeetingApt.meetingLink || availability.onlineMeetingLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-2"
+                >
+                  <Video className="w-4 h-4" />
+                  <span>OPEN ONLINE MEETING LINK</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              )}
+
               <button
                 onClick={() => setIsEndMeetingOpen(true)}
                 className="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-sm transition-all flex items-center justify-center gap-2"
@@ -445,6 +481,12 @@ export default function OverviewDashboard({ setActiveAdminPage }) {
                       {(nextInLineApt.isBulk || nextInLineApt.studentCount > 1 || (nextInLineApt.students && nextInLineApt.students.length > 1)) && (
                         <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300">
                           👥 Group ({nextInLineApt.studentCount || nextInLineApt.students?.length})
+                        </span>
+                      )}
+                      {nextInLineApt.consultationMode === 'ONLINE' && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-800 inline-flex items-center gap-1">
+                          <Video className="w-3 h-3" />
+                          <span>ONLINE</span>
                         </span>
                       )}
                     </div>

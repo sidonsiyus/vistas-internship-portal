@@ -14,7 +14,9 @@ import {
   Clock,
   UserX,
   X,
-  Zap
+  Zap,
+  Video,
+  ExternalLink
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import TokenBadge from '../common/TokenBadge';
@@ -146,6 +148,12 @@ export default function LiveQueueManager() {
                       <span>Group ({currentlyServing.studentCount || currentlyServing.students?.length})</span>
                     </span>
                   )}
+                  {currentlyServing.consultationMode === 'ONLINE' && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-800 inline-flex items-center gap-1">
+                      <Video className="w-3 h-3" />
+                      <span>ONLINE</span>
+                    </span>
+                  )}
                 </div>
                 <p className="text-xs text-slate-600 dark:text-slate-400">
                   {currentlyServing.department} • Reg: {
@@ -200,6 +208,12 @@ export default function LiveQueueManager() {
                       <span>Group ({calledStudent.studentCount || calledStudent.students?.length})</span>
                     </span>
                   )}
+                  {calledStudent.consultationMode === 'ONLINE' && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-800 inline-flex items-center gap-1">
+                      <Video className="w-3 h-3" />
+                      <span>ONLINE</span>
+                    </span>
+                  )}
                 </div>
                 <p className="text-xs text-slate-600 dark:text-slate-400">
                   {calledStudent.department} • {calledStudent.appointmentTime}
@@ -207,7 +221,9 @@ export default function LiveQueueManager() {
                     <span> • Reg: {calledStudent.students.map(s => s.registerNumber).filter(Boolean).join(', ')}</span>
                   )}
                 </p>
-                <p className="text-xs font-bold text-amber-600 dark:text-amber-400 mt-1">Called • Student En Route to Office</p>
+                <p className="text-xs font-bold text-amber-600 dark:text-amber-400 mt-1">
+                  {calledStudent.consultationMode === 'ONLINE' ? 'Called • Ready on Video Call' : 'Called • Student En Route to Office'}
+                </p>
               </div>
 
               <div className="pt-2 flex items-center gap-2">
@@ -271,6 +287,12 @@ export default function LiveQueueManager() {
                       <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 flex items-center gap-0.5">
                         <Users className="w-3 h-3" />
                         <span>Group ({apt.studentCount || apt.students?.length})</span>
+                      </span>
+                    )}
+                    {apt.consultationMode === 'ONLINE' && (
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 inline-flex items-center gap-1">
+                        <Video className="w-2.5 h-2.5" />
+                        <span>ONLINE</span>
                       </span>
                     )}
                     {apt.isWalkIn && (

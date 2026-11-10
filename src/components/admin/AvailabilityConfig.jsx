@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
-import { Clock, Save, Sliders, Calendar, Plus, Trash2, Check, AlertCircle, Sun, CalendarCheck, Sparkles, Coffee } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Clock, Save, Sliders, Calendar, Plus, Trash2, Check, AlertCircle, Sun, CalendarCheck, Sparkles, Coffee, Video, Globe, Link as LinkIcon, Power } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
-import { generateRegularSlots, formatTimeDisplay } from '../../utils/slotGenerator';
+import { generateRegularSlots, generateOnlineSlots, formatTimeDisplay } from '../../utils/slotGenerator';
 
 const DAYS_OF_WEEK = [
   { key: 'Mon', label: 'Monday', short: 'Mon' },
@@ -25,13 +25,43 @@ export default function AvailabilityConfig() {
     maxBookings: availability.maxBookings || 25,
     bookingDeadline: availability.bookingDeadline || '17:00',
     workingDays: availability.workingDays || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
-    dateOverrides: availability.dateOverrides || {}
+    dateOverrides: availability.dateOverrides || {},
+    onlineAppointmentsEnabled: !!availability.onlineAppointmentsEnabled,
+    onlineStartTime: availability.onlineStartTime || '14:00',
+    onlineEndTime: availability.onlineEndTime || '17:00',
+    onlineSlotDuration: availability.onlineSlotDuration || 15,
+    onlineMeetingLink: availability.onlineMeetingLink || ''
   });
+
+  // Sync external updates (e.g. from Overview command bar toggle or cloud sync)
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      onlineAppointmentsEnabled: !!availability.onlineAppointmentsEnabled,
+      onlineStartTime: availability.onlineStartTime || prev.onlineStartTime,
+      onlineEndTime: availability.onlineEndTime || prev.onlineEndTime,
+      onlineSlotDuration: availability.onlineSlotDuration || prev.onlineSlotDuration,
+      onlineMeetingLink: availability.onlineMeetingLink ?? prev.onlineMeetingLink
+    }));
+  }, [
+    availability.onlineAppointmentsEnabled,
+    availability.onlineStartTime,
+    availability.onlineEndTime,
+    availability.onlineSlotDuration,
+    availability.onlineMeetingLink
+  ]);
 
   // Date override local form
   const [overrideDate, setOverrideDate] = useState('');
   const [overrideType, setOverrideType] = useState('WORKING'); // 'WORKING' or 'HOLIDAY'
   const [overrideNote, setOverrideNote] = useState('');
+
+  const handleToggleOnline = () => {
+    const nextEnabled = !formData.onlineAppointmentsEnabled;
+    const nextState = { ...formData, onlineAppointmentsEnabled: nextEnabled };
+    setFormData(nextState);
+    updateAvailabilityConfig(nextState);
+  };
 
   const toggleDay = (dayKey) => {
     setFormData(prev => {
@@ -73,6 +103,12 @@ export default function AvailabilityConfig() {
     updateAvailabilityConfig(formData);
   };
 
+  const onlinePreviewSlots = generateOnlineSlots({
+    startTime: formData.onlineStartTime || '14:00',
+    endTime: formData.onlineEndTime || '17:00',
+    slotDuration: formData.onlineSlotDuration || 15
+  });
+
   return (
     <div className="max-w-4xl mx-auto space-y-6 font-sans">
       
@@ -82,7 +118,7 @@ export default function AvailabilityConfig() {
           Coordinator Schedule & Working Days Controls
         </h1>
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-          Configure active working days (e.g. working Saturdays), holiday overrides, and session hours.
+          Configure active working days (e.g. working Saturdays), online appointment hours (2:00 PM – 5:00 PM), holiday overrides, and session hours.
         </p>
       </div>
 
@@ -133,6 +169,151 @@ export default function AvailabilityConfig() {
             <span className="text-xs font-bold">● UNAVAILABLE</span>
             <span className="text-[10px] text-slate-500 dark:text-slate-400">Bookings disabled</span>
           </button>
+        </div>
+      </div>
+
+      {/* ONLINE CONSULTATIONS CONTROL CARD (2:00 PM – 5:00 PM) */}
+      <div className={`bg-white dark:bg-slate-900 border-2 p-5 rounded-2xl shadow-sm space-y-4 transition-colors ${
+        formData.onlineAppointmentsEnabled
+          ? 'border-indigo-300 dark:border-indigo-800'
+          : 'border-slate-200/80 dark:border-slate-800'
+      }`}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3.5">
+          <div className="flex items-start gap-3">
+            <div className={`p-2.5 rounded-xl shrink-0 ${
+              formData.onlineAppointmentsEnabled
+                ? 'bg-indigo-600 text-white shadow-xs'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+            }`}>
+              <Video className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                  Online Appointments (02:00 PM – 05:00 PM)
+                </h3>
+                <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${
+                  formData.onlineAppointmentsEnabled
+                    ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700'
+                }`}>
+                  {formData.onlineAppointmentsEnabled ? '● Enabled for Students' : 'Disabled'}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Allow students to book video/online consultations between 2:00 PM and 5:00 PM. Overlapping slots automatically block in-person bookings.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleToggleOnline}
+            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shrink-0 shadow-xs ${
+              formData.onlineAppointmentsEnabled
+                ? 'bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+            }`}
+          >
+            <Power className="w-3.5 h-3.5" />
+            <span>{formData.onlineAppointmentsEnabled ? 'Disable Online Bookings' : 'Enable Online Bookings'}</span>
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="space-y-1">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Online Start Time
+            </label>
+            <input
+              type="time"
+              value={formData.onlineStartTime}
+              onChange={(e) => setFormData(p => ({ ...p, onlineStartTime: e.target.value }))}
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white font-mono focus:border-indigo-500 focus:outline-none"
+            />
+            <span className="text-[10px] text-slate-500">Default: 14:00 (02:00 PM)</span>
+          </div>
+
+          <div className="space-y-1">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Online End Time
+            </label>
+            <input
+              type="time"
+              value={formData.onlineEndTime}
+              onChange={(e) => setFormData(p => ({ ...p, onlineEndTime: e.target.value }))}
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white font-mono focus:border-indigo-500 focus:outline-none"
+            />
+            <span className="text-[10px] text-slate-500">Default: 17:00 (05:00 PM)</span>
+          </div>
+
+          <div className="space-y-1">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Online Slot Duration
+            </label>
+            <select
+              value={formData.onlineSlotDuration}
+              onChange={(e) => setFormData(p => ({ ...p, onlineSlotDuration: parseInt(e.target.value, 10) }))}
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white font-mono focus:border-indigo-500 focus:outline-none"
+            >
+              <option value={10}>10 Minutes / Slot</option>
+              <option value={15}>15 Minutes / Slot (Default)</option>
+              <option value={20}>20 Minutes / Slot</option>
+              <option value={30}>30 Minutes / Slot</option>
+            </select>
+            <span className="text-[10px] text-slate-500">Pace for online video calls</span>
+          </div>
+        </div>
+
+        {/* Single Reusable Meeting Link */}
+        <div className="space-y-1.5">
+          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+            <LinkIcon className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+            <span>Single Reusable Meeting Link (Google Meet / Zoom / Microsoft Teams)</span>
+          </label>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <input
+              type="url"
+              placeholder="e.g. https://meet.google.com/abc-defg-hij"
+              value={formData.onlineMeetingLink}
+              onChange={(e) => setFormData(p => ({ ...p, onlineMeetingLink: e.target.value }))}
+              className="flex-1 px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white font-mono focus:border-indigo-500 focus:outline-none"
+            />
+            <button
+              type="button"
+              onClick={() => updateAvailabilityConfig(formData)}
+              className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer shrink-0 flex items-center justify-center gap-1.5"
+            >
+              <Save className="w-3.5 h-3.5" />
+              <span>Save Online Config</span>
+            </button>
+          </div>
+          <p className="text-[10px] text-slate-500 dark:text-slate-400">
+            This single meeting link is automatically attached to all confirmed Online Appointments and shown to students on their Token Card & Live Tracker.
+          </p>
+        </div>
+
+        {/* Online Slots Live Preview */}
+        <div className="p-3.5 rounded-xl bg-indigo-50/50 dark:bg-indigo-950/30 border border-indigo-200/80 dark:border-indigo-900/60 space-y-2">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <span className="text-xs font-bold text-indigo-900 dark:text-indigo-200 flex items-center gap-1.5">
+              <Globe className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+              <span>Online Slots Preview ({onlinePreviewSlots.length} Slots)</span>
+            </span>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white dark:bg-slate-900 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+              {formatTimeDisplay(formData.onlineStartTime)} – {formatTimeDisplay(formData.onlineEndTime)}
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {onlinePreviewSlots.map(slot => (
+              <span
+                key={slot.value}
+                className="px-2 py-1 rounded-lg text-[11px] font-mono font-medium bg-white dark:bg-slate-900 text-indigo-800 dark:text-indigo-200 border border-indigo-200/80 dark:border-indigo-800/80"
+              >
+                {slot.time}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
 

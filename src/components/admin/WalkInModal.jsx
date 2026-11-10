@@ -16,14 +16,15 @@ import {
   Sun,
   Sunset,
   Sunrise,
-  Zap
+  Zap,
+  Video
 } from 'lucide-react';
 import { DEPARTMENTS, QUERY_CATEGORIES } from '../../mock/sampleData';
 import { useApp } from '../../context/AppContext';
 import { getAllDaySlotPresets, formatTimeDisplay } from '../../utils/slotGenerator';
 
 export default function WalkInModal({ isOpen, onClose, initialDate = null, initialStudent = null }) {
-  const { addWalkInStudent, students = [] } = useApp();
+  const { addWalkInStudent, students = [], availability = {} } = useApp();
 
   const todayIso = useMemo(() => {
     const now = new Date();
@@ -61,6 +62,7 @@ export default function WalkInModal({ isOpen, onClose, initialDate = null, initi
     phone: '',
     email: '',
     category: 'Internship Opportunity',
+    consultationMode: 'IN_PERSON',
     positionChoice: 'END_OF_QUEUE', // NEXT_AVAILABLE, END_OF_QUEUE, PRIORITY, SCHEDULED
     date: todayIso,
     timeSlot: '02:00 PM',
@@ -89,6 +91,7 @@ export default function WalkInModal({ isOpen, onClose, initialDate = null, initi
         phone: initialStudent?.phone || '',
         email: initialStudent?.email || '',
         category: 'Internship Opportunity',
+        consultationMode: 'IN_PERSON',
         positionChoice: 'END_OF_QUEUE',
         date: targetDate,
         timeSlot: initialSlot,
@@ -189,6 +192,7 @@ export default function WalkInModal({ isOpen, onClose, initialDate = null, initi
 
     addWalkInStudent({
       ...formData,
+      meetingLink: formData.consultationMode === 'ONLINE' ? (availability.onlineMeetingLink || '') : '',
       appointmentDate: formData.date || todayIso,
       appointmentTime: finalTime,
       injectedByAdmin: true,
@@ -681,6 +685,37 @@ export default function WalkInModal({ isOpen, onClose, initialDate = null, initi
 
           {/* CONSULTATION & QUEUE CONFIGURATION */}
           <div className="space-y-3 pt-1">
+
+            {/* Consultation Mode Selector */}
+            <div className="space-y-1">
+              <label className="block font-semibold text-slate-700 dark:text-slate-300">Consultation Mode *</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFormData(p => ({ ...p, consultationMode: 'IN_PERSON' }))}
+                  className={`p-2 rounded-xl border text-center font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                    formData.consultationMode !== 'ONLINE'
+                      ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-500 text-blue-700 dark:text-blue-300 ring-1 ring-blue-500'
+                      : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-slate-300'
+                  }`}
+                >
+                  <Building2 className="w-3.5 h-3.5" />
+                  <span>In-Person (Staff Room)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData(p => ({ ...p, consultationMode: 'ONLINE' }))}
+                  className={`p-2 rounded-xl border text-center font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                    formData.consultationMode === 'ONLINE'
+                      ? 'bg-indigo-50 dark:bg-indigo-950/40 border-indigo-500 text-indigo-700 dark:text-indigo-300 ring-1 ring-indigo-500'
+                      : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-slate-300'
+                  }`}
+                >
+                  <Video className="w-3.5 h-3.5" />
+                  <span>Online Video Call</span>
+                </button>
+              </div>
+            </div>
             
             {/* Category */}
             <div className="space-y-1">

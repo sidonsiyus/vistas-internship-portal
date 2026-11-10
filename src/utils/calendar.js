@@ -1,11 +1,14 @@
 export function downloadIcsFile(appointment) {
-  const { tokenNumber, studentName, appointmentDate, appointmentTime, category, description } = appointment;
-  
+  const { tokenNumber, studentName, appointmentDate, appointmentTime, category, description, consultationMode, meetingLink } = appointment;
+  const isOnline = consultationMode === 'ONLINE';
+
   // Basic ICS format generator
-  const title = `VISTAS Internship Consultation (${tokenNumber})`;
-  const summary = `Consultation with Internship Coordinator - Token ${tokenNumber}`;
-  const details = `Category: ${category}\\nDescription: ${description || 'N/A'}\\nStudent: ${studentName}`;
-  const location = `VISTAS Internship Coordinator Office, Admin Block`;
+  const title = `VISTAS ${isOnline ? 'Online ' : ''}Internship Consultation (${tokenNumber})`;
+  const summary = `${isOnline ? 'Online ' : ''}Consultation with Internship Coordinator - Token ${tokenNumber}`;
+  const details = `Mode: ${isOnline ? 'Online Video Consultation' : 'In-Person (7th Floor Staff Room)'}\\nDate/Time: ${appointmentDate} ${appointmentTime}\\nCategory: ${category}\\n${isOnline && meetingLink ? `Meeting Link: ${meetingLink}\\n` : ''}Description: ${description || 'N/A'}\\nStudent: ${studentName}`;
+  const location = isOnline
+    ? (meetingLink || 'Online Video Consultation (Link via Student Portal)')
+    : `VISTAS Internship Coordinator Office, 7th Floor Staff Room`;
 
   const icsContent = [
     'BEGIN:VCALENDAR',

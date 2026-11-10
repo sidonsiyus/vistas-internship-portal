@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, MapPin, AlertCircle, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { Clock, MapPin, AlertCircle, ShieldCheck, AlertTriangle, Video } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import StatusBadge from '../common/StatusBadge';
 import { OFFICE_LOCATION } from '../../mock/sampleData';
@@ -11,6 +11,9 @@ export default function CoordinatorStatusView({ setActiveTab }) {
   const formattedStart = formatTimeDisplay(availability.startTime || '15:30');
   const formattedEnd = formatTimeDisplay(availability.endTime || '17:30');
   const slotDuration = availability.slotDuration || 15;
+  const onlineEnabled = !!availability.onlineAppointmentsEnabled;
+  const formattedOnlineStart = formatTimeDisplay(availability.onlineStartTime || '14:00');
+  const formattedOnlineEnd = formatTimeDisplay(availability.onlineEndTime || '17:00');
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 md:py-12 space-y-7 font-sans transition-colors duration-200">
@@ -33,12 +36,18 @@ export default function CoordinatorStatusView({ setActiveTab }) {
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm">
         <div className="space-y-2 text-center md:text-left">
           <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">CURRENT DESK STATUS</span>
-          <div className="flex items-center justify-center md:justify-start gap-3">
+          <div className="flex items-center justify-center md:justify-start gap-3 flex-wrap">
             <StatusBadge status={availability.status} size="large" />
+            {onlineEnabled && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-bold">
+                <Video className="w-3.5 h-3.5" />
+                <span>Online Slots Open ({formattedOnlineStart} – {formattedOnlineEnd})</span>
+              </span>
+            )}
           </div>
           <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 font-normal">
             {availability.status === 'AVAILABLE' ? (
-              `The Internship Coordinator is currently accepting regular student consultation bookings after ${formattedStart} and emergency requests.`
+              `The Internship Coordinator is currently accepting regular student consultation bookings after ${formattedStart}${onlineEnabled ? `, online consultations (${formattedOnlineStart} – ${formattedOnlineEnd}),` : ''} and emergency requests.`
             ) : availability.status === 'ON_BREAK' ? (
               'The Coordinator is currently in a meeting or administrative break.'
             ) : (
@@ -73,7 +82,19 @@ export default function CoordinatorStatusView({ setActiveTab }) {
               </span>
             </li>
             <li className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-              <span className="text-slate-500 dark:text-slate-400">Pre-{formattedStart} Session</span>
+              <span className="text-slate-500 dark:text-slate-400">Online Video Consultations</span>
+              {onlineEnabled ? (
+                <span className="font-mono font-semibold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 px-2 py-0.5 rounded border border-indigo-200 dark:border-indigo-800">
+                  {formattedOnlineStart} – {formattedOnlineEnd} (Active)
+                </span>
+              ) : (
+                <span className="font-mono font-medium text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
+                  Currently Disabled
+                </span>
+              )}
+            </li>
+            <li className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+              <span className="text-slate-500 dark:text-slate-400">Pre-{formattedStart} In-Person</span>
               <span className="font-mono font-semibold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60 px-2 py-0.5 rounded border border-rose-100 dark:border-rose-800">Emergency Requests Only</span>
             </li>
             <li className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
@@ -99,11 +120,17 @@ export default function CoordinatorStatusView({ setActiveTab }) {
           <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-300">
             <li className="flex items-start gap-2">
               <span className="text-blue-600 dark:text-blue-400 font-bold">•</span>
-              <span>Regular consultation slots are available only <strong className="text-slate-900 dark:text-white">after {formattedStart}</strong>.</span>
+              <span>Regular in-person consultation slots are available <strong className="text-slate-900 dark:text-white">after {formattedStart}</strong>.</span>
             </li>
+            {onlineEnabled && (
+              <li className="flex items-start gap-2">
+                <span className="text-indigo-600 dark:text-indigo-400 font-bold">•</span>
+                <span>Online video consultations run between <strong className="text-indigo-700 dark:text-indigo-300">{formattedOnlineStart} and {formattedOnlineEnd}</strong> with meeting links on your token.</span>
+              </li>
+            )}
             <li className="flex items-start gap-2">
               <span className="text-rose-600 dark:text-rose-400 font-bold">•</span>
-              <span>Pre-{formattedStart} visits require emergency justification.</span>
+              <span>Pre-{formattedStart} in-person visits require emergency justification.</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-blue-600 dark:text-blue-400 font-bold">•</span>
